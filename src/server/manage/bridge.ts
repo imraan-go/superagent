@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { db } from "@/server/db";
 import { audit } from "@/server/db/schema";
+import { redactSecrets, redactValue } from "@/server/lib/redact";
 import { env } from "@/server/env";
 import { AppError } from "@/server/lib/errors";
 
@@ -129,19 +130,19 @@ async function call<T>(
 async function audited<T>(action: string, detail: unknown, fn: () => Promise<T>): Promise<T> {
   try {
     const result = await fn();
-    await db.insert(audit).values({ action, detail: detail as object, ok: true, result: summarise(result) });
+    await db.insert(audit).values({ action, detail: redactValue(detail) as object, ok: true, result: summarise(result) });
     return result;
   } catch (err) {
     await db
       .insert(audit)
-      .values({ action, detail: detail as object, ok: false, result: err instanceof Error ? err.message : String(err) })
+      .values({ action, detail: redactValue(detail) as object, ok: false, result: redactSecrets(err instanceof Error ? err.message : String(err)) })
       .catch(() => {});
     throw err;
   }
 }
 
 function summarise(v: unknown): string {
-  const s = typeof v === "string" ? v : JSON.stringify(v);
+  const s = redactSecrets(typeof v === "string" ? v : JSON.stringify(v));
   return s.length > 2000 ? `${s.slice(0, 2000)}…` : s;
 }
 

@@ -59,14 +59,16 @@ export async function recordLoginAttempt(ip: string, ok: boolean): Promise<void>
 }
 
 /**
- * Best-effort client IP. Caddy sets X-Forwarded-For; direct dev requests fall
- * back to a constant, which is fine for a single-owner panel.
+ * Best-effort client IP. Uses the **rightmost** X-Forwarded-For entry -- the
+ * one appended by our own proxy (Caddy). Leftmost entries are client-supplied
+ * and rotating them would otherwise reset the login limiter on every attempt.
+ * Direct dev requests fall back to a constant.
  */
 export function clientIp(headers: Headers): string {
   const xff = headers.get("x-forwarded-for");
   if (xff) {
-    const first = xff.split(",")[0]?.trim();
-    if (first) return first;
+    const last = xff.split(",").map((s) => s.trim()).filter(Boolean).at(-1);
+    if (last) return last;
   }
   return headers.get("x-real-ip")?.trim() || "unknown";
 }

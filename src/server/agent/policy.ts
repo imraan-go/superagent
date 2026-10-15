@@ -41,12 +41,15 @@ export function requiresApproval(
   policy: ApprovalPolicy = {},
   args?: Record<string, unknown>,
 ): ApprovalDecision {
-  const byArgs = argumentGate(toolName, args);
+  // Match on a canonical form so `sendEmail`, `gmail.send`, `Send-Message`
+  // and `MCP__x__SEND` cannot slip past the `_`-delimited verb patterns.
+  const canonical = normalizeToolName(toolName);
+  const byArgs = argumentGate(canonical, args);
   if (byArgs) return { required: true, reason: byArgs };
 
   for (const pattern of DEFAULT_PATTERNS) {
-    if (pattern.test(toolName)) {
-      return { required: true, reason: describe(pattern, toolName) };
+    if (pattern.test(canonical)) {
+      return { required: true, reason: describe(pattern, canonical) };
     }
   }
 
@@ -54,7 +57,7 @@ export function requiresApproval(
     const pattern = compilePattern(source);
     // A malformed pattern from Settings must not disable checkpointing.
     if (!pattern) continue;
-    if (pattern.test(toolName)) {
+    if (pattern.test(toolName) || pattern.test(canonical)) {
       if (policy.allowlist?.includes(toolName)) continue;
       return { required: true, reason: `matches your rule /${source}/` };
     }
@@ -86,13 +89,34 @@ export function compilePattern(source: string): RegExp | null {
  */
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-function argumentGate(toolName: string, args?: Record<string, unknown>): string | null {
-  if (!args) return null;
-  if (toolName === "http_request") {
-    const method = typeof args.method === "string" ? args.method.toUpperCase() : "GET";
-    if (WRITE_METHODS.has(method)) return `an outbound ${method} request is irreversible`;
+/** Any raw-HTTP style tool, however it is namespaced (`mcp__x__http_request`, `fetch_url`, `curl`). */
+const HTTP_TOOL = /(^|_)(http|https|fetch|curl|wget|webhook|api_call|rest_call)(_|$)|http_?request$/;
+
+function argumentGate(canonical: string, args?: Record<string, unknown>): string | null {
+  if (!args || !HTTP_TOOL.test(canonical)) return null;
+  for (const key of ["method", "http_method", "verb"]) {
+    const raw = args[key];
+    if (typeof raw !== "string") continue;
+    const method = raw.trim().toUpperCase();
+    // Anything other than a known-safe read is treated as a write.
+    if (!["GET", "HEAD", "OPTIONS", ""].includes(method) || WRITE_METHODS.has(method)) {
+      return `an outbound ${method} request is irreversible`;
+    }
   }
   return null;
+}
+
+/**
+ * Canonical tool name for matching: camelCase split, every non-alphanumeric
+ * run (`.`, `-`, `/`, `__`, spaces) collapsed to one `_`, lower-cased.
+ */
+export function normalizeToolName(name: string): string {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 }
 
 function describe(pattern: RegExp, toolName: string): string {

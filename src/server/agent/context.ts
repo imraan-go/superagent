@@ -10,6 +10,7 @@ import type { FilePart, MessagePart } from "@/lib/messages";
 import { formatBytes, isVisionMime } from "@/lib/uploads";
 import { getFileRow, readFileBytes } from "@/server/files/store";
 import { recall } from "@/server/memory";
+import { UNTRUSTED_RULES, wrapUntrusted } from "./guard";
 
 /**
  * Context assembly (skill-agent-loop §2), in order:
@@ -39,7 +40,9 @@ Working rules:
   tool anyway — the panel will stop and ask the owner before it executes. Never
   try to work around that pause.
 - If you cannot proceed, say exactly what is blocking you and what you need.
-- Do not claim an action succeeded unless a tool result confirms it.`;
+- Do not claim an action succeeded unless a tool result confirms it.
+
+${UNTRUSTED_RULES}`;
 
 export async function buildContext(args: {
   chatId: string;
@@ -102,7 +105,9 @@ async function memoryRecall(turns: AdapterMessage[]): Promise<string | null> {
       .join(" ")
       .slice(0, 2000);
     const rows = await recall(query);
-    return rows.length ? rows.map((m) => `- ${m.text}`).join("\n") : null;
+    // Memories are distilled from past runs (which saw external content), so
+    // they are data, not instructions.
+    return rows.length ? wrapUntrusted("memory", rows.map((m) => `- ${m.text}`).join("\n")) : null;
   } catch (err) {
     logger.debug("agent", { msg: "memory recall unavailable", detail: String(err) });
     return null;
@@ -161,7 +166,7 @@ export async function toAdapterParts(
           type: "tool_result",
           toolUseId: part.toolUseId,
           ok: part.ok,
-          text: part.text,
+          text: wrapUntrusted(`tool:${part.name}`, part.text),
           images,
         });
         break;
@@ -212,7 +217,7 @@ async function describeFile(part: FilePart): Promise<string> {
     const row = await getFileRow(part.fileId);
     if (!row) return head;
     const text = (await readFileBytes(row)).toString("utf8");
-    return `${head}\n<file_content>\n${text}\n</file_content>`;
+    return `${head}\n${wrapUntrusted(`file:${part.name}`, text.replace(/<\/?\s*file_content\b[^>]*>/gi, ""))}`;
   } catch {
     return head;
   }

@@ -16,6 +16,7 @@ import type { MessagePart } from "@/lib/messages";
 import { filterTools, resolveAllowlist } from "./allowlist";
 import { notifyUsage } from "@/server/usage/live";
 import { requiresApproval } from "./policy";
+import { blockedToolReason, redactSecrets } from "./guard";
 import { getSection } from "@/server/settings/store";
 import { emit, finishRun, startRun } from "./registry";
 import { buildContext, pruneOldImages, toAdapterParts } from "./context";
@@ -114,6 +115,8 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
     const maxCostUsd = agentSettings.maxCostUsdPerRun;
 
     const tools = model.tools ? await loadTools(resolveAllowlist(agentSettings.toolAllowlist)) : [];
+    // Server-side enforcement of the allowlist: only names actually offered run.
+    const offered = new Set(tools.map((t) => t.name));
     const context = await buildContext({
       chatId,
       userId,
@@ -143,6 +146,7 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
         completed: resume.state.completed as MessagePart[],
         plan: planResume(resume.state, resume.decision),
         checkpointPatterns: approvalSettings.checkpointPatterns,
+        offered,
       });
       stepIdx = outcome.stepIdx;
       if (outcome.paused) return;
@@ -280,6 +284,7 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
         completed: [],
         plan: toolCalls.map((call) => ({ call, action: "gate" as const })),
         checkpointPatterns: approvalSettings.checkpointPatterns,
+        offered,
       });
       stepIdx = outcome.stepIdx;
       if (outcome.paused) return;
@@ -335,6 +340,8 @@ async function runCalls(args: {
   plan: PlannedCall[];
   /** Owner checkpoint patterns from Settings (stricter-only). */
   checkpointPatterns?: string[];
+  /** Tool names offered to the model this run; anything else is refused. */
+  offered: ReadonlySet<string>;
 }): Promise<{ paused: boolean; parts: MessagePart[]; stepIdx: number }> {
   const { runId, chatId, signal, calls, offset, plan } = args;
   const parts = [...args.completed];
@@ -346,9 +353,18 @@ async function runCalls(args: {
       continue;
     }
 
+    // Checked for approved ("run") calls too: an approval never widens what
+    // the agent may call.
+    const blocked = blockedToolReason(call.name, args.offered);
+    if (blocked) {
+      logger.warn("agent", { runId, msg: "blocked tool call", tool: call.name });
+      parts.push(syntheticResult(call, blocked));
+      continue;
+    }
+
     if (action === "gate") {
       const gate = isExternalToolName(call.name)
-        ? externalApproval(call.name)
+        ? externalApproval(call.name, { extraPatterns: args.checkpointPatterns ?? [], args: call.args })
         : requiresApproval(call.name, { extraPatterns: args.checkpointPatterns }, call.args);
       if (gate.required) {
         await checkpoint({
@@ -420,7 +436,9 @@ async function observeTool(args: {
                 .where(and(eq(runs.id, runId), eq(runs.status, "paused_question")));
             }
           });
-      const text = truncate(resultText(result.result), RESULT_LIMIT);
+      // Signed/trigger/share URLs and bearer values never reach the model,
+      // the timeline or the stored step.
+      const text = truncate(redactSecrets(resultText(result.result)), RESULT_LIMIT);
       const images = resultImages(result.result);
 
       // Screenshots are stored once (sha256-deduped) and referenced by id.
@@ -472,7 +490,7 @@ async function observeTool(args: {
       const appErr = toAppError(err);
       // An abort surfaces here as a transport failure; it is the owner's doing,
       // not an error, and the transcript should say so.
-      const message = signal.aborted ? "Cancelled before this finished." : appErr.message;
+      const message = signal.aborted ? "Cancelled before this finished." : redactSecrets(appErr.message);
       const kind = classifyFailure({ status: appErr.status, message: appErr.message });
 
       if (kind === "waking" && attempt < MAX_WAKING_RETRIES && !signal.aborted) {

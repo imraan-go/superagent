@@ -99,6 +99,8 @@ export class McpClient {
       headers: this.headers(),
       body: JSON.stringify({ jsonrpc: "2.0", id, method, ...(params === undefined ? {} : { params }) }),
       signal: AbortSignal.timeout(this.timeoutMs),
+      // A redirect could bounce a vetted public URL to a private host (SSRF).
+      redirect: "error",
     });
     const sid = res.headers.get("mcp-session-id");
     if (sid) this.sessionId = sid;
@@ -115,6 +117,8 @@ export class McpClient {
       headers: this.headers(),
       body: JSON.stringify({ jsonrpc: "2.0", method }),
       signal: AbortSignal.timeout(this.timeoutMs),
+      // A redirect could bounce a vetted public URL to a private host (SSRF).
+      redirect: "error",
     });
     await res.text().catch(() => "");
   }

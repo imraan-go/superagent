@@ -58,8 +58,13 @@ export class WindowLimiter {
     private readonly windowMs: number,
   ) {}
 
+  /** Hard cap on tracked keys so spoofed/rotating keys cannot grow memory without bound. */
+  static readonly MAX_KEYS = 10_000;
+
   allow(key: string, nowMs: number = Date.now()): boolean {
     const since = nowMs - this.windowMs;
+    if (!this.hits.has(key) && this.hits.size >= WindowLimiter.MAX_KEYS) this.prune(since);
+    if (!this.hits.has(key) && this.hits.size >= WindowLimiter.MAX_KEYS) return false;
     const list = (this.hits.get(key) ?? []).filter((t) => t > since);
     if (list.length >= this.limit) {
       this.hits.set(key, list);
@@ -68,6 +73,16 @@ export class WindowLimiter {
     list.push(nowMs);
     this.hits.set(key, list);
     return true;
+  }
+
+  private prune(since: number): void {
+    for (const [k, list] of this.hits) {
+      if (!list.some((t) => t > since)) this.hits.delete(k);
+    }
+  }
+
+  get size(): number {
+    return this.hits.size;
   }
 }
 

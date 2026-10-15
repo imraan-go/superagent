@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { invalidateExternalTools } from "@/server/connectors/external-tools";
-import { addMcpServer, builtinLhosServer, listMcpServers } from "@/server/connectors/store";
+import { addMcpServer, assertSafeConnectorUrl, builtinLhosServer, listMcpServers } from "@/server/connectors/store";
 import { parseBody } from "@/server/lib/body";
 import { json, ownerRoute } from "@/server/lib/route";
 
@@ -20,6 +20,7 @@ export const POST = ownerRoute(async ({ request }) => {
       bearer: z.string().trim().max(2000).optional(),
     }),
   );
+  await assertSafeConnectorUrl(body.url);
   const server = await addMcpServer({ name: body.name, url: body.url, bearer: body.bearer || undefined });
   invalidateExternalTools();
   return json({ server }, { status: 201 });

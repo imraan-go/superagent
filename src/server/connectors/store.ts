@@ -7,6 +7,7 @@ import { env } from "@/server/env";
 import { last4, seal, unseal } from "@/server/lib/crypto";
 import { AppError } from "@/server/lib/errors";
 import { logger } from "@/server/lib/logger";
+import { assertPublicUrl } from "@/server/lib/ssrf";
 
 /**
  * Persistence for connector configuration. No migrations in Phase 4, so:
@@ -168,5 +169,14 @@ export async function mcpCredentials(id: string): Promise<{ name: string; url: s
       logger.error("connectors", { msg: "mcp bearer failed to decrypt", id });
     }
   }
+  // Re-checked at connect time (DNS may have changed since it was saved): an
+  // owner-entered MCP URL must never reach loopback/private hosts such as the
+  // Manage bridge on 127.0.0.1:7071.
+  await assertPublicUrl(cfg.data.url, { allowOrigins: [env.LHOS_BASE_URL] });
   return { name: row.name, url: cfg.data.url, bearer };
+}
+
+/** Validates an owner-entered outbound URL before it is saved or fetched. */
+export async function assertSafeConnectorUrl(url: string, opts: { requireHttps?: boolean } = {}): Promise<void> {
+  await assertPublicUrl(url, { allowOrigins: [env.LHOS_BASE_URL], ...opts });
 }
