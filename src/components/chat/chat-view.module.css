@@ -1,6 +1,7 @@
 .center {
   display: grid;
   grid-template-rows: 1fr auto;
+  grid-template-columns: minmax(0, 1fr);
   min-height: 0;
   min-width: 0;
 }
@@ -16,94 +17,39 @@
   padding: var(--sp-6);
   text-align: center;
   color: var(--text-3);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-small);
 }
 
-.approval {
-  width: min(100%, var(--chat-max));
-  margin: 0 auto var(--sp-4);
-  padding: var(--sp-4);
-  border: var(--border) solid var(--amber, var(--signal));
-  border-radius: var(--radius-panel);
-  background: color-mix(in oklab, var(--amber, var(--signal)) 8%, transparent);
-}
-
-.approval strong {
-  display: block;
-  margin-bottom: var(--sp-2);
-  font-family: var(--font-display);
-  font-size: var(--fs-sm);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-1);
-}
-
-.approval p {
-  margin: 0 0 var(--sp-2);
-  font-size: var(--fs-sm);
-  line-height: 1.6;
-  color: var(--text-2);
-}
-
-.approval code {
-  padding: 0.1em 0.35em;
-  border-radius: 5px;
+/* Sticks to the bottom of the scroller when the owner has scrolled up. */
+.jump {
+  position: sticky;
+  bottom: var(--sp-3);
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  width: max-content;
+  margin: 0 auto;
+  padding: 6px var(--sp-3);
+  border: var(--border) solid var(--line-strong);
+  border-radius: var(--radius-pill);
   background: var(--ink-2);
-  font-family: var(--font-mono);
-  font-size: 0.9em;
+  box-shadow: var(--elev-2);
+  color: var(--text-1);
+  font: inherit;
+  font-size: var(--fs-tiny);
+  cursor: pointer;
+  animation: jumpIn var(--dur-std) var(--ease-out) both;
 }
 
-.approvalNote {
-  font-size: var(--fs-micro) !important;
-  color: var(--text-3) !important;
+.jump:hover { border-color: var(--signal); color: var(--signal); }
+.jump:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
+@keyframes jumpIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
 }
 
-.center {
-  position: relative;
-}
-
-.center:focus {
-  outline: none;
-}
-
-/* Active run: a hairline signal edge-light along the composer side. The static
-   edge always shows; the slow pulse is skipped under reduced motion (OS or
-   Settings -> Appearance), and Settings "off" re-enables it. */
-.center::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: 0;
-  box-shadow: inset 0 0 0 0 transparent;
-  opacity: 0;
-  transition: opacity var(--dur-panel) var(--ease-out);
-}
-
-.center[data-running]::after {
-  opacity: 1;
-  box-shadow: inset 0 -2px 0 0 var(--signal), inset 0 -24px 32px -24px var(--signal-wash-strong);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  :root:not([data-motion="reduce"]) .center[data-running]::after {
-    animation: edge-pulse 2.4s ease-in-out infinite;
-  }
-}
-
-:root[data-motion="full"] .center[data-running]::after {
-  animation: edge-pulse 2.4s ease-in-out infinite;
-}
-
-@keyframes edge-pulse {
-  50% {
-    opacity: 0.45;
-  }
-}
-
-/* Keep the first transcript line clear of the floating rail toggle. */
-@media (max-width: 1100px) {
-  .scroll {
-    padding-top: var(--sp-10);
-  }
+@media (prefers-reduced-motion: reduce) {
+  .jump { animation: none; }
 }

@@ -5,8 +5,15 @@ import type { ClipboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowUp,
+  Brain,
   CalendarPlus,
   FileText,
+  Gauge,
+  Globe,
+  Monitor,
+  Plugs,
+  PlugsConnected,
+  WindowsLogo,
   Paperclip,
   Plus,
   Sparkle,
@@ -26,7 +33,29 @@ import {
   isImageMime,
 } from "@/lib/uploads";
 import type { FileInfo } from "@/lib/uploads";
+import { CAPABILITIES, PROMPT_PREFILL_EVENT, SLASH_COMMANDS, matchSlash } from "./parts/composer";
+import type { CapabilityId, PromptPrefillDetail, SlashCommand } from "./parts/composer";
 import styles from "./prompt-bar.module.css";
+
+const CAP_ICONS: Record<CapabilityId, typeof Monitor> = {
+  computer: Monitor,
+  browser: Globe,
+  rdp: WindowsLogo,
+  connectors: Plugs,
+  mcp: PlugsConnected,
+  memory: Brain,
+};
+
+interface LhosSnapshot {
+  reachable?: boolean;
+  pace?: string | null;
+}
+
+async function fetchLhos(): Promise<LhosSnapshot> {
+  const res = await fetch("/api/lhos/capabilities", { cache: "no-store" });
+  if (!res.ok) throw new Error(`capabilities: ${res.status}`);
+  return (await res.json()) as LhosSnapshot;
+}
 
 /**
  * The pill prompt bar: `+` menu on the left, model picker and send on the
@@ -36,7 +65,7 @@ import styles from "./prompt-bar.module.css";
  * the owner never hunts for it.
  */
 export interface PromptBarProps {
-  onSend: (text: string, model: string, fileIds: string[]) => void;
+  onSend: (text: string, model: string, fileIds: string[], capabilities: CapabilityId[]) => void;
   /** Uploads are tied to the chat when known; the landing sends none. */
   chatId?: string | null;
   onStop: () => void;
@@ -63,6 +92,49 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId }: PromptBarP
   const [model, setModel] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [caps, setCaps] = useState<CapabilityId[]>([]);
+  const [slashIdx, setSlashIdx] = useState(0);
+  const slash = matchSlash(text);
+  const slashOpen = slash.length > 0;
+  const slashSel = slashOpen ? slashIdx % slash.length : 0;
+
+  // Same cache key as the topbar dot, so this adds no polling of its own.
+  const { data: lhosState } = useQuery({
+    queryKey: ["lhos", "capabilities"],
+    queryFn: fetchLhos,
+    refetchInterval: 20_000,
+    staleTime: 10_000,
+  });
+  const pace = lhosState?.reachable ? (lhosState.pace ?? null) : null;
+
+  // Landing suggestions (and anything else) can prefill the composer.
+  useEffect(() => {
+    const onPrefill = (e: Event) => {
+      const detail = (e as CustomEvent<PromptPrefillDetail>).detail;
+      if (!detail) return;
+      setText(detail.text);
+      if (detail.capabilities) setCaps(detail.capabilities);
+      requestAnimationFrame(() => {
+        const el = textareaRef.current;
+        if (!el) return;
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      });
+    };
+    window.addEventListener(PROMPT_PREFILL_EVENT, onPrefill);
+    return () => window.removeEventListener(PROMPT_PREFILL_EVENT, onPrefill);
+  }, []);
+
+  const toggleCap = (id: CapabilityId) =>
+    setCaps((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+
+  const applySlash = (command: SlashCommand) => {
+    setText(command.template);
+    setSlashIdx(0);
+    const cap = command.capability;
+    if (cap) setCaps((prev) => (prev.includes(cap) ? prev : [...prev, cap]));
+    textareaRef.current?.focus();
+  };
 
   const { data } = useQuery({ queryKey: ["models"], queryFn: api.listModels });
   const models = data?.models.filter((m) => m.ready) ?? [];
@@ -201,7 +273,7 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId }: PromptBarP
   const submit = () => {
     const value = text.trim();
     if (!canSend || busy) return;
-    onSend(value, selected, ready.map((f) => f.id));
+    onSend(value, selected, ready.map((f) => f.id), caps);
     setText("");
     setAttachments([]);
   };
@@ -261,54 +333,62 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId }: PromptBarP
         }}
       />
 
-      <div className={cn(styles.bar, disabled && styles.barDisabled)}>
-        <div className={styles.menuAnchor} ref={menuRef}>
-          <IconButton
-            label="Add to this message"
-            icon={<Plus size={16} weight="bold" />}
-            pill
-            active={menuOpen}
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-          />
-          {menuOpen && (
-            <div className={styles.menu} role="menu">
+      {slashOpen && (
+        <ul className={styles.slash} id="fd-slash" role="listbox" aria-label="Commands">
+          {slash.map((c, i) => (
+            <li key={c.cmd} role="option" aria-selected={i === slashSel}>
               <button
                 type="button"
-                role="menuitem"
-                disabled={attachments.length >= MAX_ATTACHMENTS}
-                onClick={() => {
-                  setMenuOpen(false);
-                  fileInputRef.current?.click();
-                }}
+                tabIndex={-1}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => applySlash(c)}
               >
-                <Paperclip size={14} /> Attach files
+                <span className={styles.slashCmd}>{c.cmd}</span>
+                <span className={styles.slashLabel}>{c.label}</span>
               </button>
-              <button type="button" role="menuitem" disabled>
-                <Sparkle size={14} /> Save as skill
-              </button>
-              <button type="button" role="menuitem" disabled>
-                <CalendarPlus size={14} /> Schedule this
-              </button>
-              <p className={styles.menuNote}>Arriving in a later phase.</p>
-            </div>
-          )}
-        </div>
+            </li>
+          ))}
+        </ul>
+      )}
 
+      <div className={cn(styles.bar, disabled && styles.barDisabled, busy && styles.barBusy)}>
         <textarea
           ref={textareaRef}
           data-prompt-input=""
           className={styles.input}
           value={text}
           rows={1}
-          placeholder={disabled ? "Open or start a chat first" : "Tell the agent what to do"}
+          placeholder={disabled ? "Open or start a chat first" : "Tell the agent what to do — / for commands"}
           aria-label="Message the agent"
+          aria-controls={slashOpen ? "fd-slash" : undefined}
           disabled={disabled}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            setSlashIdx(0);
+          }}
           onPaste={onPaste}
           onKeyDown={(e) => {
-            // Enter sends; Shift+Enter is a newline.
+            if (slashOpen) {
+              if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                e.preventDefault();
+                setSlashIdx(
+                  (slashSel + (e.key === "ArrowDown" ? 1 : slash.length - 1)) % slash.length,
+                );
+                return;
+              }
+              if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
+                e.preventDefault();
+                const pick = slash[slashSel];
+                if (pick) applySlash(pick);
+                return;
+              }
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setText("");
+                return;
+              }
+            }
+            // Enter or ⌘/Ctrl+Enter sends; Shift+Enter is a newline.
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
               submit();
@@ -316,42 +396,126 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId }: PromptBarP
           }}
         />
 
-        <div className={styles.right}>
-          {models.length > 0 && (
-            <select
-              className={styles.model}
-              value={selected}
-              aria-label="Model"
-              onChange={(e) => setModel(e.target.value)}
-            >
-              {models.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          )}
-
-          {busy ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onStop}
-              iconLeft={<Square size={13} weight="fill" />}
-            >
-              Stop
-            </Button>
-          ) : (
+        <div className={styles.toolbar}>
+          <div className={styles.menuAnchor} ref={menuRef}>
             <IconButton
-              label="Send"
-              icon={<ArrowUp size={16} weight="bold" />}
+              label="Add to this message"
+              icon={<Plus size={16} weight="bold" />}
               pill
-              onClick={submit}
-              disabled={!canSend}
+              size="sm"
+              active={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
             />
-          )}
+            {menuOpen && (
+              <div className={styles.menu} role="menu">
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={attachments.length >= MAX_ATTACHMENTS}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    fileInputRef.current?.click();
+                  }}
+                >
+                  <Paperclip size={14} /> Attach files
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    const cmd = SLASH_COMMANDS.find((c) => c.cmd === "/schedule");
+                    if (cmd) applySlash(cmd);
+                  }}
+                >
+                  <CalendarPlus size={14} /> Schedule this
+                </button>
+                <button type="button" role="menuitem" disabled>
+                  <Sparkle size={14} /> Save as skill
+                </button>
+                <p className={styles.menuNote}>Skills arrive in a later phase.</p>
+              </div>
+            )}
+          </div>
+
+          <div className={styles.caps} role="group" aria-label="Focus this message on">
+            {CAPABILITIES.map((c) => {
+              const Icon = CAP_ICONS[c.id];
+              const on = caps.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={cn(styles.cap, on && styles.capOn)}
+                  aria-pressed={on}
+                  title={c.hint}
+                  onClick={() => toggleCap(c.id)}
+                >
+                  <Icon size={13} weight={on ? "fill" : "regular"} aria-hidden />
+                  <span>{c.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className={styles.right}>
+            {pace && (
+              <span className={styles.pace} title="Agent pace (set in Manage)">
+                <Gauge size={12} aria-hidden />
+                {pace}
+              </span>
+            )}
+            {models.length > 0 && (
+              <select
+                className={styles.model}
+                value={selected}
+                aria-label="Model"
+                onChange={(e) => setModel(e.target.value)}
+              >
+                {models.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {busy ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onStop}
+                iconLeft={<Square size={12} weight="fill" />}
+                className={styles.stop}
+              >
+                Stop
+              </Button>
+            ) : (
+              <IconButton
+                label="Send (Enter)"
+                icon={<ArrowUp size={16} weight="bold" />}
+                pill
+                className={cn(styles.send, canSend && styles.sendReady)}
+                onClick={submit}
+                disabled={!canSend}
+              />
+            )}
+          </div>
         </div>
       </div>
+
+      <p className={styles.keys}>
+        <span aria-hidden>
+          <kbd>↵</kbd> send · <kbd>⇧↵</kbd> newline · <kbd>/</kbd> commands
+        </span>
+        {caps.length > 0 && (
+          <span className={styles.capNote}>
+            Focused on {caps.map((id) => CAPABILITIES.find((c) => c.id === id)?.label).join(", ")}
+          </span>
+        )}
+      </p>
 
       {data && !data.anyVendorReady && (
         <p className={styles.hint}>

@@ -104,7 +104,18 @@ export const api = {
   deleteChat: (id: string) =>
     request<{ ok: true }>(`/api/chats/${id}`, { method: "DELETE" }),
 
-  sendMessage: (chatId: string, text: string, model?: string, fileIds?: string[]) =>
+  /**
+   * `capabilities` is an advisory hint from the composer chips (computer,
+   * browser, rdp, connectors, mcp, memory); the server may use it to narrow the
+   * tool allowlist. Omitted when empty.
+   */
+  sendMessage: (
+    chatId: string,
+    text: string,
+    model?: string,
+    fileIds?: string[],
+    capabilities?: string[],
+  ) =>
     request<{ message: ChatMessage; runId: string; model: string }>(
       `/api/chats/${chatId}/messages`,
       {
@@ -113,6 +124,7 @@ export const api = {
           text,
           ...(model ? { model } : {}),
           ...(fileIds && fileIds.length > 0 ? { fileIds } : {}),
+          ...(capabilities && capabilities.length > 0 ? { capabilities } : {}),
         }),
       },
     ),

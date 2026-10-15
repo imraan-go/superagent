@@ -3,6 +3,34 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — Chat: run trace, richer answers, capability composer, live landing
+- Run trace inside each assistant turn (`chat/parts/run-trace.tsx`): live
+  timeline of narration + tool cards (icon per category: computer, browser,
+  shell, RDP, files, connector, MCP, memory, schedule), past-tense titles from
+  args ("Ran `ls ~/persist`", "Called Notion · create page via MCP"), duration,
+  status, screenshot thumbnails, expandable args/result. Folds to one line
+  ("Used the computer · 22 steps · 29.8s") when the answer lands. Approval
+  steps render as an inline amber card that dispatches `fd:focus-waiting`.
+- Transcript grouped into exchanges (`parts/exchanges.ts`, unit-tested with
+  `parts/tool-meta.ts`); the live stream overlays the persisted rows.
+- Answers: section-tick headings, scrollable striped tables, file/screenshot
+  citation chips for `/api/uploads/*` links, streaming caret, mono footer
+  (model · tokens in/out · cost from the run `usage` frame · latency) with
+  Copy / Retry / Continue.
+- Composer: two-row layout, capability chips (Computer, Browser, RDP,
+  Connectors, MCP, Memory) sent as optional `capabilities` on the send body
+  (advisory; the server currently strips it), slash commands `/computer`,
+  `/rdp`, `/schedule`, `/memory`, live pace readout, prefill event
+  `fd:prompt-prefill`.
+- Landing: centred identity hero with live status strip (computer, Windows PC,
+  connectors, MCP servers, pace) and six suggestion cards that prefill.
+- Jump-to-latest pill + pinned auto-follow; reduced-motion aware entrance
+  motion; fixed 390px horizontal overflow (grid `minmax(0, 1fr)`); replaced
+  undefined `--fs-sm`/`--fs-md` tokens in chat CSS.
+- Known gap: `src/app/api/uploads/` is not tracked (`.gitignore` `uploads/`
+  matches it), so upload and screenshot URLs 404; thumbnails now degrade to a
+  labelled tile.
+
 ## 2026-10-15 — Wave 2: ops + loose ends
 - LHOS approve/reject: `decideApproval` timeout 15 s -> 45 s; on a timeout it
   re-reads `/api/approvals` and reports success if the record is gone
