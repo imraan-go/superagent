@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { findToolkit } from "@/server/connectors/composio-catalog";
 import { getCatalog } from "@/server/connectors/composio-tools";
 import { ComposioClient } from "@/server/connectors/composio-client";
 import { getComposioKey } from "@/server/connectors/store";
@@ -21,7 +22,7 @@ export const GET = ownerRoute(async ({ request }) => {
   const { slug } = parseQuery(request.url, z.object({ slug: z.string().trim().regex(/^[a-z0-9_-]{1,64}$/i) }));
   const key = await getComposioKey();
   if (!key) throw new AppError("bad_request", "Add your Composio API key first.");
-  const tk = (await getCatalog(new ComposioClient(key.key))).toolkits.find((t) => t.slug === slug);
+  const tk = findToolkit((await getCatalog(new ComposioClient(key.key))).toolkits, slug);
   if (!tk?.logo) throw new AppError("not_found", "No logo.");
   await assertPublicUrl(tk.logo, { requireHttps: true });
   const res = await fetch(tk.logo, { signal: AbortSignal.timeout(8_000), redirect: "error" });

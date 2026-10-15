@@ -171,7 +171,18 @@ export class ComposioClient {
   }
 
   private async paged<T extends z.ZodTypeAny>(path: string, item: T, params: URLSearchParams, pageSize = 100): Promise<Array<z.infer<T>>> {
+    return (await this.pagedWithTotal(path, item, params, pageSize)).items;
+  }
+
+  /** Same walk as `paged`, also returning Composio's own `total_items` (from the first page) when it reports one. */
+  private async pagedWithTotal<T extends z.ZodTypeAny>(
+    path: string,
+    item: T,
+    params: URLSearchParams,
+    pageSize = 100,
+  ): Promise<{ items: Array<z.infer<T>>; total: number | null }> {
     const out: Array<z.infer<T>> = [];
+    let total: number | null = null;
     let cursor: string | null | undefined;
     for (let i = 0; i < MAX_PAGES; i += 1) {
       const q = new URLSearchParams(params);
@@ -179,10 +190,11 @@ export class ComposioClient {
       if (cursor) q.set("cursor", cursor);
       const data = page(item).parse(await this.request(`${path}?${q.toString()}`));
       out.push(...data.items);
+      if (total === null && typeof data.total_items === "number") total = data.total_items;
       cursor = data.next_cursor;
       if (!cursor) break;
     }
-    return out;
+    return { items: out, total };
   }
 
   /* ---------------------------------------------------------- toolkits -- */
@@ -190,6 +202,11 @@ export class ComposioClient {
   /** The FULL catalog, paginated. */
   listAllToolkits(): Promise<ComposioToolkit[]> {
     return this.paged("/toolkits", toolkitSchema, new URLSearchParams({ sort_by: "usage", managed_by: "all" }), 200);
+  }
+
+  /** The full catalog plus Composio's reported `total_items`, so callers can prove nothing was missed. */
+  listAllToolkitsWithTotal(): Promise<{ items: ComposioToolkit[]; total: number | null }> {
+    return this.pagedWithTotal("/toolkits", toolkitSchema, new URLSearchParams({ sort_by: "usage", managed_by: "all" }), 200);
   }
 
   async listCategories(): Promise<Array<{ id: string; name: string }>> {
