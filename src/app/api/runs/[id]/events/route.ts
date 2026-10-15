@@ -6,7 +6,7 @@ import { isActive, replay, subscribe } from "@/server/agent/registry";
 import { AppError } from "@/server/lib/errors";
 import { errorResponse } from "@/server/lib/route";
 import { getOwner } from "@/server/auth/session";
-import { dropSupersededTerminals, isTerminal } from "@/lib/run-events";
+import { dropSupersededTerminals, isTerminal, serialiseFrame as serialise } from "@/lib/run-events";
 import type { RunEvent, RunFrame } from "@/lib/run-events";
 
 export const runtime = "nodejs";
@@ -165,8 +165,4 @@ function terminalFor(status: string, error: string | null): RunEvent {
     default:
       return { type: "done", status: "done" };
   }
-}
-
-function serialise(frame: RunFrame): string {
-  return `id: ${frame.seq}\nevent: ${frame.event.type}\ndata: ${JSON.stringify(frame.event)}\n\n`;
 }

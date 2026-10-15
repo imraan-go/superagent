@@ -142,6 +142,26 @@ All notable changes to tj-lhos-panel. Newest first. Format:
 - Production CSP and HSTS headers; login and webhook limiters use the proxy-appended IP; limiter memory is bounded.
 - Rate limits on runs, key tests, host actions and exports.
 - See docs/SECURITY_REVIEW.md; tests in tests/unit/security.test.ts.
+## 2026-10-15 — Production E2E smoke + three live bugs fixed
+- `tests/e2e/prod.spec.ts` (`PANEL_PROD=1 npx playwright test`): owner session
+  minted in-process (`tests/e2e/support/prod-session.ts`, nothing printed),
+  covers login/redirect/splash, shell, chat + SSE + Last-Event-ID replay,
+  approvals (hold-approve, reject, 409, cross-origin 403), Computer tab
+  (framed viewer, take control, expand, Esc), uploads + Library + nosniff,
+  every Settings tab, every Manage section + log follow; per-test console /
+  network error gate; screenshots in `test-results/prod/`; cleans up its chats.
+  `playwright.config.ts` skips the dev server in that mode.
+- FIX: `/api/runs/[id]/events` sent named SSE events (`event: <type>`) but the
+  client uses `EventSource.onmessage`, so no live run frame was ever delivered:
+  no streaming, no step chips, UI stuck on "Thinking"/Stop until reload. Frames
+  are now unnamed (`serialiseFrame`, unit-tested).
+- FIX: `.gitignore` `uploads/` also matched `src/app/api/uploads/`, so the
+  upload + serve routes were never committed (prod: every upload/thumbnail
+  fails). Pattern anchored to `/uploads/`; routes re-added with
+  `servingHeaders` (nosniff, sandbox CSP, attachment for non-images).
+- FIX: prompt bar now preselects the chat's stored model (`pickModel`); a reload
+  no longer silently switches a mock chat to the paid default.
+- Needs redeploy to go green in prod: areas 3 (live SSE) and 6 (uploads).
 
 ## 2026-10-15 — Manage mode (Phase 5)
 - `/manage` is now the full admin dashboard behind a left rail: Overview (9

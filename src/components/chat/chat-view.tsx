@@ -223,6 +223,7 @@ export function ChatView({ chatId }: { chatId: string }) {
           busy={busy}
           onStop={() => stop.mutate()}
           chatId={chatId}
+          chatModel={data?.chat.model ?? null}
           onSend={(text, model, fileIds, capabilities) =>
             send.mutate({ text, model, fileIds, capabilities })
           }

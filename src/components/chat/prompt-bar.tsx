@@ -21,6 +21,7 @@ import {
   X,
 } from "@phosphor-icons/react/dist/ssr";
 import { api } from "@/lib/api";
+import { pickModel } from "@/lib/model-pick";
 import { Button, IconButton } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import {
@@ -68,6 +69,8 @@ export interface PromptBarProps {
   onSend: (text: string, model: string, fileIds: string[], capabilities: CapabilityId[]) => void;
   /** Uploads are tied to the chat when known; the landing sends none. */
   chatId?: string | null;
+  /** The chat's stored model; preselected so a reload does not switch vendors. */
+  chatModel?: string | null;
   onStop: () => void;
   busy: boolean;
   disabled?: boolean;
@@ -83,7 +86,7 @@ interface Attachment {
   error?: string;
 }
 
-export function PromptBar({ onSend, onStop, busy, disabled, chatId }: PromptBarProps) {
+export function PromptBar({ onSend, onStop, busy, disabled, chatId, chatModel }: PromptBarProps) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -138,7 +141,12 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId }: PromptBarP
 
   const { data } = useQuery({ queryKey: ["models"], queryFn: api.listModels });
   const models = data?.models.filter((m) => m.ready) ?? [];
-  const selected = model ?? data?.defaultModel ?? "";
+  const selected = pickModel({
+    chosen: model,
+    chatModel: chatModel ?? null,
+    defaultModel: data?.defaultModel ?? null,
+    ready: models.map((m) => m.id),
+  });
 
   // Grow with content up to a cap, then scroll.
   useEffect(() => {

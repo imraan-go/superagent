@@ -54,6 +54,16 @@ export interface RunFrame {
   event: RunEvent;
 }
 
+/**
+ * One SSE frame on the wire. Deliberately **unnamed** (no `event:` line): the
+ * client listens with `EventSource.onmessage`, which only fires for the
+ * default `message` event; a named event is silently dropped and the run
+ * never streams or settles in the UI. The type travels inside `data`.
+ */
+export function serialiseFrame(frame: RunFrame): string {
+  return `id: ${frame.seq}\ndata: ${JSON.stringify(frame.event)}\n\n`;
+}
+
 /** Terminal frames tell the client to stop listening. */
 export function isTerminal(event: RunEvent): boolean {
   return event.type === "done" || event.type === "error";
