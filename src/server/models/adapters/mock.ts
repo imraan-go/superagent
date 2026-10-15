@@ -31,9 +31,7 @@ export class MockAdapter implements ModelAdapter {
 
   async *stream(request: CompletionRequest): AsyncIterable<StreamEvent> {
     const last = lastUserText(request);
-    const sawToolResult = request.messages.some((m) =>
-      m.content.some((p) => p.type === "tool_result"),
-    );
+    const sawToolResult = observedToolResult(request);
 
     if (last.startsWith("/error")) {
       yield { type: "usage", usage: usageFor(request, "") };
@@ -94,17 +92,40 @@ function sleep(ms: number): Promise<void> {
 }
 
 function lastUserText(request: CompletionRequest): string {
+  const index = lastUserTextIndex(request);
+  if (index === -1) return "";
+  return textOf(request.messages[index]?.content ?? []);
+}
+
+/**
+ * Only tool results from the *current* exchange count — results from earlier
+ * turns in the same chat must not stop the mock from acting on a new
+ * instruction.
+ */
+function observedToolResult(request: CompletionRequest): boolean {
+  const index = lastUserTextIndex(request);
+  return request.messages
+    .slice(index + 1)
+    .some((m) => m.content.some((p) => p.type === "tool_result"));
+}
+
+function lastUserTextIndex(request: CompletionRequest): number {
   for (let i = request.messages.length - 1; i >= 0; i -= 1) {
     const message = request.messages[i];
     if (message?.role !== "user") continue;
-    const text = message.content
-      .filter((p): p is { type: "text"; text: string } => p.type === "text")
-      .map((p) => p.text)
-      .join("\n")
-      .trim();
-    if (text) return text;
+    // A turn carrying a tool result is an observation, not an instruction.
+    if (message.content.some((p) => p.type === "tool_result")) continue;
+    if (textOf(message.content)) return i;
   }
-  return "";
+  return -1;
+}
+
+function textOf(content: CompletionRequest["messages"][number]["content"]): string {
+  return content
+    .filter((p): p is { type: "text"; text: string } => p.type === "text")
+    .map((p) => p.text)
+    .join("\n")
+    .trim();
 }
 
 function parseToolDirective(

@@ -88,6 +88,34 @@ describe("MockAdapter", () => {
     expect(events.at(-1)).toEqual({ type: "stop", reason: "end" });
   });
 
+  it("acts on a new instruction even after an earlier turn used a tool", async () => {
+    const events = await collect(
+      request("/tool desktop_screenshot", {
+        messages: [
+          { role: "user", content: [{ type: "text", text: "/tool desktop_click {}" }] },
+          {
+            role: "user",
+            content: [
+              {
+                type: "tool_result",
+                toolUseId: "mock_1",
+                ok: true,
+                text: "clicked",
+                images: [],
+              },
+            ],
+          },
+          { role: "assistant", content: [{ type: "text", text: "Done." }] },
+          { role: "user", content: [{ type: "text", text: "/tool desktop_screenshot" }] },
+        ],
+      }),
+    );
+
+    expect(events.find((e) => e.type === "tool_call")).toMatchObject({
+      name: "desktop_screenshot",
+    });
+  });
+
   it("reports a refusal on /error", async () => {
     const events = await collect(request("/error"));
     expect(events.at(-1)).toEqual({ type: "stop", reason: "refusal" });
