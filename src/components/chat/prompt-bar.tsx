@@ -298,6 +298,7 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId }: PromptBarP
 
         <textarea
           ref={textareaRef}
+          data-prompt-input=""
           className={styles.input}
           value={text}
           rows={1}

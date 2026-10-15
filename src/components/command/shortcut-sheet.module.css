@@ -1,0 +1,42 @@
+.groups {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.heading {
+  margin: 0 0 var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.list {
+  display: grid;
+  gap: var(--sp-1);
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-1) 0;
+  color: var(--text-2);
+}
+
+.row dd {
+  margin: 0;
+}
+
+.kbd {
+  padding: 2px var(--sp-2);
+  border: var(--border) solid var(--line-strong);
+  border-radius: var(--radius-chip);
+  background: var(--ink-2);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+}
