@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import { ArrowsIn, ArrowsOut, ArrowClockwise, Cursor, Monitor } from "@phosphor-icons/react/dist/ssr";
-import { Button, Dot, HoldToConfirm, IconButton, Panel, useToast } from "@/components/ui";
+import { ArrowSquareOut, ArrowsIn, ArrowsOut, ArrowClockwise, Monitor } from "@phosphor-icons/react/dist/ssr";
+import { Button, Dot, IconButton, Panel, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
@@ -19,8 +19,11 @@ import styles from "./computer-tab.module.css";
  * session does not reconnect. VNC traffic goes browser -> viewer directly; this
  * component only frames it.
  *
- * Watch mode lays a transparent overlay over the frame (input is swallowed);
- * Take control removes it. Sign-in happens INSIDE the frame: the viewer allows
+ * The panel adds NO input layer: the viewer itself is view-only by default
+ * and carries its own Take control pill, so the iframe receives pointer and
+ * keyboard events directly at all times. (The panel's former Watch overlay
+ * and hold-to-take-control duplicated that and blocked the viewer's own
+ * controls; the takeover audit call went with it.) Sign-in happens INSIDE the frame: the viewer allows
  * this panel via CSP frame-ancestors and keeps a SameSite=Lax session cookie on
  * the shared site, so a signed-out viewer simply renders its access-code form
  * here (no popup). The frame is tall enough for that form; Reload re-fetches it.
@@ -51,12 +54,9 @@ export function ComputerTab({ capabilities, active, steps, runId, onRequestOpen 
   const reduced = useReducedMotion();
 
   const [expanded, setExpanded] = useState(false);
-  const [control, setControl] = useState(false);
-  const [controlSeconds, setControlSeconds] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [frameKey, setFrameKey] = useState(0);
   const [takeoverAsked, setTakeoverAsked] = useState(false);
-  const controlStartRef = useRef(0);
 
   const { data: viewer } = useQuery({
     queryKey: ["computer", "viewer"],
@@ -74,7 +74,6 @@ export function ComputerTab({ capabilities, active, steps, runId, onRequestOpen 
     if (visible || !mounted) return;
     const timer = window.setTimeout(() => {
       setMounted(false);
-      setControl(false);
     }, UNMOUNT_AFTER_MS);
     return () => window.clearTimeout(timer);
   }, [visible, mounted]);
@@ -82,47 +81,16 @@ export function ComputerTab({ capabilities, active, steps, runId, onRequestOpen 
   // The sheet is position:fixed inside the tab, so hiding the tab must collapse it.
   if (!active && expanded) setExpanded(false);
 
-  /* ---- take control / release ---- */
-  const release = useCallback(() => {
-    setControl((was) => {
-      if (was) {
-        const seconds = Math.round((Date.now() - controlStartRef.current) / 1000);
-        void api.logTakeover("end", seconds).catch(() => undefined);
-      }
-      return false;
-    });
-  }, []);
-
-  const takeControl = useCallback(() => {
-    controlStartRef.current = Date.now();
-    setControlSeconds(0);
-    setControl(true);
-    setTakeoverAsked(false);
-    void api.logTakeover("start").catch(() => undefined);
-  }, []);
-
+  // Esc collapses the sheet. Keys typed *inside* the frame belong to the
+  // remote desktop and never reach this window.
   useEffect(() => {
-    if (!control) return;
-    const id = window.setInterval(
-      () => setControlSeconds(Math.round((Date.now() - controlStartRef.current) / 1000)),
-      1000,
-    );
-    return () => window.clearInterval(id);
-  }, [control]);
-
-  // Esc releases control first, then collapses the sheet. Keys typed *inside*
-  // the frame belong to the remote desktop, so the Release button is always
-  // visible as well.
-  useEffect(() => {
-    if (!control && !expanded) return;
+    if (!expanded) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      if (control) release();
-      else setExpanded(false);
+      if (e.key === "Escape") setExpanded(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [control, expanded, release]);
+  }, [expanded]);
 
   /* ---- open requests: approvals engineer's event + request_takeover step ---- */
   const openForTakeover = useCallback(() => {
@@ -198,7 +166,7 @@ export function ComputerTab({ capabilities, active, steps, runId, onRequestOpen 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={transition}
-          onClick={() => !control && setExpanded(false)}
+          onClick={() => setExpanded(false)}
           aria-hidden
         />
       )}
@@ -220,40 +188,17 @@ export function ComputerTab({ capabilities, active, steps, runId, onRequestOpen 
             <motion.div
               layout
               transition={transition}
-              className={cn(styles.stage, expanded && styles.sheet, control && styles.control)}
+              className={cn(styles.stage, expanded && styles.sheet)}
               role={expanded ? "dialog" : undefined}
               aria-label={expanded ? "Agent computer, full view" : undefined}
               style={{ borderRadius: expanded ? 16 : 12 }}
             >
               <div className={styles.bar} role="toolbar" aria-label="Live view controls">
                 <div className={styles.barLead}>
-                  {control ? (
-                    <>
-                      <span className={styles.live} role="status">
-                        <Dot status="warn" size="sm" pulse /> LIVE CONTROL
-                        <span className={styles.timer}>{formatClock(controlSeconds)}</span>
-                      </span>
-                      <Button size="sm" variant="outline" onClick={release} title="Esc also releases">
-                        Release
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <span className={styles.watch}>
-                        <Dot status="live" size="sm" /> Watch
-                      </span>
-                      <HoldToConfirm
-                        size="sm"
-                        holdMs={600}
-                        icon={<Cursor size={14} />}
-                        onConfirm={takeControl}
-                        disabled={!showFrame}
-                        label="Take control of the agent computer (hold)"
-                      >
-                        Take control
-                      </HoldToConfirm>
-                    </>
-                  )}
+                  <span className={styles.watch} role="status">
+                    <Dot status={showFrame ? "live" : status} size="sm" pulse={showFrame} />
+                    {showFrame ? "Connected" : "Paused"}
+                  </span>
                 </div>
                 <div className={styles.barTail}>
                   <IconButton
@@ -267,6 +212,18 @@ export function ComputerTab({ capabilities, active, steps, runId, onRequestOpen 
                     icon={expanded ? <ArrowsIn size={15} /> : <ArrowsOut size={15} />}
                     onClick={() => setExpanded((v) => !v)}
                   />
+                  {viewer?.url && (
+                    <a
+                      className={styles.openTab}
+                      href={viewer.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="Open live view in a new tab"
+                      title="Open live view in a new tab"
+                    >
+                      <ArrowSquareOut size={15} aria-hidden />
+                    </a>
+                  )}
                 </div>
                 {takeoverAsked && <p className={styles.ask}>The agent asked you to take over.</p>}
               </div>
@@ -286,9 +243,6 @@ export function ComputerTab({ capabilities, active, steps, runId, onRequestOpen 
                     <span>Live view paused</span>
                   </div>
                 )}
-                {!control && showFrame && (
-                  <div className={styles.overlay} title="Watch only. Take control to interact." />
-                )}
               </div>
             </motion.div>
           )}
@@ -298,7 +252,7 @@ export function ComputerTab({ capabilities, active, steps, runId, onRequestOpen 
           <p className={styles.caption}>
             {viewer?.embeddable === false
               ? (viewer.reason ?? "The viewer may refuse to be framed here.")
-              : "Signed out? Take control and type your access code in the frame. Blank? Reload."}
+              : "Sign in once with your access code. Use the viewer's Take control to drive the desktop."}
           </p>
         )}
       </Panel>
@@ -330,8 +284,3 @@ function Fallback(props: { reachable: boolean; asleep: boolean; waking: boolean;
   );
 }
 
-function formatClock(totalSeconds: number): string {
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
