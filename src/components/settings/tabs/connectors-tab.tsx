@@ -4,18 +4,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, HoldToConfirm, SettingRow, SettingSection, useToast } from "@/components/ui";
 import { api } from "./shared";
+import { ComposioSection } from "./composio-section";
 import styles from "./automation.module.css";
-
-type Composio =
-  | { configured: false }
-  | {
-      configured: true;
-      source: "settings" | "env";
-      last4: string | null;
-      toolkits: Array<{ slug: string; name: string; description: string }>;
-      accounts: Array<{ id: string; toolkit: string; status: string }>;
-      error: string | null;
-    };
 
 interface McpServer {
   id: string;
@@ -49,93 +39,6 @@ function useAction<T>(fn: (v: T) => Promise<unknown>, keys: string[], onDone?: (
     },
     onError: (e: Error) => toast.push({ title: "Connector action failed", message: e.message, tone: "error" }),
   });
-}
-
-function ComposioSection() {
-  const KEY = ["connectors", "composio"];
-  const { data, isPending, error } = useQuery({ queryKey: KEY, queryFn: () => api<Composio>("/api/connectors/composio") });
-  const [key, setKey] = useState("");
-  const [toolkit, setToolkit] = useState("");
-  const post = useAction(
-    (body: Record<string, unknown>) => api<{ redirectUrl?: string | null }>("/api/connectors/composio", { method: "POST", body }),
-    KEY,
-    (d) => {
-      const url = (d as { redirectUrl?: string | null }).redirectUrl;
-      if (url) window.open(url, "_blank", "noopener,noreferrer");
-      setKey("");
-    },
-  );
-
-  return (
-    <SettingSection title="Composio">
-      {isPending && <div className={styles.empty}>Loading…</div>}
-      {error && <div className={styles.error}>{error.message}</div>}
-      {data && !data.configured && (
-        <form
-          className={styles.form}
-          onSubmit={(e) => {
-            e.preventDefault();
-            post.mutate({ action: "setKey", key });
-          }}
-        >
-          <div className={styles.meta}>Add your Composio API key to connect Gmail, Notion, Slack and more. It is stored encrypted.</div>
-          <div className={styles.formRow}>
-            <input className={styles.input} type="password" autoComplete="off" placeholder="Composio API key" value={key} onChange={(e) => setKey(e.target.value)} required />
-            <Button size="sm" variant="primary" type="submit" loading={post.isPending}>
-              Save key
-            </Button>
-          </div>
-        </form>
-      )}
-      {data?.configured && (
-        <>
-          <SettingRow label="API key" description={data.source === "env" ? "From the environment" : `Stored · ••••${data.last4 ?? ""}`}>
-            {data.source === "settings" && (
-              <HoldToConfirm size="sm" tone="danger" onConfirm={() => post.mutate({ action: "clearKey" })}>
-                Remove
-              </HoldToConfirm>
-            )}
-          </SettingRow>
-          {data.error && <div className={styles.error}>{data.error}</div>}
-          <div className={styles.list}>
-            {data.accounts.length === 0 && <div className={styles.empty}>No connected apps.</div>}
-            {data.accounts.map((a) => (
-              <div className={styles.item} key={a.id}>
-                <div>
-                  <div className={styles.itemTitle}>{a.toolkit}</div>
-                  <div className={styles.meta}>{a.status} · tools appear to the agent as composio__{a.toolkit}__…</div>
-                </div>
-                <HoldToConfirm size="sm" tone="danger" onConfirm={() => post.mutate({ action: "disconnect", accountId: a.id })}>
-                  Disconnect
-                </HoldToConfirm>
-              </div>
-            ))}
-          </div>
-          <form
-            className={styles.form}
-            onSubmit={(e) => {
-              e.preventDefault();
-              post.mutate({ action: "connect", toolkit });
-            }}
-          >
-            <div className={styles.formRow}>
-              <select className={styles.select} value={toolkit} onChange={(e) => setToolkit(e.target.value)} required aria-label="App to connect">
-                <option value="">Choose an app…</option>
-                {data.toolkits.map((t) => (
-                  <option key={t.slug} value={t.slug}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-              <Button size="sm" variant="primary" type="submit" loading={post.isPending}>
-                Connect
-              </Button>
-            </div>
-          </form>
-        </>
-      )}
-    </SettingSection>
-  );
 }
 
 function PipedreamSection() {

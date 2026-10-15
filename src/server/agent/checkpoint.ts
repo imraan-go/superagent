@@ -26,6 +26,8 @@ export const checkpointStateSchema = z.object({
   calls: z.array(toolCallSchema).min(1),
   pendingIndex: z.number().int().nonnegative(),
   completed: z.array(z.record(z.string(), z.unknown())),
+  /** Composer chips of the paused run, so the resumed run stays narrowed. */
+  capabilities: z.array(z.string().max(32)).max(12).optional(),
 });
 export type CheckpointState = z.infer<typeof checkpointStateSchema>;
 

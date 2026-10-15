@@ -6,6 +6,8 @@
  * *stricter* by adding patterns; it can never remove a default
  * (skill-approvals-hitl §Gotchas).
  */
+import { isComposioReadAction, parseNamespaced } from "@/server/connectors/naming";
+
 
 /** Verbs that make a tool call irreversible from the outside world's view. */
 const DEFAULT_PATTERNS: readonly RegExp[] = [
@@ -46,6 +48,16 @@ export function requiresApproval(
   const canonical = normalizeToolName(toolName);
   const byArgs = argumentGate(canonical, args);
   if (byArgs) return { required: true, reason: byArgs };
+
+  // Third-party app actions (Composio, directly or through its MCP server) are
+  // default-deny: only a recognisable read verb (get/list/fetch/search…) runs
+  // unattended. Everything else (create/update/add/move/… as well as the
+  // send/post/delete class below) stops for the owner.
+  const external = parseNamespaced(toolName);
+  const viaComposio = external?.ns === "composio" || (external?.ns === "mcp" && external.group === "composio");
+  if (viaComposio && external?.action && !HTTP_TOOL.test(canonical) && !isComposioReadAction(external.action)) {
+    return { required: true, reason: `"${external.action.replace(/_/g, " ")}" changes data in a connected app` };
+  }
 
   for (const pattern of DEFAULT_PATTERNS) {
     if (pattern.test(canonical)) {

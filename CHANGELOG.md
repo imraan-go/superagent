@@ -3,6 +3,19 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — Composio as the connector + MCP layer
+- Composio client rewritten against the real v3.1 API (OpenAPI-verified): paginated full toolkit
+  catalog (1 h cache), categories, auth configs, hosted Connect Link OAuth, credential-style
+  connections (posted straight to Composio, never stored/echoed), tools, execute, MCP servers,
+  triggers, webhook subscriptions. Docs: INTEGRATIONS.md §4 rewritten.
+- Settings → Connectors → Composio: searchable/categorised catalog with logos (owner's priority set
+  pinned), connect / re-authorise / disconnect with ACTIVE polling, per-toolkit tool picker (read-only
+  by default, schema-token estimates), "Use via MCP" server (off by default), triggers → panel webhooks.
+- Agent: enabled tools exposed as `composio__<toolkit>__<action>` under a 14k-token schema budget;
+  default-deny approval for every non-read Composio action (create/update/add/… as well as send/post),
+  also for `mcp__composio__*`. New public `POST /api/webhooks/composio` (Standard-Webhooks signed).
+- Rate limits for connect/MCP/trigger changes and Composio execution. Tests: tests/unit/composio.test.ts.
+
 ## 2026-10-15 — Right rail: live operations console + embedded computer
 - Rail body is one block-flow scroller; panels size to content (fixes the
   "Spend today / Usage / Steps" headers rendering with 0-height bodies).

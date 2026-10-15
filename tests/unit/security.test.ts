@@ -35,6 +35,7 @@ const PUBLIC_ROUTES: Record<string, string> = {
   "auth/login/route.ts": "login itself (rate-limited)",
   "auth/logout/route.ts": "only destroys the caller's own session",
   "webhooks/[id]/route.ts": "HMAC-signed inbound webhook",
+  "webhooks/composio/route.ts": "Composio Standard-Webhooks signed trigger delivery",
 };
 
 describe("every API route is owner-gated", () => {

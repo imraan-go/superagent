@@ -51,7 +51,7 @@ describe("locked tools", () => {
   it("matches the guard deny-list exactly", () => {
     expect(locked.sort()).toEqual(
       [
-        "connector_save", "schedule_create", "schedule_delete", "schedule_enable", "secret_delete",
+        "connector_save", "maintenance_run_now", "snapshot_prune", "schedule_create", "schedule_delete", "schedule_enable", "secret_delete",
         "secret_intake_url", "secret_list", "trigger_url", "workflow_save",
       ].sort(),
     );

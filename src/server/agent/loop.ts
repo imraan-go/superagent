@@ -151,6 +151,7 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
         completed: resume.state.completed as MessagePart[],
         plan: planResume(resume.state, resume.decision),
         checkpointPatterns: approvalSettings.checkpointPatterns,
+        capabilities: input.capabilities,
         offered,
       });
       stepIdx = outcome.stepIdx;
@@ -289,6 +290,7 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
         completed: [],
         plan: toolCalls.map((call) => ({ call, action: "gate" as const })),
         checkpointPatterns: approvalSettings.checkpointPatterns,
+        capabilities: input.capabilities,
         offered,
       });
       stepIdx = outcome.stepIdx;
@@ -345,6 +347,8 @@ async function runCalls(args: {
   plan: PlannedCall[];
   /** Owner checkpoint patterns from Settings (stricter-only). */
   checkpointPatterns?: string[];
+  /** Composer chips, persisted into a checkpoint so resume stays narrowed. */
+  capabilities?: string[];
   /** Tool names offered to the model this run; anything else is refused. */
   offered: ReadonlySet<string>;
 }): Promise<{ paused: boolean; parts: MessagePart[]; stepIdx: number }> {
@@ -378,7 +382,7 @@ async function runCalls(args: {
           stepIdx: idx,
           call,
           reason: gate.reason,
-          state: { v: 1, calls, pendingIndex: offset + i, completed: parts },
+          state: { v: 1, calls, pendingIndex: offset + i, completed: parts, capabilities: args.capabilities },
         });
         return { paused: true, parts, stepIdx: idx + 1 };
       }
@@ -757,7 +761,14 @@ export async function decideCheckpoint(args: {
   const controller = startRun(runId, seqRow?.seq ?? 0);
 
   void execute(
-    { chatId: row.chatId, userId, modelId: row.model, runId, signal: controller.signal },
+    {
+      chatId: row.chatId,
+      userId,
+      modelId: row.model,
+      runId,
+      signal: controller.signal,
+      capabilities: state.data.capabilities,
+    },
     {
       approvalId,
       decision,

@@ -19,7 +19,7 @@ import type { NextRequest } from "next/server";
  * webhook management lives under `/api/automation/webhooks` (session-gated).
  */
 const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/health", "/api/webhooks"];
-const CSRF_EXEMPT_PREFIXES = ["/api/webhooks/", "/api/triggers/"];
+const CSRF_EXEMPT_PREFIXES = ["/api/webhooks/"];
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 export function proxy(request: NextRequest) {

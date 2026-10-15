@@ -87,7 +87,8 @@ export function CommandPalette({
         id: "theme",
         group: "Actions",
         label: "Toggle theme",
-        hint: `now ${resolvedTheme(theme)}`,
+        // Static on purpose: a theme-dependent hint differs between SSR and the client (React #418).
+        hint: "light ⇄ dark",
         icon: Sun,
         run: go(() => setTheme(resolvedTheme(theme) === "dark" ? "light" : "dark")),
       },

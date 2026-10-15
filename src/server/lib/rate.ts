@@ -14,6 +14,10 @@ export const LIMITS = {
   keyTest: { max: 10, windowMs: 60_000 },
   /** Host actions: restarts, maintenance, wake, auth rotation. */
   hostAction: { max: 6, windowMs: 60_000 },
+  /** Connecting / disconnecting third-party apps and creating MCP servers or triggers. */
+  connect: { max: 12, windowMs: 60_000 },
+  /** Agent-initiated Composio tool executions (each can hit a third-party API). */
+  composioExecute: { max: 60, windowMs: 60_000 },
   /** Full-database / usage exports. */
   export: { max: 6, windowMs: 60_000 },
 } as const;

@@ -80,6 +80,7 @@ export class McpClient {
     private readonly bearer: string | null,
     private readonly fetchImpl: FetchLike = fetch,
     private readonly timeoutMs = 30_000,
+    private readonly extraHeaders: Record<string, string> = {},
   ) {}
 
   private headers(): Record<string, string> {
@@ -87,6 +88,7 @@ export class McpClient {
       "content-type": "application/json",
       accept: "application/json, text/event-stream",
       "mcp-protocol-version": MCP_PROTOCOL_VERSION,
+      ...this.extraHeaders,
       ...(this.bearer ? { authorization: `Bearer ${this.bearer}` } : {}),
       ...(this.sessionId ? { "mcp-session-id": this.sessionId } : {}),
     };
