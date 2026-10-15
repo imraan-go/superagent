@@ -9,8 +9,8 @@
       "properties": {
         "systemPrompt": { "type": "string", "maxLength": 20000 },
         "defaultModel": { "type": "string" },
-        "maxSteps": { "type": "integer", "minimum": 1, "maximum": 200, "default": 40 },
-        "maxCostUsdPerRun": { "type": "number", "minimum": 0, "default": 2 },
+        "maxSteps": { "type": "integer", "minimum": 1, "maximum": 300, "default": 120 },
+        "maxCostUsdPerRun": { "type": "number", "minimum": 0, "default": 3 },
         "pace": { "enum": ["fast", "careful"], "default": "careful" },
         "toolAllowlist": { "type": "array", "items": { "type": "string" } },
         "memoryRecallTopK": { "type": "integer", "minimum": 0, "maximum": 32, "default": 8 }

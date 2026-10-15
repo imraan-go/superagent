@@ -18,3 +18,4 @@ AGENTS.md
 dupcheck.mjs
 shot.mjs
 .claude/
+config/agent-guide.md

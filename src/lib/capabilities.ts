@@ -3,10 +3,12 @@ import { categoryIdOf } from "./tool-categories";
 /**
  * Composer capability chips (Computer · Browser · RDP · Connectors · MCP · Memory).
  *
- * A chip selection can only NARROW what the owner's allowlist already offers —
- * it never enables a tool the allowlist (or the safety guard) left out. No chips
- * selected = no narrowing. Observing the screen and asking the owner are always
- * kept so the agent can still look and ask before acting.
+ * A chip selection — manual, or picked per message by Auto
+ * (src/lib/auto-capabilities.ts) — can only NARROW what the owner's allowlist
+ * already offers; it never enables a tool the allowlist (or the safety guard)
+ * left out. No chips = no narrowing. The GUI family serves both Computer and
+ * RDP (Windows is driven through click_text / desktop_* / wait). Observing the
+ * screen and asking the owner are always kept.
  */
 export const CAPABILITIES = ["computer", "browser", "rdp", "connectors", "mcp", "memory"] as const;
 export type Capability = (typeof CAPABILITIES)[number];
@@ -14,7 +16,8 @@ export type Capability = (typeof CAPABILITIES)[number];
 const ALWAYS = new Set(["observe", "hitl"]);
 
 const BY_CATEGORY: Record<string, Capability[]> = {
-  gui: ["computer"],
+  // RDP is driven through the GUI family (click_text, desktop_click/scroll/key, wait).
+  gui: ["computer", "rdp"],
   shell: ["computer"],
   ops: ["computer"],
   browser: ["browser"],
@@ -23,7 +26,18 @@ const BY_CATEGORY: Record<string, Capability[]> = {
   workflows: ["computer"],
 };
 
-/** Which capability a tool name belongs to; null = always allowed. */
+/** Capabilities a tool serves; "always" = kept whatever the chips; [] = unclassified (kept). */
+export function capabilitiesOf(toolName: string): Capability[] | "always" {
+  const lower = toolName.toLowerCase();
+  if (lower.startsWith("mcp__")) return ["mcp"];
+  if (lower.startsWith("composio__") || lower.startsWith("pipedream__")) return ["connectors"];
+  if (lower.includes("memory") || lower.includes("memories")) return ["memory"];
+  const cat = categoryIdOf(toolName);
+  if (ALWAYS.has(cat)) return "always";
+  return BY_CATEGORY[cat] ?? [];
+}
+
+/** Primary capability of a tool name; null = always allowed. */
 export function capabilityOf(toolName: string): Capability | "always" | null {
   const lower = toolName.toLowerCase();
   if (lower.startsWith("mcp__")) return "mcp";
@@ -42,7 +56,7 @@ export function narrowByCapabilities<T extends { name: string }>(
     (CAPABILITIES as readonly string[]).includes(c)));
   if (chosen.size === 0) return [...tools];
   return tools.filter((t) => {
-    const cap = capabilityOf(t.name);
-    return cap === "always" || cap === null || chosen.has(cap);
+    const caps = capabilitiesOf(t.name);
+    return caps === "always" || caps.length === 0 || caps.some((c) => chosen.has(c));
   });
 }

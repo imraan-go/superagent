@@ -92,7 +92,27 @@ describe("presets", () => {
     const rdpTools = TOOL_CATEGORIES.find((c) => c.id === "rdp")!.tools;
     expect(rdpTools.every((n) => rdp.includes(n))).toBe(true);
     expect(computePreset("recommended", ALL).every((n) => rdp.includes(n))).toBe(true);
-    expect(rdp).toHaveLength(computePreset("recommended", ALL).length + rdpTools.length);
+    expect(rdp).toHaveLength(new Set([...computePreset("recommended", ALL), ...rdpTools]).size);
+  });
+
+  it("operator = every tool of the 2026-10-14/15 MCP sessions that is not locked", () => {
+    const op = computePreset("operator", ALL);
+    // Real usage from e2b-agent-vm logs/events (unlocked tools only).
+    for (const n of [
+      "desktop_screenshot", "wait", "desktop_click", "rdp_open_url", "desktop_scroll", "run_command",
+      "observe", "desktop_key", "list_files", "rdp_type", "screen_text", "click_text", "browser_fill",
+      "rdp_connect", "workflow_run_saved", "workflow_run", "workflow_list", "set_pace", "share_file",
+      "http_request", "schedule_list", "snapshot_list", "maintenance_status", "rdp_status", "rdp_profiles",
+      "rdp_hotkey", "rdp_fetch", "rdp_send", "desktop_type", "desktop_move_mouse", "desktop_cursor",
+      "session_report", "hitl_check", "save_text", "capabilities", "browser_goto", "browser_snapshot",
+    ]) {
+      expect(op, n).toContain(n);
+    }
+    expect(op.filter(isLocked)).toEqual([]);
+    expect(op).not.toContain("trigger_url");
+    expect(op).not.toContain("secret_list");
+    expect(computePreset("recommended", ALL).every((n) => op.includes(n))).toBe(true);
+    expect(matchingPreset(new Set(op), ALL)).toBe("operator");
   });
 
   it("browser only has browser, observe and hitl tools", () => {

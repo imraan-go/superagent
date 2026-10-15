@@ -1,12 +1,13 @@
-import { DEFAULT_TOOL_ALLOWLIST } from "@/server/agent/allowlist";
+import { DEFAULT_TOOL_ALLOWLIST, OPERATOR_TOOLS } from "@/server/agent/allowlist";
 import { lockedToolReason } from "@/server/agent/guard";
 import { requiresApproval } from "@/server/agent/policy";
 import { categoryIdOf } from "./tool-categories";
 
-export type PresetId = "recommended" | "everything" | "rdp" | "browser";
+export type PresetId = "recommended" | "operator" | "everything" | "rdp" | "browser";
 
 export const PRESETS: ReadonlyArray<{ id: PresetId; label: string; hint: string }> = [
-  { id: "recommended", label: "Recommended (default)", hint: "The curated set: structured browser, OCR, files, API." },
+  { id: "recommended", label: "Recommended (default)", hint: "Operator work: OCR, GUI, RDP, structured browser, files, API." },
+  { id: "operator", label: "Full computer operator", hint: "Everything real operator sessions used, incl. clipboard and batches. No locked tools." },
   { id: "everything", label: "Everything allowed", hint: "Every tool that is not locked. Highest token cost." },
   { id: "rdp", label: "Windows/RDP work", hint: "Recommended plus the RDP tools." },
   { id: "browser", label: "Browser only", hint: "Browser and observe tools, plus asking you." },
@@ -59,6 +60,10 @@ export function computePreset(id: PresetId, available: readonly string[]): strin
   switch (id) {
     case "recommended":
       return pick((n) => defaults.has(n));
+    case "operator": {
+      const operator = new Set(OPERATOR_TOOLS);
+      return pick((n) => operator.has(n));
+    }
     case "everything":
       return pick(() => true);
     case "rdp":

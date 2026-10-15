@@ -53,7 +53,7 @@ describe("settings schema mirror", () => {
 
   it("salvages the valid fields of a corrupt row", () => {
     const value = parseStored("agent", { maxSteps: 9999, pace: "fast", junk: 1 });
-    expect(value.maxSteps).toBe(40);
+    expect(value.maxSteps).toBe(120);
     expect(value.pace).toBe("fast");
   });
 
@@ -119,6 +119,7 @@ describe("tool allowlist resolution", () => {
     expect(resolveAllowlist(undefined)).toBe(DEFAULT_TOOL_ALLOWLIST);
     expect(filterTools(tools, resolveAllowlist(undefined)).map((t) => t.name)).toEqual([
       "desktop_screenshot",
+      "rdp_type",
       "run_command",
     ]);
   });

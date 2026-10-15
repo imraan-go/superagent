@@ -20,6 +20,12 @@ import { formatBytes } from "@/lib/uploads";
 import { groupExchanges, liveTrace } from "./parts/exchanges";
 import type { Exchange } from "./parts/exchanges";
 import { RunTrace } from "./parts/run-trace";
+import { ReasoningBlock } from "./parts/reasoning-block";
+import { DebugPanel } from "./parts/debug-panel";
+import type { DebugEntry } from "@/hooks/use-run-stream";
+import { DEFAULT_CHAT_MODE, traceStaysOpen } from "@/lib/chat-mode";
+import type { ChatMode } from "@/lib/chat-mode";
+import modeStyles from "./parts/modes.module.css";
 import { formatMs } from "./parts/tool-meta";
 import styles from "./transcript.module.css";
 
@@ -36,6 +42,8 @@ export interface RunUsage {
   tokensOut: number;
   cached: number;
   costUsd: number;
+  /** Estimated reasoning tokens (included in tokensOut). */
+  thinkingTokens?: number;
 }
 
 /**
@@ -57,6 +65,14 @@ export interface TranscriptProps {
   /** Re-send an earlier owner turn. */
   onRetry?: (text: string) => void;
   onContinue?: () => void;
+  /** Conversation mode of this chat (trace/readout behaviour). */
+  mode?: ChatMode;
+  /** Reasoning streaming for the current turn (Thinking mode). */
+  streamingThinking?: string;
+  /** Debug-mode frames of the current run. */
+  debug?: DebugEntry[];
+  /** Machine code of `error` ("step_limit" shows a Continue button). */
+  errorCode?: string | null;
 }
 
 const LIVE_PHASES = new Set(["thinking", "tool", "waiting", "approval"]);
@@ -73,6 +89,10 @@ export function Transcript({
   approval = null,
   onRetry,
   onContinue,
+  mode = DEFAULT_CHAT_MODE,
+  streamingThinking = "",
+  debug = [],
+  errorCode = null,
 }: TranscriptProps) {
   const exchanges = useMemo(() => groupExchanges(messages), [messages]);
   const running = LIVE_PHASES.has(phase);
@@ -100,6 +120,10 @@ export function Transcript({
             isLast={i === lastIdx}
             onRetry={onRetry}
             onContinue={onContinue}
+            mode={mode}
+            streamingThinking={isCurrent ? streamingThinking : ""}
+            debug={isCurrent ? debug : []}
+            errorCode={isCurrent ? errorCode : null}
           />
         );
       })}
@@ -141,7 +165,15 @@ function ExchangeView({
   isLast,
   onRetry,
   onContinue,
+  mode,
+  streamingThinking,
+  debug,
+  errorCode,
 }: {
+  mode: ChatMode;
+  streamingThinking: string;
+  debug: DebugEntry[];
+  errorCode: string | null;
   exchange: Exchange;
   live: boolean;
   current: boolean;
@@ -162,13 +194,16 @@ function ExchangeView({
   const answer = streamingText || ex.answer;
   const streaming = Boolean(streamingText) && live;
   const userText = ex.user ? textOf(ex.user.content) : "";
-  const hasAgent = live || trace.length > 0 || Boolean(answer) || Boolean(error);
+  const reasoning = [ex.reasoning, streamingThinking].filter(Boolean).join("\n\n");
+  const hasAgent = live || trace.length > 0 || Boolean(answer) || Boolean(error) || Boolean(reasoning);
+  const expanded = traceStaysOpen(mode);
 
   return (
     <>
       {ex.user && <UserTurn message={ex.user} />}
       {hasAgent && (
         <AgentShell glyph={live ? "thinking" : error ? "error" : "done"}>
+          {reasoning && <ReasoningBlock text={reasoning} live={live && Boolean(streamingThinking)} />}
           {(live || trace.length > 0) && (
             <div className={styles.traceSlot}>
               <RunTrace
@@ -178,6 +213,8 @@ function ExchangeView({
                 activity={activity}
                 phase={phase}
                 approval={approval}
+                keepOpen={expanded}
+                expandSteps={expanded}
               />
             </div>
           )}
@@ -186,7 +223,13 @@ function ExchangeView({
               <Markdown content={answer} />
             </div>
           )}
-          {error && <ErrorLine message={error} />}
+          {error && (
+            <ErrorLine
+              message={error}
+              onContinue={errorCode === "step_limit" && isLast ? onContinue : undefined}
+            />
+          )}
+          {mode === "debug" && debug.length > 0 && <DebugPanel entries={debug} />}
           {!live && (answer || error) && (
             <Footer
               exchange={ex}
@@ -202,11 +245,16 @@ function ExchangeView({
   );
 }
 
-function ErrorLine({ message }: { message: string }) {
+function ErrorLine({ message, onContinue }: { message: string; onContinue?: () => void }) {
   return (
     <p className={styles.error} role="alert">
       <Warning size={15} weight="fill" aria-hidden />
       {message}
+      {onContinue && (
+        <button type="button" className={modeStyles.continue} onClick={onContinue}>
+          <FastForward size={12} aria-hidden /> Continue
+        </button>
+      )}
     </p>
   );
 }
@@ -269,6 +317,7 @@ function Footer({
         {usage && (
           <span title={`${usage.cached.toLocaleString()} cached`}>
             {compact(usage.tokensIn)} in · {compact(usage.tokensOut)} out
+            {usage.thinkingTokens ? ` (≈${compact(usage.thinkingTokens)} reasoning)` : ""}
           </span>
         )}
         {usage && <span>${usage.costUsd < 0.01 ? usage.costUsd.toFixed(4) : usage.costUsd.toFixed(2)}</span>}

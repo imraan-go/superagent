@@ -29,8 +29,8 @@ export const SOUND_EVENTS = ["send", "done", "approval", "error", "takeover"] as
 const agentSchema = z.object({
   systemPrompt: z.string().max(20_000).default(""),
   defaultModel: z.string().max(200).optional(),
-  maxSteps: z.number().int().min(1).max(200).default(40),
-  maxCostUsdPerRun: z.number().min(0).max(1_000).default(2),
+  maxSteps: z.number().int().min(1).max(300).default(120),
+  maxCostUsdPerRun: z.number().min(0).max(1_000).default(3),
   pace: z.enum(["fast", "careful"]).default("careful"),
   /** Absent → the built-in ADR-06 default list. */
   toolAllowlist: z.array(z.string().regex(/^[A-Za-z0-9_]+$/).max(120)).max(500).optional(),

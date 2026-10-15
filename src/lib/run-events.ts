@@ -23,6 +23,18 @@ export type RunEvent =
   | { type: "run_started"; runId: string; chatId: string; model: string }
   /** Coalesced assistant text; append in order. */
   | { type: "token"; text: string }
+  /** Coalesced summarised reasoning (Thinking mode); append in order. */
+  | { type: "thinking"; text: string }
+  /**
+   * Debug mode only: raw diagnostics (context/tool counts, model call
+   * timings/tokens, gate and retry decisions). Never carries secrets.
+   */
+  | { type: "debug"; kind: string; data: Record<string, unknown> }
+  /**
+   * Capability chips in effect for this run: picked by the Auto classifier
+   * (`auto: true`, with human-readable reasons) or the owner's manual chips.
+   */
+  | { type: "capabilities"; auto: boolean; chosen: string[]; reasons: string[] }
   | { type: "step"; step: RunStepView }
   | { type: "step_done"; step: RunStepView }
   /** The agent computer is waking; the loop retries automatically. */
@@ -43,10 +55,19 @@ export type RunEvent =
       tool: string;
       decision: "approve" | "reject";
     }
-  | { type: "usage"; tokensIn: number; tokensOut: number; cached: number; costUsd: number }
+  | {
+      type: "usage";
+      tokensIn: number;
+      tokensOut: number;
+      cached: number;
+      costUsd: number;
+      /** Estimated reasoning tokens (already included in tokensOut). */
+      thinkingTokens?: number;
+    }
   /** A persisted turn — replaces any streamed text for that turn. */
   | { type: "message"; message: ChatMessage }
   | { type: "done"; status: "done" | "cancelled" | "paused_approval" }
+  /** `code: "step_limit"` means the run can be continued with a new turn. */
   | { type: "error"; code: string; message: string };
 
 export interface RunFrame {

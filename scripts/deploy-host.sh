@@ -43,6 +43,8 @@ cp -a .next/standalone/. "$REL/"
 mkdir -p "$REL/.next" && cp -a .next/static "$REL/.next/static"
 [ -d public ] && cp -a public "$REL/public"
 cp -a config "$REL/config"
+# LHOS operator guide: single source of truth lives in the agent-computer repo
+[ -f /root/e2b-agent-vm/docs/SYSTEM_PROMPT.md ] && cp /root/e2b-agent-vm/docs/SYSTEM_PROMPT.md "$REL/config/agent-guide.md"
 cp -a src/server/db/migrations "$REL/migrations"
 chown -R panel:panel "$REL"
 ln -sfn "$REL" "$BASE/current.new" && mv -T "$BASE/current.new" "$BASE/current"

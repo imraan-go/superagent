@@ -21,9 +21,10 @@ describe("capability chips", () => {
 
   it("keeps observe + human-in-the-loop with any selection", () => {
     const names = narrowByCapabilities(tools, ["rdp"]).map((t) => t.name);
-    expect(names).toEqual(expect.arrayContaining(["observe", "ask_user", "rdp_type"]));
+    // RDP is driven through the GUI family, so desktop_click comes along.
+    expect(names).toEqual(expect.arrayContaining(["observe", "ask_user", "rdp_type", "desktop_click"]));
     expect(names).not.toContain("browser_goto");
-    expect(names).not.toContain("desktop_click");
+    expect(names).not.toContain("run_command");
   });
 
   it("maps namespaced external tools", () => {

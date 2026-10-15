@@ -5,15 +5,9 @@ import type { ClipboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowUp,
-  Brain,
   CalendarPlus,
   FileText,
   Gauge,
-  Globe,
-  Monitor,
-  Plugs,
-  PlugsConnected,
-  WindowsLogo,
   Paperclip,
   Plus,
   Sparkle,
@@ -37,15 +31,11 @@ import type { FileInfo } from "@/lib/uploads";
 import { CAPABILITIES, PROMPT_PREFILL_EVENT, SLASH_COMMANDS, matchSlash } from "./parts/composer";
 import type { CapabilityId, PromptPrefillDetail, SlashCommand } from "./parts/composer";
 import styles from "./prompt-bar.module.css";
+import { CapabilityChips } from "./parts/capability-chips";
+import { ModeSelect } from "./parts/mode-select";
+import { DEFAULT_CHAT_PREFS } from "@/lib/chat-mode";
+import type { ChatMode, ChatPrefs } from "@/lib/chat-mode";
 
-const CAP_ICONS: Record<CapabilityId, typeof Monitor> = {
-  computer: Monitor,
-  browser: Globe,
-  rdp: WindowsLogo,
-  connectors: Plugs,
-  mcp: PlugsConnected,
-  memory: Brain,
-};
 
 interface LhosSnapshot {
   reachable?: boolean;
@@ -65,8 +55,26 @@ async function fetchLhos(): Promise<LhosSnapshot> {
  * While a run is active the send button becomes Stop — the same position, so
  * the owner never hunts for it.
  */
+export interface SendOptions {
+  mode: ChatMode;
+  /** Auto chip: the server picks capabilities from the text. */
+  capabilitiesAuto: boolean;
+}
+
 export interface PromptBarProps {
-  onSend: (text: string, model: string, fileIds: string[], capabilities: CapabilityId[]) => void;
+  onSend: (
+    text: string,
+    model: string,
+    fileIds: string[],
+    capabilities: CapabilityId[],
+    options: SendOptions,
+  ) => void;
+  /** The chat's stored composer prefs (mode + Auto/manual chips). */
+  initialPrefs?: ChatPrefs | null;
+  /** Called when the owner changes mode or chips, to persist on the chat. */
+  onPrefsChange?: (prefs: ChatPrefs) => void;
+  /** What Auto picked for the current/last run. */
+  autoPick?: { chosen: string[]; reasons: string[] } | null;
   /** Uploads are tied to the chat when known; the landing sends none. */
   chatId?: string | null;
   /** The chat's stored model; preselected so a reload does not switch vendors. */
@@ -86,17 +94,17 @@ interface Attachment {
   error?: string;
 }
 
-/** Composer chips share the tool-category hues (DESIGN_SYSTEM §Colour). */
-const CAP_CATEGORY: Record<CapabilityId, string> = {
-  computer: "screen",
-  browser: "browser",
-  rdp: "rdp",
-  connectors: "connector",
-  mcp: "mcp",
-  memory: "memory",
-};
-
-export function PromptBar({ onSend, onStop, busy, disabled, chatId, chatModel }: PromptBarProps) {
+export function PromptBar({
+  onSend,
+  onStop,
+  busy,
+  disabled,
+  chatId,
+  chatModel,
+  initialPrefs,
+  onPrefsChange,
+  autoPick,
+}: PromptBarProps) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -106,6 +114,21 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId, chatModel }:
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [caps, setCaps] = useState<CapabilityId[]>([]);
+  const [capsAuto, setCapsAuto] = useState(true);
+  const [mode, setMode] = useState<ChatMode>(DEFAULT_CHAT_PREFS.mode);
+  // Adopt the chat's stored prefs once they load (and on chat switch).
+  const prefsKey = initialPrefs ? JSON.stringify(initialPrefs) : null;
+  const [adopted, setAdopted] = useState<string | null>(null);
+  if (prefsKey && prefsKey !== adopted) {
+    // Adjusting state while rendering (React docs: "storing information from previous renders").
+    const p = JSON.parse(prefsKey) as ChatPrefs;
+    setAdopted(prefsKey);
+    setMode(p.mode);
+    setCapsAuto(p.capsAuto);
+    setCaps(p.caps as CapabilityId[]);
+  }
+  const savePrefs = (next: Partial<ChatPrefs>) =>
+    onPrefsChange?.({ mode, capsAuto, caps, ...next });
   const [slashIdx, setSlashIdx] = useState(0);
   const slash = matchSlash(text);
   const slashOpen = slash.length > 0;
@@ -126,7 +149,10 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId, chatModel }:
       const detail = (e as CustomEvent<PromptPrefillDetail>).detail;
       if (!detail) return;
       setText(detail.text);
-      if (detail.capabilities) setCaps(detail.capabilities);
+      if (detail.capabilities) {
+        setCaps(detail.capabilities);
+        setCapsAuto(false);
+      }
       requestAnimationFrame(() => {
         const el = textareaRef.current;
         if (!el) return;
@@ -138,14 +164,32 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId, chatModel }:
     return () => window.removeEventListener(PROMPT_PREFILL_EVENT, onPrefill);
   }, []);
 
-  const toggleCap = (id: CapabilityId) =>
-    setCaps((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+  /** A specific chip switches to Manual (starting from an empty selection). */
+  const toggleCap = (id: CapabilityId) => {
+    const base = capsAuto ? [] : caps;
+    const next = base.includes(id) ? base.filter((c) => c !== id) : [...base, id];
+    setCaps(next);
+    setCapsAuto(false);
+    savePrefs({ caps: next, capsAuto: false });
+  };
+  const chooseAuto = () => {
+    setCapsAuto(true);
+    setCaps([]);
+    savePrefs({ capsAuto: true, caps: [] });
+  };
+  const changeMode = (m: ChatMode) => {
+    setMode(m);
+    savePrefs({ mode: m });
+  };
 
   const applySlash = (command: SlashCommand) => {
     setText(command.template);
     setSlashIdx(0);
     const cap = command.capability;
-    if (cap) setCaps((prev) => (prev.includes(cap) ? prev : [...prev, cap]));
+    if (cap) {
+      setCaps((prev) => (capsAuto ? [cap] : prev.includes(cap) ? prev : [...prev, cap]));
+      setCapsAuto(false);
+    }
     textareaRef.current?.focus();
   };
 
@@ -291,7 +335,7 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId, chatModel }:
   const submit = () => {
     const value = text.trim();
     if (!canSend || busy) return;
-    onSend(value, selected, ready.map((f) => f.id), caps);
+    onSend(value, selected, ready.map((f) => f.id), capsAuto ? [] : caps, { mode, capabilitiesAuto: capsAuto });
     setText("");
     setAttachments([]);
   };
@@ -458,28 +502,21 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId, chatModel }:
             )}
           </div>
 
-          <div className={styles.caps} role="group" aria-label="Focus this message on">
-            {CAPABILITIES.map((c) => {
-              const Icon = CAP_ICONS[c.id];
-              const on = caps.includes(c.id);
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  className={cn(styles.cap, on && styles.capOn)}
-                  data-cat={CAP_CATEGORY[c.id]}
-                  aria-pressed={on}
-                  title={c.hint}
-                  onClick={() => toggleCap(c.id)}
-                >
-                  <Icon size={13} weight={on ? "fill" : "regular"} aria-hidden />
-                  <span>{c.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          <CapabilityChips
+            auto={capsAuto}
+            caps={caps}
+            picked={autoPick?.chosen ?? []}
+            pickedWhy={autoPick?.reasons}
+            onAuto={chooseAuto}
+            onToggle={toggleCap}
+          />
 
           <div className={styles.right}>
+            <ModeSelect
+              value={mode}
+              onChange={changeMode}
+              thinkingSupported={models.find((m) => m.id === selected)?.vendor === "anthropic"}
+            />
             {pace && (
               <span className={styles.pace} title="Agent pace (set in Manage)">
                 <Gauge size={12} aria-hidden />
@@ -529,7 +566,7 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId, chatModel }:
         <span aria-hidden>
           <kbd>↵</kbd> send · <kbd>⇧↵</kbd> newline · <kbd>/</kbd> commands
         </span>
-        {caps.length > 0 && (
+        {!capsAuto && caps.length > 0 && (
           <span className={styles.capNote}>
             Focused on {caps.map((id) => CAPABILITIES.find((c) => c.id === id)?.label).join(", ")}
           </span>

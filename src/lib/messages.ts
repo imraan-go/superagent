@@ -53,7 +53,17 @@ export const toolResultPartSchema = z.object({
   images: z.array(z.uuid()).default([]),
 });
 
+/**
+ * Summarised model reasoning (Thinking mode). Display only: it is never sent
+ * back to a model (src/server/agent/context.ts skips it).
+ */
+export const thinkingPartSchema = z.object({
+  type: z.literal("thinking"),
+  text: z.string(),
+});
+
 export const messagePartSchema = z.discriminatedUnion("type", [
+  thinkingPartSchema,
   textPartSchema,
   imagePartSchema,
   filePartSchema,
@@ -69,6 +79,7 @@ export type FilePart = z.infer<typeof filePartSchema>;
 export type ToolUsePart = z.infer<typeof toolUsePartSchema>;
 export type ToolResultPart = z.infer<typeof toolResultPartSchema>;
 export type MessagePart = z.infer<typeof messagePartSchema>;
+export type ThinkingPart = z.infer<typeof thinkingPartSchema>;
 
 export const messageRoleSchema = z.enum(["user", "assistant", "system", "tool"]);
 export type MessageRole = z.infer<typeof messageRoleSchema>;

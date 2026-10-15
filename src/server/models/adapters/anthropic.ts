@@ -37,23 +37,7 @@ export class AnthropicAdapter implements ModelAdapter {
         "x-api-key": this.apiKey,
         "anthropic-version": API_VERSION,
       },
-      body: JSON.stringify({
-        model: request.model,
-        max_tokens: request.maxTokens,
-        system: request.system,
-        messages: request.messages.map(toAnthropicMessage),
-        ...(request.tools.length > 0
-          ? {
-              tools: request.tools.map((t) => ({
-                name: t.name,
-                description: t.description,
-                input_schema: t.inputSchema,
-              })),
-            }
-          : {}),
-        ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
-        stream: true,
-      }),
+      body: JSON.stringify(buildAnthropicBody(request)),
       ...(request.signal ? { signal: request.signal } : {}),
     });
 
@@ -98,6 +82,11 @@ export class AnthropicAdapter implements ModelAdapter {
           const delta = event.delta;
           if (delta?.type === "text_delta" && typeof delta.text === "string") {
             yield { type: "text", text: delta.text };
+          } else if (delta?.type === "thinking_delta" && typeof delta.thinking === "string") {
+            // Summarised reasoning (display: "summarized"). `signature_delta`
+            // and redacted_thinking blocks are ignored: thinking is shown,
+            // never replayed (see buildAnthropicBody).
+            if (delta.thinking) yield { type: "thinking", text: delta.thinking };
           } else if (
             delta?.type === "input_json_delta" &&
             typeof event.index === "number"
@@ -147,6 +136,71 @@ export class AnthropicAdapter implements ModelAdapter {
   }
 }
 
+const EPHEMERAL = { type: "ephemeral" } as const;
+
+/**
+ * The request body, without credentials. Pure and exported for tests and the
+ * Debug mode's "request params" readout.
+ *
+ * - Prompt caching: tools render before system, so one breakpoint on the
+ *   stable system prefix caches tools + guide; a second on the newest message
+ *   block caches the growing conversation for the next step of a long run.
+ * - Thinking mode (current models: Opus/Sonnet/Haiku 5.5): `thinking:
+ *   {type: "adaptive", display: "summarized"}` + `output_config.effort:
+ *   "high"`. `budget_tokens` is rejected (400) on these models, and so is a
+ *   non-default temperature, so temperature is dropped while thinking. These
+ *   models think adaptively even when `thinking` is omitted (display
+ *   defaults to "omitted"); Default mode simply omits the field.
+ * - Thinking blocks are not replayed: the loop prunes old screenshots and
+ *   trims history, which would invalidate replayed blocks; omitting them is
+ *   accepted and is what the panel has always sent.
+ */
+export function buildAnthropicBody(request: CompletionRequest): Record<string, unknown> {
+  const messages = request.messages.map(toAnthropicMessage);
+  markLastBlock(messages);
+
+  const system = request.systemParts
+    ? [
+        { type: "text", text: request.systemParts.stable, cache_control: EPHEMERAL },
+        ...(request.systemParts.volatile ? [{ type: "text", text: request.systemParts.volatile }] : []),
+      ]
+    : request.system;
+
+  return {
+    model: request.model,
+    max_tokens: request.maxTokens,
+    system,
+    messages,
+    ...(request.tools.length > 0
+      ? {
+          tools: request.tools.map((t) => ({
+            name: t.name,
+            description: t.description,
+            input_schema: t.inputSchema,
+          })),
+        }
+      : {}),
+    ...(request.thinking
+      ? {
+          thinking: { type: "adaptive", display: "summarized" },
+          output_config: { effort: "high" },
+        }
+      : request.temperature !== undefined
+        ? { temperature: request.temperature }
+        : {}),
+    stream: true,
+  };
+}
+
+/** Adds a cache breakpoint to the newest content block (text / tool_result / image). */
+function markLastBlock(messages: Array<{ role: string; content: unknown[] }>): void {
+  const last = messages[messages.length - 1];
+  const block = last?.content[last.content.length - 1] as Record<string, unknown> | undefined;
+  if (block && ["text", "tool_result", "image"].includes(String(block.type))) {
+    block.cache_control = EPHEMERAL;
+  }
+}
+
 function toAnthropicMessage(message: AdapterMessage) {
   return { role: message.role, content: message.content.flatMap(toAnthropicPart) };
 }
@@ -191,10 +245,17 @@ function readUsage(raw: unknown, current: TokenUsage): Partial<TokenUsage> {
   const u = raw as Record<string, unknown>;
   const num = (v: unknown) => (typeof v === "number" ? v : 0);
 
+  // `input_tokens` excludes cache reads and writes; the panel's `in` is the
+  // total prompt size, with `cached` (reads) and `cacheWrite` as subsets.
+  const reads = num(u.cache_read_input_tokens) || current.cached;
+  const writes = num(u.cache_creation_input_tokens) || (current.cacheWrite ?? 0);
+  const uncached = num(u.input_tokens);
+  const total = uncached + reads + writes;
   return {
-    in: num(u.input_tokens) || current.in,
+    in: uncached || reads || writes ? total : current.in,
     out: num(u.output_tokens) || current.out,
-    cached: num(u.cache_read_input_tokens) || current.cached,
+    cached: reads,
+    ...(writes ? { cacheWrite: writes } : {}),
   };
 }
 
@@ -282,6 +343,7 @@ interface AnthropicStreamEvent {
   delta?: {
     type?: string;
     text?: string;
+    thinking?: string;
     partial_json?: string;
     stop_reason?: string;
   };

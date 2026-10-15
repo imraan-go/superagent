@@ -13,8 +13,14 @@ import { AppError, toAppError } from "@/server/lib/errors";
 import { logger } from "@/server/lib/logger";
 import { activityLabel } from "@/lib/activity";
 import type { MessagePart } from "@/lib/messages";
-import { filterTools, resolveAllowlist } from "./allowlist";
+import { DEFAULT_TOOL_ALLOWLIST, OPERATOR_TOOLS, filterTools, resolveAllowlist } from "./allowlist";
 import { narrowByCapabilities } from "@/lib/capabilities";
+import { classifyCapabilities } from "@/lib/auto-capabilities";
+import { getChatMode } from "@/server/chat/mode";
+import { DEFAULT_CHAT_MODE, maxTokensFor, supportsThinking, wantsThinking } from "@/lib/chat-mode";
+import type { ChatMode } from "@/lib/chat-mode";
+import { buildAnthropicBody } from "@/server/models/adapters/anthropic";
+import { estimateTokens } from "@/server/models/pricing";
 import { notifyUsage } from "@/server/usage/live";
 import { requiresApproval } from "./policy";
 import { blockedToolReason, lockedToolReason, redactSecrets } from "./guard";
@@ -48,9 +54,8 @@ import type { CheckpointState, Decision, PlannedCall, ToolCall } from "./checkpo
  * closing the tab never kills a run.
  */
 /** Fallbacks only — the live values come from Settings → Agent each run. */
-const MAX_STEPS = 40;
-const MAX_COST_USD = 2;
-const MAX_TOKENS = 4_096;
+const MAX_STEPS = 120;
+const MAX_COST_USD = 3;
 /** Text deltas are coalesced to this cadence — imperceptible, ~12 frames/s. */
 const TOKEN_FLUSH_MS = 80;
 /** Oversized tool output is trimmed for the model and the UI alike. */
@@ -62,6 +67,11 @@ export interface StartRunInput {
   modelId: string;
   /** Composer chips; narrow the allowlist for this run only. */
   capabilities?: string[];
+  /** Conversation mode (src/lib/chat-mode.ts); defaults to the chat's stored mode. */
+  mode?: ChatMode;
+  /** Auto chips: pick capabilities from `autoText` (rules-only, never widens). */
+  capabilitiesAuto?: boolean;
+  autoText?: string;
 }
 
 export async function startAgentRun(input: StartRunInput): Promise<string> {
@@ -100,9 +110,16 @@ interface ResumeInput {
 
 async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void> {
   const { runId, chatId, userId, modelId, signal } = input;
+  const mode: ChatMode = input.mode ?? (await getChatMode(chatId).catch(() => DEFAULT_CHAT_MODE));
+  const debug = mode === "debug";
+  /** Debug-mode diagnostics; a no-op in every other mode. */
+  const trace = (kind: string, data: Record<string, unknown>) => {
+    if (debug) emit(runId, { type: "debug", kind, data });
+  };
   let stepIdx = resume?.stepIdx ?? 0;
   let total: TokenUsage = ZERO_USAGE;
   let cost = resume?.costSoFar ?? 0;
+  let thinkingTokens = 0;
 
   try {
     const { adapter, model } = await getAdapter(modelId);
@@ -117,9 +134,20 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
     const maxSteps = agentSettings.maxSteps;
     const maxCostUsd = agentSettings.maxCostUsdPerRun;
 
-    const tools = model.tools
-      ? narrowByCapabilities(await loadTools(resolveAllowlist(agentSettings.toolAllowlist)), input.capabilities)
-      : [];
+    const allowed = model.tools ? await loadTools(effectiveAllowlist(agentSettings.toolAllowlist)) : [];
+    // Auto chips classify the owner's text; manual chips are used as given.
+    // Either way they only narrow `allowed` — never add to it.
+    let caps = input.capabilities;
+    if (input.capabilitiesAuto && !resume) {
+      const toolkits = [...new Set(allowed.flatMap((t) => /^composio__(.+?)__/i.exec(t.name)?.[1] ?? []))];
+      const pick = classifyCapabilities(input.autoText ?? "", toolkits);
+      caps = pick.chosen;
+      emit(runId, { type: "capabilities", auto: true, chosen: pick.chosen, reasons: pick.reasons });
+      trace("auto_capabilities", { chosen: pick.chosen, reasons: pick.reasons, toolkits });
+    } else if (caps && caps.length > 0) {
+      emit(runId, { type: "capabilities", auto: false, chosen: caps, reasons: ["manual selection"] });
+    }
+    const tools = narrowByCapabilities(allowed, caps);
     // Server-side enforcement of the allowlist: only names actually offered run.
     const offered = new Set(tools.map((t) => t.name));
     const context = await buildContext({
@@ -127,8 +155,45 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
       userId,
       model,
       systemPrompt: agentSettings.systemPrompt,
+      mode,
     });
     const messages: AdapterMessage[] = context.messages;
+    const thinking = wantsThinking(mode) && supportsThinking(model.vendor);
+    const maxTokens = maxTokensFor(thinking ? mode : "default");
+    if (wantsThinking(mode) && !thinking) {
+      emit(runId, {
+        type: "thinking",
+        text: `(${model.label} does not support extended thinking; running without it.)`,
+      });
+    }
+
+    if (debug) {
+      const schemaChars = tools.reduce(
+        (n, t) => n + JSON.stringify({ name: t.name, description: t.description, input_schema: t.inputSchema }).length,
+        0,
+      );
+      const params = model.vendor === "anthropic"
+        ? buildAnthropicBody({ model: model.model, system: "", messages: [], tools: [], maxTokens, thinking })
+        : { model: model.model, max_tokens: maxTokens };
+      delete params.system;
+      delete params.messages;
+      trace("context", {
+        mode,
+        model: model.id,
+        vendor: model.vendor,
+        toolCount: tools.length,
+        schemaTokens: estimateTokens("x".repeat(schemaChars)),
+        tools: tools.map((t) => t.name),
+        guideSource: context.guideSource,
+        systemChars: context.system.length,
+        systemTokens: estimateTokens(context.system),
+        systemPreview: redactSecrets(context.system).slice(0, 6_000),
+        historyMessages: messages.length,
+        maxSteps,
+        maxCostUsd,
+        requestParams: params,
+      });
+    }
 
     if (resume) {
       const pending = resume.state.calls[resume.state.pendingIndex];
@@ -151,7 +216,7 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
         completed: resume.state.completed as MessagePart[],
         plan: planResume(resume.state, resume.decision),
         checkpointPatterns: approvalSettings.checkpointPatterns,
-        capabilities: input.capabilities,
+        capabilities: caps,
         offered,
       });
       stepIdx = outcome.stepIdx;
@@ -178,6 +243,10 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
         [];
       let flushedAt = Date.now();
       let buffered = "";
+      let reasoning = "";
+      let thinkBuffered = "";
+      const callStarted = Date.now();
+      let stopReason = "";
 
       /**
        * Emits any buffered text. Called before every non-token event so the
@@ -185,6 +254,11 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
        * text appearing after the usage or step event that followed it.
        */
       const flushTokens = () => {
+        if (thinkBuffered) {
+          emit(runId, { type: "thinking", text: thinkBuffered });
+          thinkBuffered = "";
+          flushedAt = Date.now();
+        }
         if (!buffered) return;
         emit(runId, { type: "token", text: buffered });
         buffered = "";
@@ -198,13 +272,21 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
         system: context.system,
         messages,
         tools,
-        maxTokens: MAX_TOKENS,
+        maxTokens,
         signal,
+        thinking,
+        systemParts: context.systemParts,
       })) {
         switch (event.type) {
           case "text": {
             text += event.text;
             buffered += event.text;
+            if (Date.now() - flushedAt >= TOKEN_FLUSH_MS) flushTokens();
+            break;
+          }
+          case "thinking": {
+            reasoning += event.text;
+            thinkBuffered += event.text;
             if (Date.now() - flushedAt >= TOKEN_FLUSH_MS) flushTokens();
             break;
           }
@@ -223,17 +305,30 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
               usage: event.usage,
               costUsd: turnCost,
             });
+            thinkingTokens += estimateTokens(reasoning);
             emit(runId, {
               type: "usage",
               tokensIn: total.in,
               tokensOut: total.out,
               cached: total.cached,
               costUsd: Number(cost.toFixed(6)),
+              ...(thinkingTokens > 0 ? { thinkingTokens } : {}),
+            });
+            trace("model_call", {
+              turn,
+              ms: Date.now() - callStarted,
+              tokensIn: event.usage.in,
+              tokensOut: event.usage.out,
+              cacheRead: event.usage.cached,
+              cacheWrite: event.usage.cacheWrite ?? 0,
+              costUsd: turnCost,
+              runCostUsd: Number(cost.toFixed(6)),
             });
             break;
           }
           case "stop":
             flushTokens();
+            stopReason = event.reason;
             if (event.reason === "aborted") {
               return void (await endRun(runId, chatId, "cancelled"));
             }
@@ -242,10 +337,12 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
       }
 
       flushTokens();
+      trace("model_stop", { turn, stopReason, toolCalls: toolCalls.map((c) => c.name) });
 
       // Persist the assistant turn before acting on it, so a crash mid-tool
       // still leaves the transcript coherent.
       const assistantParts: MessagePart[] = [
+        ...(reasoning.trim() ? [{ type: "thinking" as const, text: reasoning }] : []),
         ...(text.trim() ? [{ type: "text" as const, text }] : []),
         ...toolCalls.map((c) => ({
           type: "tool_use" as const,
@@ -290,8 +387,9 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
         completed: [],
         plan: toolCalls.map((call) => ({ call, action: "gate" as const })),
         checkpointPatterns: approvalSettings.checkpointPatterns,
-        capabilities: input.capabilities,
+        capabilities: caps,
         offered,
+        trace,
       });
       stepIdx = outcome.stepIdx;
       if (outcome.paused) return;
@@ -309,10 +407,15 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
       });
     }
 
-    throw new AppError(
-      "internal",
-      `This run hit the ${maxSteps}-step limit without finishing.`,
-    );
+    // Not a failure: the owner can continue with one click (code step_limit).
+    const message = `This run reached its ${maxSteps}-step limit before finishing. Continue to keep going.`;
+    await db
+      .update(runs)
+      .set({ status: "error", error: message, endedAt: new Date() })
+      .where(eq(runs.id, runId));
+    emit(runId, { type: "error", code: "step_limit", message });
+    finishRun(runId);
+    return;
   } catch (err) {
     if (signal.aborted) return void (await endRun(runId, chatId, "cancelled"));
 
@@ -351,6 +454,8 @@ async function runCalls(args: {
   capabilities?: string[];
   /** Tool names offered to the model this run; anything else is refused. */
   offered: ReadonlySet<string>;
+  /** Debug-mode diagnostics sink. */
+  trace?: (kind: string, data: Record<string, unknown>) => void;
 }): Promise<{ paused: boolean; parts: MessagePart[]; stepIdx: number }> {
   const { runId, chatId, signal, calls, offset, plan } = args;
   const parts = [...args.completed];
@@ -367,6 +472,7 @@ async function runCalls(args: {
     const blocked = blockedToolReason(call.name, args.offered);
     if (blocked) {
       logger.warn("agent", { runId, msg: "blocked tool call", tool: call.name });
+      args.trace?.("blocked", { tool: call.name, reason: blocked });
       parts.push(syntheticResult(call, blocked));
       continue;
     }
@@ -375,6 +481,7 @@ async function runCalls(args: {
       const gate = isExternalToolName(call.name)
         ? externalApproval(call.name, { extraPatterns: args.checkpointPatterns ?? [], args: call.args })
         : requiresApproval(call.name, { extraPatterns: args.checkpointPatterns }, call.args);
+      args.trace?.("gate", { tool: call.name, required: gate.required, reason: gate.reason });
       if (gate.required) {
         await checkpoint({
           runId,
@@ -388,7 +495,7 @@ async function runCalls(args: {
       }
     }
 
-    parts.push(await observeTool({ runId, chatId, stepIdx: idx, call, signal }));
+    parts.push(await observeTool({ runId, chatId, stepIdx: idx, call, signal, trace: args.trace }));
     idx += 1;
   }
 
@@ -405,6 +512,7 @@ async function observeTool(args: {
   stepIdx: number;
   call: { id: string; name: string; args: Record<string, unknown> };
   signal: AbortSignal;
+  trace?: (kind: string, data: Record<string, unknown>) => void;
 }): Promise<MessagePart> {
   const { runId, chatId, stepIdx, call, signal } = args;
   const label = activityLabel(call.name);
@@ -449,6 +557,16 @@ async function observeTool(args: {
       // the timeline or the stored step.
       const text = truncate(redactSecrets(resultText(result.result)), RESULT_LIMIT);
       const images = resultImages(result.result);
+      args.trace?.("tool_raw", {
+        idx: stepIdx,
+        tool: call.name,
+        args: JSON.parse(redactSecrets(JSON.stringify(call.args))) as unknown,
+        ok: result.ok,
+        ms: result.ms,
+        images: images.length,
+        resultChars: text.length,
+        result: text.slice(0, 2_000),
+      });
 
       // Screenshots are stored once (sha256-deduped) and referenced by id.
       const imageIds: string[] = [];
@@ -501,6 +619,14 @@ async function observeTool(args: {
       // not an error, and the transcript should say so.
       const message = signal.aborted ? "Cancelled before this finished." : redactSecrets(appErr.message);
       const kind = classifyFailure({ status: appErr.status, message: appErr.message });
+      args.trace?.("retry_classifier", {
+        idx: stepIdx,
+        tool: call.name,
+        status: appErr.status,
+        kind,
+        attempt,
+        willRetry: kind === "waking" && attempt < MAX_WAKING_RETRIES && !signal.aborted,
+      });
 
       if (kind === "waking" && attempt < MAX_WAKING_RETRIES && !signal.aborted) {
         const wait = backoffMs(kind, attempt);
@@ -614,6 +740,19 @@ async function endRun(
 
   // Phase 4: distil durable facts after a finished run. Never blocks or fails the run.
   if (status === "done") void extractMemories({ chatId, runId });
+}
+
+/**
+ * Settings → Agent allowlist, or — in development only — a named preset from
+ * `PANEL_AGENT_TOOLSET` (`default` | `operator`) so the parity harness can
+ * exercise the shipped defaults without touching the owner's saved settings.
+ * Ignored in production.
+ */
+function effectiveAllowlist(saved: readonly string[] | undefined): readonly string[] {
+  const preset = process.env.NODE_ENV !== "production" ? process.env.PANEL_AGENT_TOOLSET : undefined;
+  if (preset === "default") return DEFAULT_TOOL_ALLOWLIST;
+  if (preset === "operator") return OPERATOR_TOOLS;
+  return resolveAllowlist(saved);
 }
 
 async function loadTools(allowlist: readonly string[]): Promise<AdapterTool[]> {

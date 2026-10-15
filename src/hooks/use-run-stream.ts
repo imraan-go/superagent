@@ -28,10 +28,27 @@ export interface RunState {
   steps: RunStepView[];
   /** Plain-language line under the transcript. */
   activity: string | null;
-  usage: { tokensIn: number; tokensOut: number; cached: number; costUsd: number } | null;
+  usage: { tokensIn: number; tokensOut: number; cached: number; costUsd: number; thinkingTokens?: number } | null;
   approval: { tool: string; reason: string; args: Record<string, unknown> } | null;
   error: string | null;
+  /** Machine code of `error` (e.g. "step_limit"). */
+  errorCode: string | null;
+  /** Reasoning streamed for the current turn (Thinking mode). */
+  streamingThinking: string;
+  /** Debug-mode frames, in order (capped). */
+  debug: DebugEntry[];
+  /** What the server picked for this run's capability chips. */
+  capabilities: { auto: boolean; chosen: string[]; reasons: string[] } | null;
 }
+
+export interface DebugEntry {
+  seq: number;
+  at: number;
+  kind: string;
+  data: Record<string, unknown>;
+}
+
+const DEBUG_CAP = 400;
 
 export const IDLE_RUN: RunState = {
   runId: null,
@@ -42,6 +59,10 @@ export const IDLE_RUN: RunState = {
   usage: null,
   approval: null,
   error: null,
+  errorCode: null,
+  streamingThinking: "",
+  debug: [],
+  capabilities: null,
 };
 
 export interface UseRunStream {
@@ -112,7 +133,7 @@ export function useRunStream(
           );
         }
 
-        setState((prev) => reduce(prev, event));
+        setState((prev) => reduce(prev, event, followRef.current.seq));
         eventRef.current?.(event);
 
         if (event.type === "done" || event.type === "error") {
@@ -162,7 +183,7 @@ export function useRunStream(
   return { state, messages, start, resume, reset };
 }
 
-function reduce(state: RunState, event: RunEvent): RunState {
+function reduce(state: RunState, event: RunEvent, seq = 0): RunState {
   switch (event.type) {
     case "run_started":
       return { ...state, runId: event.runId, phase: "thinking", activity: "Thinking" };
@@ -174,6 +195,18 @@ function reduce(state: RunState, event: RunEvent): RunState {
         activity: "Thinking",
         streamingText: state.streamingText + event.text,
       };
+
+    case "thinking":
+      return { ...state, phase: "thinking", activity: "Reasoning", streamingThinking: state.streamingThinking + event.text };
+
+    case "debug":
+      return {
+        ...state,
+        debug: [...state.debug, { seq, at: Date.now(), kind: event.kind, data: event.data }].slice(-DEBUG_CAP),
+      };
+
+    case "capabilities":
+      return { ...state, capabilities: { auto: event.auto, chosen: event.chosen, reasons: event.reasons } };
 
     case "step":
       return {
@@ -216,12 +249,13 @@ function reduce(state: RunState, event: RunEvent): RunState {
           tokensOut: event.tokensOut,
           cached: event.cached,
           costUsd: event.costUsd,
+          ...(event.thinkingTokens ? { thinkingTokens: event.thinkingTokens } : {}),
         },
       };
 
     case "message":
       // The persisted turn supersedes the streamed text for that turn.
-      return { ...state, streamingText: "" };
+      return { ...state, streamingText: "", streamingThinking: "" };
 
     case "done":
       return {
@@ -229,9 +263,10 @@ function reduce(state: RunState, event: RunEvent): RunState {
         phase: event.status === "paused_approval" ? "approval" : "done",
         activity: null,
         streamingText: "",
+        streamingThinking: "",
       };
 
     case "error":
-      return { ...state, phase: "error", activity: null, error: event.message };
+      return { ...state, phase: "error", activity: null, error: event.message, errorCode: event.code };
   }
 }

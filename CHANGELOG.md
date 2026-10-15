@@ -20,6 +20,31 @@ All notable changes to tj-lhos-panel. Newest first. Format:
   honouring `data-motion`.
 - Computer tab: removed the panel Watch overlay + hold-to-take-control (it blocked
   the viewer's own pill and sign-in); the takeover audit call went with it.
+## 2026-10-15 — Operator parity with Claude-over-MCP + conversation modes + Auto chips
+- Agent guide: LHOS's own operator guide (observe→act→verify, OCR-first, rdp_type, pace, secrets,
+  failure protocol) is layered into the system prompt below the panel's rules (which win). Read at
+  runtime from `LHOS_AGENT_GUIDE_PATH` (mtime-cached), embedded fallback copy in
+  `src/server/agent/guide-fallback.ts`; lines naming owner-only (locked) tools are trimmed.
+- Tools: new "Full computer operator" preset (every unlocked tool used in the 2026-10-14/15 MCP
+  sessions + the GUI/RDP families). Default allowlist now includes the raw click family, click_text,
+  desktop_batch and RDP (51 → 66 tools, ~5.5k → ~7.0k schema tokens est.). The RDP chip now also
+  covers the GUI family. Saved owner allowlists are untouched.
+- Prompt caching (Anthropic): stable system prefix (tools + base rules + guide + mode) and the newest
+  message block carry `cache_control`; usage counts cache reads/writes (writes billed +25%).
+- Long runs: defaults maxSteps 40 → 120, max cost $2 → $3; hitting the step limit is a
+  `step_limit` error with an inline Continue button.
+- Modes (per chat, composer select): Default · Thinking (adaptive thinking, summarized; dimmed
+  collapsible Reasoning block; reasoning tokens estimated in the footer; no-op label on non-Anthropic
+  models) · Verbose (narrated plan/steps, trace stays open with args/results) · Debug (plus tool count,
+  schema tokens, redacted system prompt, request params, per-call tokens/cost/timing, gate/retry
+  decisions). `mode` on `POST /api/chats/{id}/messages`; stored in `settings` key `chat-prefs:<id>`
+  (no migration), also via `PATCH /api/chats/{id}`.
+- Auto capability chips (default): rules-only classifier (`src/lib/auto-capabilities.ts`, priority
+  connectors > browser > computer, negation-aware, falls back to the full set) picks chips per message;
+  picked chips light up, Debug shows why. Clicking a chip switches to Manual; chips only ever narrow.
+- `scripts/parity-check.mjs`: safe scenario harness against a dev server (in-process owner cookie,
+  deletes its chats). Dev-only `PANEL_AGENT_TOOLSET=default|operator` exercises shipped presets
+  without touching saved settings.
 
 ## 2026-10-15 — Composio as the connector + MCP layer
 - Composio client rewritten against the real v3.1 API (OpenAPI-verified): paginated full toolkit

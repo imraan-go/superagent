@@ -44,6 +44,18 @@ export interface CompletionRequest {
   maxTokens: number;
   temperature?: number;
   signal?: AbortSignal;
+  /**
+   * Thinking mode: ask for extended (adaptive, summarised) reasoning. Adapters
+   * without support ignore it; `buildRequestBody` shapes it per vendor.
+   */
+  thinking?: boolean;
+  /**
+   * Optional split of `system` into a stable, cacheable prefix and a volatile
+   * tail. When present, adapters that support prompt caching mark the prefix
+   * (tools + prefix are then cached together). `system` stays authoritative
+   * for adapters that do not.
+   */
+  systemParts?: { stable: string; volatile: string };
 }
 
 export interface TokenUsage {
@@ -51,6 +63,8 @@ export interface TokenUsage {
   out: number;
   /** Cache *reads*, billed at the cached rate. */
   cached: number;
+  /** Cache *writes* (subset of `in`), billed at 1.25x the input rate. */
+  cacheWrite?: number;
 }
 
 /**
@@ -59,6 +73,8 @@ export interface TokenUsage {
  */
 export type StreamEvent =
   | { type: "text"; text: string }
+  /** Summarised reasoning text (Thinking mode); display only, never replayed. */
+  | { type: "thinking"; text: string }
   | { type: "tool_call"; id: string; name: string; args: Record<string, unknown> }
   | { type: "usage"; usage: TokenUsage }
   | { type: "stop"; reason: StopReason };

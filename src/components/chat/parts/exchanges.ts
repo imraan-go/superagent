@@ -27,6 +27,8 @@ export interface Exchange {
   trace: TraceItem[];
   /** The agent's answer text (last text-only assistant turn). */
   answer: string;
+  /** Summarised reasoning from Thinking mode, joined across the run's turns. */
+  reasoning: string;
   /** Timestamp of the first and last agent turns, for a latency readout. */
   startedAt: string | null;
   endedAt: string | null;
@@ -53,6 +55,7 @@ export function groupExchanges(messages: readonly ChatMessage[]): Exchange[] {
       model: null,
       trace: [],
       answer: "",
+      reasoning: "",
       startedAt: null,
       endedAt: null,
     };
@@ -73,6 +76,11 @@ export function groupExchanges(messages: readonly ChatMessage[]): Exchange[] {
     cur.endedAt = m.createdAt;
 
     if (m.role === "assistant") {
+      const thought = m.content
+        .flatMap((p) => (p.type === "thinking" ? [p.text.trim()] : []))
+        .filter(Boolean)
+        .join("\n\n");
+      if (thought) cur.reasoning = cur.reasoning ? `${cur.reasoning}\n\n${thought}` : thought;
       const uses = m.content.filter((p): p is ToolUsePart => p.type === "tool_use");
       const text = textOf(m.content);
       if (uses.length > 0) {
