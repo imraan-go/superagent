@@ -1,0 +1,368 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Dot, Panel, Readout, SegmentedSwitch } from "@/components/ui";
+import { formatCost } from "@/lib/format";
+import { useUsageTicker } from "@/hooks/use-usage-ticker";
+import type { UsageTotals } from "@/hooks/use-usage-ticker";
+import type { RunState } from "@/hooks/use-run-stream";
+import { WaitingPanel } from "@/components/hitl/waiting-panel";
+import { clockTime, compactNumber, filterLog, mergeLog } from "./rail-log";
+import type { ChatStepInput, LhosEventInput, LogFilter } from "./rail-log";
+import styles from "./mission-tab.module.css";
+
+export interface RailCapabilities {
+  reachable: boolean;
+  waking?: boolean;
+  desktopUp?: boolean;
+  rdpConnected?: boolean;
+  pace?: string | null;
+}
+
+type Scope = "today" | "chat" | "run";
+
+const SCOPES = [
+  { value: "today" as const, label: "Today" },
+  { value: "chat" as const, label: "This chat" },
+  { value: "run" as const, label: "This run" },
+];
+
+const FILTERS: { value: LogFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "chat", label: "This chat" },
+  { value: "computer", label: "Computer" },
+  { value: "errors", label: "Errors" },
+];
+
+const EVENTS_POLL_MS = 5_000;
+
+/** Visible-tab flag: polling stops while the browser tab is hidden. */
+function usePageVisible(): boolean {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const on = () => setVisible(document.visibilityState === "visible");
+    on();
+    document.addEventListener("visibilitychange", on);
+    return () => document.removeEventListener("visibilitychange", on);
+  }, []);
+  return visible;
+}
+
+function stampNow(): number {
+  return Date.now();
+}
+
+function localDay(d = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/**
+ * Mission tab — a live operations console: token & cost meter, stats strip,
+ * "Waiting on you", and a merged activity log. Every token/cost figure comes
+ * from `usage_events` rows (vendor-reported usage) via /api/usage/live; the
+ * only exception is the in-flight run figure, marked `~`.
+ */
+export function MissionTab({
+  run,
+  chatId,
+  capabilities,
+}: {
+  run: RunState;
+  chatId?: string | null;
+  capabilities?: RailCapabilities;
+}) {
+  const { summary, live } = useUsageTicker(chatId, run.runId);
+  const running = run.phase === "thinking" || run.phase === "tool" || run.phase === "waiting";
+  const [scope, setScope] = useState<Scope>("today");
+
+  /* ---- meter ---- */
+  const exactRun = summary?.run ?? null;
+  // While streaming, the run stream's own (vendor-reported, per-step) figures
+  // can be ahead of the persisted rows; show them, marked as provisional.
+  const streamedAhead =
+    running &&
+    run.usage !== null &&
+    (exactRun === null || run.usage.tokensIn + run.usage.tokensOut > exactRun.tokensIn + exactRun.tokensOut);
+  const runTotals: UsageTotals | null =
+    streamedAhead && run.usage
+      ? {
+          tokensIn: run.usage.tokensIn,
+          tokensOut: run.usage.tokensOut,
+          tokensCached: run.usage.cached,
+          costUsd: run.usage.costUsd,
+          calls: exactRun?.calls ?? 0,
+          toolCalls: Math.max(exactRun?.toolCalls ?? 0, run.steps.filter((s) => s.type === "tool").length),
+        }
+      : exactRun;
+  const shown: UsageTotals | null =
+    scope === "today" ? (summary?.today ?? null) : scope === "chat" ? (summary?.chat ?? null) : runTotals;
+  const estimate = scope === "run" && streamedAhead;
+  const budget = summary?.budget ?? null;
+
+  /* ---- stats ---- */
+  const stats = summary?.stats;
+  const successPct =
+    stats && stats.toolOk + stats.toolFailed > 0
+      ? Math.round((stats.toolOk / (stats.toolOk + stats.toolFailed)) * 100)
+      : null;
+
+  return (
+    <>
+      <Panel
+        title="Tokens & cost"
+        badge={
+          <Dot
+            status={live ? "live" : "idle"}
+            size="sm"
+            pulse={live && running}
+            label={live ? "Live" : "Offline"}
+          />
+        }
+        className={styles.meter}
+      >
+        <SegmentedSwitch<Scope>
+          label="Usage scope"
+          size="sm"
+          value={scope}
+          onChange={setScope}
+          options={SCOPES}
+          className={styles.scope}
+        />
+        {shown === null ? (
+          <p className={styles.muted}>
+            {scope === "today"
+              ? "Connecting to the usage stream…"
+              : scope === "chat"
+                ? "Open a chat to see its usage."
+                : "No run yet in this chat."}
+          </p>
+        ) : (
+          <>
+            <div className={styles.headline}>
+              <Readout
+                label="cost"
+                prefix="$"
+                value={shown.costUsd}
+                precision={4}
+                size="md"
+                tone="signal"
+                estimate={estimate}
+              />
+              <span className={styles.calls}>
+                {shown.calls} model · {shown.toolCalls} tool calls
+              </span>
+            </div>
+            <dl className={styles.figures}>
+              <Figure label="in" value={shown.tokensIn} estimate={estimate} />
+              <Figure label="out" value={shown.tokensOut} estimate={estimate} />
+              <Figure label="cached" value={shown.tokensCached} estimate={estimate} />
+            </dl>
+          </>
+        )}
+        {budget ? (
+          <div className={styles.budget} data-state={budget.state}>
+            <div
+              className={styles.budgetTrack}
+              role="meter"
+              aria-label="Daily budget used"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.min(100, Math.round(budget.pct))}
+            >
+              <span className={styles.budgetFill} style={{ width: `${Math.min(100, budget.pct)}%` }} />
+            </div>
+            <span className={styles.budgetText}>
+              {formatCost(summary?.today.costUsd ?? 0)} / {formatCost(budget.dailyBudgetUsd)} today ·{" "}
+              {Math.round(budget.pct)}%
+            </span>
+          </div>
+        ) : (
+          summary && <p className={styles.muted}>No daily budget set (Settings › Usage).</p>
+        )}
+      </Panel>
+
+      <ul className={styles.stats} aria-label="Stats">
+        <Stat label="avg tool" value={stats?.avgToolMs != null ? `${stats.avgToolMs}ms` : "–"} />
+        <Stat
+          label="success"
+          value={successPct === null ? "–" : `${successPct}%`}
+          tone={successPct !== null && successPct < 90 ? "warn" : undefined}
+        />
+        <Stat label="steps run" value={String(run.steps.length)} />
+        <Stat
+          label="computer"
+          value={
+            !capabilities
+              ? "…"
+              : !capabilities.reachable
+                ? capabilities.waking
+                  ? "waking"
+                  : "offline"
+                : capabilities.desktopUp
+                  ? "awake"
+                  : "asleep"
+          }
+          tone={capabilities?.reachable && capabilities.desktopUp ? "ok" : "warn"}
+        />
+        <Stat
+          label="rdp"
+          value={capabilities?.rdpConnected ? "connected" : "off"}
+          tone={capabilities?.rdpConnected ? "ok" : undefined}
+        />
+        <Stat label="pace" value={capabilities?.pace ?? "–"} />
+      </ul>
+
+      <WaitingPanel />
+
+      <ActivityLog run={run} chatId={chatId} />
+    </>
+  );
+}
+
+function Figure({ label, value, estimate }: { label: string; value: number; estimate: boolean }) {
+  return (
+    <div className={styles.figure}>
+      <dt>{label}</dt>
+      <dd title={value.toLocaleString()}>
+        {estimate && <span aria-label="approximately">~</span>}
+        {compactNumber(value)}
+      </dd>
+    </div>
+  );
+}
+
+function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok" | "warn" }) {
+  return (
+    <li className={styles.stat} data-tone={tone}>
+      <span className={styles.statValue}>{value}</span>
+      <span className={styles.statLabel}>{label}</span>
+    </li>
+  );
+}
+
+function ActivityLog({ run, chatId }: { run: RunState; chatId?: string | null }) {
+  const pageVisible = usePageVisible();
+  const [filter, setFilter] = useState<LogFilter>("all");
+  const [follow, setFollow] = useState(true);
+  const listRef = useRef<HTMLOListElement>(null);
+
+  const { data: eventsData, isError } = useQuery<{ events: LhosEventInput[] }>({
+    queryKey: ["lhos", "events", "rail"],
+    queryFn: async () => {
+      const res = await fetch(`/api/lhos/events?date=${localDay()}&limit=80`, {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`events ${res.status}`);
+      return (await res.json()) as { events: LhosEventInput[] };
+    },
+    refetchInterval: pageVisible ? EVENTS_POLL_MS : false,
+    retry: false,
+  });
+
+  // The run stream carries no timestamps; stamp each step when first seen.
+  // (Adjust-state-during-render pattern: stamps are set once, then stable.)
+  const [seen, setSeen] = useState<Record<string, number>>({});
+  const stepKey = (idx: number) => `${run.runId ?? ""}:${idx}`;
+  const unseen = run.steps.filter((s) => seen[stepKey(s.idx)] === undefined);
+  if (unseen.length > 0) {
+    const now = stampNow();
+    setSeen((prev) => {
+      const next = { ...prev };
+      for (const s of unseen) next[stepKey(s.idx)] ??= now;
+      return next;
+    });
+  }
+  const steps: ChatStepInput[] = run.steps.map((s) => ({
+    idx: s.idx,
+    toolName: s.toolName,
+    label: s.label,
+    ok: s.ok,
+    ms: s.ms,
+    type: s.type,
+    seenAt: seen[stepKey(s.idx)] ?? 0,
+  }));
+
+  const entries = useMemo(
+    () => filterLog(mergeLog(steps, eventsData?.events ?? [], run.runId), filter),
+    [steps, eventsData, run.runId, filter],
+  );
+
+  // Auto-follow: newest is on top, so following = staying scrolled to the top.
+  const newest = entries[0]?.key;
+  useEffect(() => {
+    if (follow && listRef.current) listRef.current.scrollTop = 0;
+  }, [follow, newest]);
+
+  return (
+    <Panel
+      title="Activity"
+      badge={<Dot status={run.phase === "idle" ? "idle" : "live"} size="sm" pulse={run.phase !== "idle"} />}
+      actions={
+        <label className={styles.follow}>
+          <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} />
+          Follow
+        </label>
+      }
+    >
+      <div className={styles.chips} role="group" aria-label="Filter activity">
+        {FILTERS.map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            className={styles.chip}
+            aria-pressed={filter === f.value}
+            onClick={() => setFilter(f.value)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+      {entries.length === 0 ? (
+        <p className={styles.muted}>
+          {filter === "errors"
+            ? "No errors."
+            : filter === "chat" && !chatId
+              ? "Open a chat to see its steps."
+              : isError && filter === "computer"
+                ? "Cannot reach the agent computer's event log."
+                : "Nothing yet today."}
+        </p>
+      ) : (
+        <ol
+          ref={listRef}
+          className={styles.log}
+          aria-live={follow ? "polite" : "off"}
+          aria-relevant="additions"
+          onScroll={(e) => {
+            if (e.currentTarget.scrollTop > 24 && follow) setFollow(false);
+          }}
+        >
+          {entries.map((e) => (
+            <li key={e.key} className={styles.entry} data-ok={e.ok === null ? "pending" : String(e.ok)}>
+              <time className={styles.ts} dateTime={new Date(e.ts).toISOString()}>
+                {clockTime(e.ts)}
+              </time>
+              <Dot
+                status={e.ok === null ? "pending" : e.ok ? "ok" : "error"}
+                size="sm"
+                pulse={e.ok === null}
+              />
+              <span className={styles.src} data-src={e.source}>
+                {e.source === "chat" ? "chat" : "pc"}
+              </span>
+              <span className={styles.what} title={e.detail ?? e.label}>
+                <span className={styles.tool}>{e.tool}</span>
+                {e.label && e.label !== e.tool && e.label !== e.tool.replace(/_/g, " ") && (
+                  <span className={styles.label}>{e.label}</span>
+                )}
+              </span>
+              <span className={styles.ms}>{e.ms !== null ? `${e.ms}ms` : ""}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Panel>
+  );
+}

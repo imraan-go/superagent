@@ -4,11 +4,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Desktop } from "@phosphor-icons/react/dist/ssr";
 import dynamic from "next/dynamic";
-import { Dot, Panel, Readout, SegmentedSwitch, Skeleton } from "@/components/ui";
-import { formatCost } from "@/lib/format";
-import { useUsageTicker } from "@/hooks/use-usage-ticker";
+import { Dot, SegmentedSwitch, Skeleton } from "@/components/ui";
 import type { RunState } from "@/hooks/use-run-stream";
-import { WaitingPanel } from "@/components/hitl/waiting-panel";
+import { MissionTab } from "./mission-tab";
+import type { RailCapabilities } from "./mission-tab";
 import styles from "./mission-rail.module.css";
 
 /**
@@ -31,8 +30,9 @@ const LibraryTab = dynamic(() => import("./library-tab").then((m) => m.LibraryTa
 });
 
 /**
- * The right rail: one identity block and three tabs
- * (DESIGN_SYSTEM §Reference reading — 360px cannot hold these stacked).
+ * The right rail: a one-line identity header and three tabs. The body is ONE
+ * scrolling column; panels inside size to their content and never shrink
+ * (the old flex column collapsed them to their headers).
  */
 type Tab = "mission" | "library" | "computer";
 
@@ -42,12 +42,8 @@ const TABS = [
   { value: "computer" as const, label: "Computer" },
 ];
 
-interface Capabilities {
-  reachable: boolean;
-  waking?: boolean;
-  desktopUp?: boolean;
+interface Capabilities extends RailCapabilities {
   sandboxId?: string | null;
-  pace?: string | null;
   pendingHumanRequests?: number;
 }
 
@@ -64,21 +60,36 @@ export function MissionRail({ run, chatId }: { run: RunState; chatId?: string | 
     refetchInterval: 20_000,
   });
 
+  const up = capabilities?.reachable === true && capabilities.desktopUp === true;
+  const state = !capabilities
+    ? "checking"
+    : !capabilities.reachable
+      ? capabilities.waking
+        ? "waking"
+        : "offline"
+      : up
+        ? "awake"
+        : "asleep";
+
   return (
     <div className={styles.root}>
       <header className={styles.identity}>
         <span className={styles.avatar} aria-hidden>
-          <Desktop size={26} weight="duotone" />
+          <Desktop size={18} weight="duotone" />
         </span>
-        <h2 className={styles.name}>Agent computer</h2>
-        <p className={styles.sub}>
-          {capabilities?.sandboxId
-            ? `Sandbox ${capabilities.sandboxId.slice(0, 10)}…`
-            : "The desktop this agent drives"}
-        </p>
-        <button type="button" className={styles.labelBtn} disabled>
-          Add a label
-        </button>
+        <div className={styles.idText}>
+          <h2 className={styles.name}>Agent computer</h2>
+          <p className={styles.sub} title={capabilities?.sandboxId ?? undefined}>
+            {capabilities?.sandboxId ? capabilities.sandboxId.slice(0, 12) : "sandbox"}
+          </p>
+        </div>
+        <span className={styles.state}>
+          <Dot
+            status={up ? "live" : capabilities?.reachable ? "warn" : capabilities ? "error" : "idle"}
+            size="sm"
+          />
+          {state}
+        </span>
       </header>
 
       <SegmentedSwitch<Tab>
@@ -91,7 +102,7 @@ export function MissionRail({ run, chatId }: { run: RunState; chatId?: string | 
       />
 
       <div className={styles.body}>
-        {tab === "mission" && <MissionTab run={run} chatId={chatId} />}
+        {tab === "mission" && <MissionTab run={run} chatId={chatId} capabilities={capabilities} />}
         {tab === "library" && (
           <LibraryTab
             chatId={chatId}
@@ -110,76 +121,5 @@ export function MissionRail({ run, chatId }: { run: RunState; chatId?: string | 
         </div>
       </div>
     </div>
-  );
-}
-
-function MissionTab({
-  run,
-  chatId,
-}: {
-  run: RunState;
-  chatId?: string | null;
-}) {
-  const { summary, live } = useUsageTicker(chatId);
-  const today = summary?.today;
-  return (
-    <>
-      {/* First: a decision the owner owes outranks every readout. */}
-      <WaitingPanel />
-      <Panel
-        title="Spend today"
-        badge={<Dot status={live ? "live" : "idle"} size="sm" pulse={live && run.phase !== "idle"} />}
-      >
-        <div className={styles.readouts}>
-          <Readout label="cost" prefix="$" value={today?.costUsd ?? 0} precision={4} size="md" tone="signal" />
-          <Readout label="tokens in" value={today?.tokensIn ?? 0} size="sm" />
-          <Readout label="tokens out" value={today?.tokensOut ?? 0} size="sm" />
-        </div>
-        {summary?.budget && summary.budget.state !== "ok" && (
-          <p
-            role="status"
-            className={summary.budget.state === "over" ? styles.budgetOver : styles.budgetWarn}
-          >
-            {summary.budget.state === "over"
-              ? `Over today's budget: ${formatCost(today?.costUsd ?? 0)} of ${formatCost(summary.budget.dailyBudgetUsd)}`
-              : `${Math.round(summary.budget.pct)}% of today's ${formatCost(summary.budget.dailyBudgetUsd)} budget used`}
-          </p>
-        )}
-        <p className={styles.cost}>
-          {summary?.chat
-            ? `${formatCost(summary.chat.costUsd)} this chat · ${today?.calls ?? 0} model calls today`
-            : `${today?.calls ?? 0} model calls today`}
-        </p>
-      </Panel>
-
-      <Panel title="Usage" badge={<Dot status={run.usage ? "ok" : "idle"} size="sm" />}>
-        <div className={styles.readouts}>
-          <Readout label="tokens in" value={run.usage?.tokensIn ?? 0} size="sm" />
-          <Readout label="tokens out" value={run.usage?.tokensOut ?? 0} size="sm" />
-        </div>
-        <p className={styles.cost}>{formatCost(run.usage?.costUsd ?? 0)} this run</p>
-      </Panel>
-
-      <Panel title="Steps">
-        {run.steps.length === 0 ? (
-          <p className={styles.muted}>No tools used yet.</p>
-        ) : (
-          <ol className={styles.steps}>
-            {run.steps.map((step) => (
-              <li key={step.idx}>
-                <Dot
-                  status={step.ok === null ? "pending" : step.ok ? "ok" : "error"}
-                  size="sm"
-                  pulse={step.ok === null}
-                />
-                <span className={styles.stepName}>{step.toolName ?? step.label}</span>
-                {step.ms !== null && <span className={styles.stepMs}>{step.ms}ms</span>}
-              </li>
-            ))}
-          </ol>
-        )}
-      </Panel>
-
-    </>
   );
 }

@@ -86,11 +86,19 @@ export function LibraryTab({ chatId, running }: { chatId?: string | null; runnin
 }
 
 function Tile({ file, onOpen }: { file: FileInfo; onOpen: () => void }) {
-  if (isImageMime(file.mime)) {
+  // A thumbnail that fails to load (file pruned, route down) falls back to the
+  // document tile so the grid never shows a broken-image icon.
+  const [broken, setBroken] = useState(false);
+  if (isImageMime(file.mime) && !broken) {
     return (
       <button type="button" className={styles.tile} onClick={onOpen} aria-label={`Open ${file.name}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/api/uploads/${file.id}`} alt="" loading="lazy" className={styles.thumb} />
+        <img src={`/api/uploads/${file.id}`} alt=""
+          loading="lazy"
+          decoding="async"
+          className={styles.thumb}
+          onError={() => setBroken(true)}
+        />
         <span className={styles.badge}>
           <ImageIcon size={11} /> {file.origin === "tool" ? "screen" : "upload"}
         </span>
