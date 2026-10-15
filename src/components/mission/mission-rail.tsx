@@ -117,6 +117,16 @@ function MissionTab({
           <Readout label="tokens in" value={today?.tokensIn ?? 0} size="sm" />
           <Readout label="tokens out" value={today?.tokensOut ?? 0} size="sm" />
         </div>
+        {summary?.budget && summary.budget.state !== "ok" && (
+          <p
+            role="status"
+            className={summary.budget.state === "over" ? styles.budgetOver : styles.budgetWarn}
+          >
+            {summary.budget.state === "over"
+              ? `Over today's budget: ${formatCost(today?.costUsd ?? 0)} of ${formatCost(summary.budget.dailyBudgetUsd)}`
+              : `${Math.round(summary.budget.pct)}% of today's ${formatCost(summary.budget.dailyBudgetUsd)} budget used`}
+          </p>
+        )}
         <p className={styles.cost}>
           {summary?.chat
             ? `${formatCost(summary.chat.costUsd)} this chat · ${today?.calls ?? 0} model calls today`

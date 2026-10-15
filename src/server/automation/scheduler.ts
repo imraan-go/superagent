@@ -1,5 +1,6 @@
 import "server-only";
 import { logger } from "@/server/lib/logger";
+import { maybeRunRetention } from "./retention";
 import { tickPanelSchedules } from "./schedules";
 
 /**
@@ -17,6 +18,7 @@ export function startScheduler(): void {
     g.__fdSchedulerBusy = true;
     try {
       await tickPanelSchedules();
+      await maybeRunRetention();
     } catch (err) {
       logger.warn("scheduler", { msg: "tick failed", detail: String(err) });
     } finally {

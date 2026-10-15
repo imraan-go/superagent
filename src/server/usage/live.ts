@@ -2,6 +2,9 @@ import "server-only";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/server/db";
 import { usageEvents } from "@/server/db/schema";
+import { getSection } from "@/server/settings/store";
+import { budgetStatus } from "@/lib/usage-budget";
+import type { BudgetStatus } from "@/lib/usage-budget";
 
 /**
  * Live usage ticker (skill-token-metering §3).
@@ -24,6 +27,8 @@ export interface UsageSummary {
   today: UsageTotals;
   /** Present only when the subscriber asked for one chat. */
   chat: UsageTotals | null;
+  /** Null when no daily budget is set (usage.dailyBudgetUsd = 0). */
+  budget: BudgetStatus | null;
 }
 
 type Listener = (chatId: string | null) => void;
@@ -94,5 +99,12 @@ export async function usageSummary(chatId: string | null): Promise<UsageSummary>
     chat = toTotals(chatRow);
   }
 
-  return { day: dayKey(since), today: toTotals(todayRow), chat };
+  const today = toTotals(todayRow);
+  const usage = await getSection("usage");
+  return {
+    day: dayKey(since),
+    today,
+    chat,
+    budget: budgetStatus(today.costUsd, usage.dailyBudgetUsd, usage.warnAtPct),
+  };
 }

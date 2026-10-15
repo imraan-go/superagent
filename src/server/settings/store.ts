@@ -4,13 +4,16 @@ import { z } from "zod";
 import { db } from "@/server/db";
 import { settings } from "@/server/db/schema";
 import { AppError } from "@/server/lib/errors";
+import { lhos } from "@/server/lhos/client";
 import {
   SETTINGS_SECTIONS,
   mergeSection,
   parseStored,
+  reconcilePace,
+  pacePristine,
   validateSection,
 } from "@/lib/settings";
-import type { AllSettings, SectionValue, SettingsSection } from "@/lib/settings";
+import type { AgentSettings, AllSettings, SectionValue, SettingsSection } from "@/lib/settings";
 
 /**
  * Settings store: one `settings` row per section (key = section name, value =
@@ -52,8 +55,37 @@ async function writeRaw(key: string, value: unknown): Promise<void> {
   cache.set(key, { value, at: Date.now() });
 }
 
+/**
+ * LHOS's live pace, cached briefly. Only consulted while no pace was ever
+ * saved; any failure falls back to the schema default. Read-only: never calls
+ * set_pace.
+ */
+const PACE_TTL_MS = 60_000;
+const gPace = globalThis as unknown as { __fdLhosPace?: { mode: string | null; at: number } };
+
+async function lhosPaceMode(): Promise<string | null> {
+  const hit = gPace.__fdLhosPace;
+  if (hit && Date.now() - hit.at < PACE_TTL_MS) return hit.mode;
+  let mode: string | null = null;
+  try {
+    mode = (await lhos.getCapabilities({ timeoutMs: 3_000 })).pace?.mode ?? null;
+  } catch {
+    mode = null;
+  }
+  gPace.__fdLhosPace = { mode, at: Date.now() };
+  return mode;
+}
+
+async function withPace(agent: AgentSettings, raw: unknown): Promise<AgentSettings> {
+  if (!pacePristine(raw)) return agent;
+  return reconcilePace(agent, raw, await lhosPaceMode());
+}
+
 export async function getSection<S extends SettingsSection>(section: S): Promise<SectionValue<S>> {
-  return parseStored(section, await readRaw(section));
+  const raw = await readRaw(section);
+  const value = parseStored(section, raw);
+  if (section === "agent") return (await withPace(value as AgentSettings, raw)) as SectionValue<S>;
+  return value;
 }
 
 export async function getAllSettings(): Promise<AllSettings> {
@@ -67,6 +99,7 @@ export async function getAllSettings(): Promise<AllSettings> {
   for (const section of SETTINGS_SECTIONS) {
     out[section] = parseStored(section, byKey.get(section));
   }
+  out.agent = await withPace(out.agent as AgentSettings, byKey.get("agent"));
   return out as AllSettings;
 }
 

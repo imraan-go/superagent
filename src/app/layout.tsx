@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import { connection } from "next/server";
 import { fontVariables } from "./fonts";
 import { ThemeScript } from "@/components/theme/theme-script";
+import { getSection } from "@/server/settings/store";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,11 +20,16 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Per-request: the saved theme is authoritative (no build-time DB read).
+  await connection();
+  const serverTheme = await getSection("appearance")
+    .then((a) => a.theme)
+    .catch(() => null);
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <head>
-        <ThemeScript />
+        <ThemeScript serverTheme={serverTheme} />
       </head>
       <body className={fontVariables}>{children}</body>
     </html>
