@@ -1,13 +1,17 @@
 import "server-only";
-import { requiresApproval } from "@/server/agent/policy";
-import type { ApprovalDecision } from "@/server/agent/policy";
 import { sanitizeSchema, sanitizeToolDescription } from "@/server/agent/guard";
 import { AppError } from "@/server/lib/errors";
 import { logger } from "@/server/lib/logger";
 import { assertPublicUrl } from "@/server/lib/ssrf";
 import type { AdapterTool } from "@/server/models/types";
 import { ComposioClient } from "./composio-client";
+import { getComposioConfig } from "./composio-config";
+import { applyBudget, selectedActions } from "./composio-schema";
+import type { ToolRow } from "./composio-schema";
+import { getToolkitTools } from "./composio-tools";
+import { enforceRateLimit } from "@/server/lib/rate";
 import { McpClient } from "./mcp-client";
+import { PIPEDREAM_EMIT } from "./external-approval";
 import { isExternalToolName, namespacedTool } from "./naming";
 import { getComposioKey, getPipedream, listMcpServers, mcpCredentials } from "./store";
 
@@ -34,7 +38,6 @@ interface Cache {
 
 const g = globalThis as unknown as { __fdExtTools?: Cache };
 
-export const PIPEDREAM_EMIT = "pipedream__emit";
 
 export function invalidateExternalTools(): void {
   g.__fdExtTools = undefined;
@@ -67,22 +70,34 @@ async function build(): Promise<Cache> {
       const toolkits = [
         ...new Set(
           accounts
-            .filter((a) => (a.status ?? "ACTIVE").toUpperCase() === "ACTIVE")
+            .filter((a) => (a.status ?? "").toUpperCase() === "ACTIVE")
             .map((a) => a.toolkit?.slug)
             .filter((s): s is string => Boolean(s)),
         ),
       ];
-      for (const tk of toolkits) {
-        for (const t of await client.listTools(tk)) {
-          add(
-            {
-              name: namespacedTool("composio", tk, t.slug.replace(new RegExp(`^${tk}_`, "i"), "")),
-              description: `[Composio · ${tk}] ${sanitizeToolDescription(t.description ?? t.name ?? t.slug)}`,
-              inputSchema: (sanitizeSchema(t.input_parameters) as AdapterTool["inputSchema"] | undefined) ?? { type: "object", properties: {} },
-            },
-            { kind: "composio", slug: t.slug },
-          );
-        }
+      const cfg = await getComposioConfig();
+      const candidates: Array<ToolRow & { toolkit: string; schema: unknown }> = [];
+      await Promise.all(
+        toolkits.map(async (tk) => {
+          try {
+            const { rows, schemas } = await getToolkitTools(client, tk);
+            for (const r of selectedActions(rows, cfg.tools[tk])) candidates.push({ ...r, toolkit: tk, schema: schemas.get(r.slug) });
+          } catch (err) {
+            logger.warn("connectors", { msg: "composio tools unavailable", toolkit: tk, detail: String(err) });
+          }
+        }),
+      );
+      const { kept, dropped } = applyBudget(candidates);
+      if (dropped > 0) logger.warn("connectors", { msg: "composio schema budget exceeded", dropped });
+      for (const t of kept) {
+        add(
+          {
+            name: namespacedTool("composio", t.toolkit, t.action),
+            description: `[Composio · ${t.toolkit}] ${sanitizeToolDescription(t.description || t.name, 240)}`,
+            inputSchema: (sanitizeSchema(t.schema) as AdapterTool["inputSchema"] | undefined) ?? { type: "object", properties: {} },
+          },
+          { kind: "composio", slug: t.slug },
+        );
       }
     })(),
   );
@@ -93,7 +108,7 @@ async function build(): Promise<Cache> {
         const cred = await mcpCredentials(server.id);
         if (!cred) continue;
         try {
-          const client = new McpClient(cred.url, cred.bearer);
+          const client = new McpClient(cred.url, cred.bearer, fetch, 30_000, cred.headers);
           for (const t of await withTimeout(client.listTools(), PER_SOURCE_TIMEOUT_MS)) {
             add(
               {
@@ -146,19 +161,7 @@ export async function listExternalTools(options?: { force?: boolean }): Promise<
 
 export { isExternalToolName };
 
-/**
- * Approval decision for external tools: the default policy (send/post/delete…)
- * plus `pipedream__emit`, which always leaves the box.
- */
-export function externalApproval(
-  name: string,
-  opts: { extraPatterns?: readonly string[]; args?: Record<string, unknown> } = {},
-): ApprovalDecision {
-  const base = requiresApproval(name, { extraPatterns: opts.extraPatterns ?? [] }, opts.args);
-  if (base.required) return base;
-  if (name === PIPEDREAM_EMIT) return { required: true, reason: "emits an event to an external system" };
-  return base;
-}
+export { externalApproval, PIPEDREAM_EMIT } from "./external-approval";
 
 export async function executeExternalTool(
   name: string,
@@ -173,18 +176,19 @@ export async function executeExternalTool(
     case "composio": {
       const key = await getComposioKey();
       if (!key) throw new AppError("bad_request", "Composio is not configured.");
+      enforceRateLimit("composioExecute");
       const out = await new ComposioClient(key.key).executeTool(route.slug, args);
       const rec = out as { successful?: boolean; error?: unknown; data?: unknown };
       return {
         ok: rec.successful !== false && !rec.error,
-        text: JSON.stringify(rec.data ?? out),
+        text: (typeof rec.error === "string" && rec.error ? `Composio error: ${rec.error}` : JSON.stringify(rec.data ?? out)).slice(0, 24_000),
         ms: Date.now() - started,
       };
     }
     case "mcp": {
       const cred = await mcpCredentials(route.serverId);
       if (!cred) throw new AppError("not_found", "That MCP server was removed.");
-      const res = await new McpClient(cred.url, cred.bearer, fetch, 120_000).callTool(route.tool, args);
+      const res = await new McpClient(cred.url, cred.bearer, fetch, 120_000, cred.headers).callTool(route.tool, args);
       return { ...res, ms: Date.now() - started };
     }
     case "pipedream": {

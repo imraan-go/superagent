@@ -17,7 +17,7 @@ export const GET = ownerRoute<Ctx>(async ({ ctx }) => {
   const cred = await mcpCredentials(id);
   if (!cred) throw new AppError("not_found", "No such MCP server.");
   try {
-    const client = new McpClient(cred.url, cred.bearer, fetch, 20_000);
+    const client = new McpClient(cred.url, cred.bearer, fetch, 20_000, cred.headers);
     const { serverName } = await client.initialize();
     const tools = await client.listTools();
     return json({

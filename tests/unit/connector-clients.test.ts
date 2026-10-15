@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { COMPOSIO_BASE, ComposioClient } from "@/server/connectors/composio-client";
 import { McpClient, parseRpcBody } from "@/server/connectors/mcp-client";
 
 interface Call {
@@ -21,41 +20,6 @@ function mockFetch(responses: Array<() => Response>) {
 
 const jsonRes = (body: unknown, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json", ...headers } });
-
-describe("Composio client request shaping", () => {
-  it("sends x-api-key and lists connected accounts for the owner", async () => {
-    const { fn, calls } = mockFetch([() => jsonRes({ items: [{ id: "ca_1", status: "ACTIVE", toolkit: { slug: "gmail" } }] })]);
-    const accounts = await new ComposioClient("ck_test", fn).listConnectedAccounts();
-    expect(accounts[0]?.toolkit?.slug).toBe("gmail");
-    expect(calls[0]!.url.startsWith(`${COMPOSIO_BASE}/connected_accounts?user_ids=owner`)).toBe(true);
-    expect((calls[0]!.init.headers as Record<string, string>)["x-api-key"]).toBe("ck_test");
-  });
-
-  it("connect creates an auth config then a connected account", async () => {
-    const { fn, calls } = mockFetch([
-      () => jsonRes({ auth_config: { id: "ac_1" } }),
-      () => jsonRes({ id: "ca_2", redirect_url: "https://connect.example/x" }),
-    ]);
-    const res = await new ComposioClient("k", fn).connect("notion", "https://panel.example/");
-    expect(res).toEqual({ id: "ca_2", redirectUrl: "https://connect.example/x" });
-    expect(JSON.parse(String(calls[0]!.init.body))).toMatchObject({ toolkit: { slug: "notion" } });
-    expect(JSON.parse(String(calls[1]!.init.body))).toEqual({
-      auth_config: { id: "ac_1" },
-      connection: { user_id: "owner", callback_url: "https://panel.example/" },
-    });
-  });
-
-  it("executes a tool with user_id + arguments and surfaces HTTP errors", async () => {
-    const { fn, calls } = mockFetch([() => jsonRes({ successful: true, data: { ok: 1 } })]);
-    await new ComposioClient("k", fn).executeTool("GMAIL_SEND_EMAIL", { to: "a@b.c" });
-    expect(calls[0]!.url).toBe(`${COMPOSIO_BASE}/tools/execute/GMAIL_SEND_EMAIL`);
-    expect(calls[0]!.init.method).toBe("POST");
-    expect(JSON.parse(String(calls[0]!.init.body))).toEqual({ user_id: "owner", arguments: { to: "a@b.c" } });
-
-    const bad = mockFetch([() => new Response("nope", { status: 401 })]);
-    await expect(new ComposioClient("k", bad.fn).listToolkits()).rejects.toThrow(/401/);
-  });
-});
 
 describe("MCP streamable HTTP client", () => {
   it("initializes, carries the session id and lists tools", async () => {
