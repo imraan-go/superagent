@@ -1,0 +1,450 @@
+.heading h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  color: var(--text-1);
+}
+
+.heading p {
+  margin: var(--sp-2) 0 var(--sp-5);
+  max-width: 68ch;
+  font-size: var(--fs-small);
+  line-height: 1.55;
+  color: var(--text-3);
+}
+
+.errorNote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  border: var(--border) solid var(--danger-dim);
+  border-radius: var(--radius-control);
+  background: var(--danger-wash);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+.errorNote > div {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.errorNote strong {
+  color: var(--danger);
+}
+
+.errorNote > :first-child {
+  margin-top: 5px;
+}
+
+.skeletonRows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.spark {
+  display: block;
+  width: 100%;
+  height: 28px;
+  overflow: visible;
+}
+
+.spark polyline {
+  stroke: var(--signal);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+
+.sparkAmber polyline {
+  stroke: var(--amber);
+}
+
+.sparkDanger polyline {
+  stroke: var(--danger);
+}
+
+.sparkBase {
+  stroke: var(--line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.job {
+  margin-top: var(--sp-3);
+}
+
+.jobLine {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+.jobOutput {
+  max-height: 160px;
+  margin: var(--sp-2) 0 0;
+  padding: var(--sp-3);
+  overflow: auto;
+  border-radius: var(--radius-control);
+  background: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--fs-tiny);
+  line-height: 1.5;
+  color: var(--text-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ------------------------------------------------------------ layout -- */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--sp-4);
+}
+
+.gridWide {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.sectionTitle {
+  margin: var(--sp-6) 0 var(--sp-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.readouts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-5);
+}
+
+.meta {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-small);
+  color: var(--text-3);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.rowBetween {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+/* ---------------------------------------------------------- services -- */
+
+.svcName {
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  color: var(--text-1);
+}
+
+.svcFacts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px var(--sp-3);
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-tiny);
+}
+
+.svcFacts dt {
+  color: var(--text-3);
+}
+
+.svcFacts dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+
+.statRow {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-3) 0;
+  border-bottom: var(--border) solid var(--line);
+}
+
+.statRow:last-child {
+  border-bottom: 0;
+}
+
+/* ------------------------------------------------------------- forms -- */
+
+.input,
+.select {
+  min-width: 0;
+  padding: 7px var(--sp-3);
+  border: var(--border) solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--ink-0);
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: var(--fs-small);
+}
+
+.input:focus-visible,
+.select:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+.monoInput {
+  font-family: var(--font-mono);
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.check input {
+  accent-color: var(--amber);
+}
+
+/* ------------------------------------------------------------ tables -- */
+
+.tableWrap {
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-panel);
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-small);
+}
+
+.table th,
+.table td {
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: var(--border) solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.table th {
+  font-family: var(--font-display);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  background: var(--ink-1);
+  white-space: nowrap;
+}
+
+.table td {
+  color: var(--text-2);
+}
+
+.table tr:last-child td {
+  border-bottom: 0;
+}
+
+.cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.wrapCell {
+  max-width: 420px;
+  word-break: break-word;
+}
+
+.empty {
+  margin: var(--sp-4) 0;
+  font-size: var(--fs-small);
+  color: var(--text-3);
+}
+
+.lockNote {
+  display: flex;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: var(--border) solid var(--amber-dim);
+  border-radius: var(--radius-control);
+  background: var(--amber-wash);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.lockNote strong {
+  color: var(--amber);
+}
+
+/* ------------------------------------------------------------- files -- */
+
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: var(--sp-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+}
+
+.crumb {
+  padding: 2px 6px;
+  border: 0;
+  border-radius: var(--radius-chip);
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  cursor: pointer;
+}
+
+.crumb:hover {
+  background: var(--ink-2);
+  color: var(--text-1);
+}
+
+.crumb:focus-visible,
+.linkBtn:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+.linkBtn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-1);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.linkBtn:hover {
+  color: var(--signal);
+}
+
+.protectedTag {
+  padding: 1px 6px;
+  border: var(--border) solid var(--amber-dim);
+  border-radius: var(--radius-chip);
+  font-size: var(--fs-micro);
+  color: var(--amber);
+}
+
+/* -------------------------------------------------------------- logs -- */
+
+.logBox {
+  height: min(60vh, 560px);
+  margin: 0;
+  padding: var(--sp-3);
+  overflow: auto;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: var(--fs-tiny);
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.logLine {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.logLine mark {
+  background: var(--amber-wash);
+  color: var(--amber);
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-3);
+}
+
+.report {
+  max-width: var(--chat-max);
+}
+
+.confirmBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border: var(--border) solid var(--danger-dim);
+  border-radius: var(--radius-control);
+  background: var(--danger-wash);
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+@media (max-width: 900px) {
+  .gridWide {
+    grid-template-columns: 1fr;
+  }
+}

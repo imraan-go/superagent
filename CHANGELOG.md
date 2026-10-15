@@ -3,6 +3,33 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — Manage mode (Phase 5)
+- `/manage` is now the full admin dashboard behind a left rail: Overview (9
+  service cards with hold-to-confirm restart / caddy reload, desktop card with
+  Sleep / Wake / typed-confirm New desktop as polled bridge jobs, host stats
+  every 5 s with warn >= 80 / crit >= 90 tones and 30-minute client-side
+  sparklines), Activity & reports (filterable, paged LHOS events; reports
+  browser + Generate now), Persistent data (`~/persist` browser, 1-hour signed
+  download links), Snapshots (read-only), Schedules & maintenance, System
+  (masked config, ROTATE-gated token rotation, audit log), Logs (per-unit
+  journal, SSE follow every 2 s, grep, auto-scroll) and a read-only HITL inbox.
+- `/api/manage/*` routes (all `ownerRoute`, zod at the boundary, same-origin on
+  mutations). Host mutations are audited by `bridge.ts`; LHOS mutations
+  (schedules, maintenance, report generation, share links) by
+  `src/server/manage/ops.ts`. Signed download URLs are never stored in `audit`.
+- Safety: protected paths (`rdp_pass`, `.sync-stamp`, anything under
+  `chrome-cdp`) are listed but refused by the server for browse and download;
+  `snapshot_prune` is never called, the snapshot-prune schedule is locked server
+  side, and the maintenance run enum only allows `fs_prune`.
+- Pure logic in `src/lib/manage/*` with vitest coverage (sparkline buffer,
+  protected paths + `ls` parsing, log-follow de-duplication, thresholds).
+- Not built: DB backup-now (needs host access the bridge lacks); host-mirror
+  size/last-sync for ~/persist (not exposed by the bridge); lock-ip form.
+- Tests: `crypto.test.ts` now sets `BRIDGE_TOKEN` (the env loader requires it
+  since the bridge landed).
+- Dev note: in a linked worktree with a symlinked `node_modules`, run
+  `next dev --webpack` (Turbopack refuses symlinks leaving the project root).
+
 ## 2026-10-15 — Live spend ticker; Phase 1 complete
 - `/api/usage/live` (SSE, owner session): pushes today's totals — and one
   chat's when `?chatId=` — on connect, after every `usage_events` insert
