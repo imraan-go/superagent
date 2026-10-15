@@ -33,7 +33,9 @@ export function costUsd(usage: TokenUsage, price: ModelPrice): number {
   const total =
     (uncachedIn * price.in) / PER +
     (usage.cached * cachedRate) / PER +
-    (usage.out * price.out) / PER;
+    (usage.out * price.out) / PER +
+    // Writes are already counted in `in`; add the 25% write premium.
+    ((usage.cacheWrite ?? 0) * price.in * 0.25) / PER;
 
   return roundCost(total);
 }
@@ -53,7 +55,9 @@ export function estimateTokens(text: string): number {
 }
 
 export function addUsage(a: TokenUsage, b: TokenUsage): TokenUsage {
-  return { in: a.in + b.in, out: a.out + b.out, cached: a.cached + b.cached };
+  const out: TokenUsage = { in: a.in + b.in, out: a.out + b.out, cached: a.cached + b.cached };
+  const writes = (a.cacheWrite ?? 0) + (b.cacheWrite ?? 0);
+  return writes > 0 ? { ...out, cacheWrite: writes } : out;
 }
 
 export const ZERO_USAGE: TokenUsage = { in: 0, out: 0, cached: 0 };

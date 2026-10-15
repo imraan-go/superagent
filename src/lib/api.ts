@@ -1,3 +1,4 @@
+import type { ChatMode, ChatPrefs } from "./chat-mode";
 import type { ChatMessage } from "./messages";
 import type { FileInfo } from "./uploads";
 
@@ -63,6 +64,8 @@ export interface ChatSummary {
 
 export interface ChatDetail extends ChatSummary {
   messages: ChatMessage[];
+  /** Composer prefs: mode + Auto/manual chips (src/lib/chat-mode.ts). */
+  prefs?: ChatPrefs;
 }
 
 export interface ModelOption {
@@ -95,7 +98,10 @@ export const api = {
 
   getChat: (id: string) => request<{ chat: ChatDetail }>(`/api/chats/${id}`),
 
-  updateChat: (id: string, patch: Partial<Pick<ChatSummary, "title" | "pinned" | "archived">>) =>
+  updateChat: (
+    id: string,
+    patch: Partial<Pick<ChatSummary, "title" | "pinned" | "archived">> & Partial<ChatPrefs>,
+  ) =>
     request<{ chat: ChatSummary }>(`/api/chats/${id}`, {
       method: "PATCH",
       body: JSON.stringify(patch),
@@ -115,8 +121,10 @@ export const api = {
     model?: string,
     fileIds?: string[],
     capabilities?: string[],
+    mode?: ChatMode,
+    capabilitiesAuto?: boolean,
   ) =>
-    request<{ message: ChatMessage; runId: string; model: string }>(
+    request<{ message: ChatMessage; runId: string; model: string; mode: ChatMode }>(
       `/api/chats/${chatId}/messages`,
       {
         method: "POST",
@@ -125,6 +133,8 @@ export const api = {
           ...(model ? { model } : {}),
           ...(fileIds && fileIds.length > 0 ? { fileIds } : {}),
           ...(capabilities && capabilities.length > 0 ? { capabilities } : {}),
+          ...(mode ? { mode } : {}),
+          ...(capabilitiesAuto !== undefined ? { capabilitiesAuto } : {}),
         }),
       },
     ),

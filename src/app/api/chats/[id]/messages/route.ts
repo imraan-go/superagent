@@ -7,6 +7,8 @@ import { json, ownerRoute } from "@/server/lib/route";
 import { attachmentParts } from "@/server/files/attachments";
 import { MAX_ATTACHMENTS } from "@/lib/uploads";
 import { enforceRateLimit } from "@/server/lib/rate";
+import { chatModeSchema } from "@/lib/chat-mode";
+import { getChatPrefs, updateChatPrefs } from "@/server/chat/mode";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +23,14 @@ const bodySchema = z
     fileIds: z.array(z.uuid()).max(MAX_ATTACHMENTS).optional(),
     /** Composer chips — can only narrow the tool allowlist (src/lib/capabilities.ts). */
     capabilities: z.array(z.string().max(32)).max(12).optional(),
+    /** Conversation mode for this turn; persisted on the chat when it changes. */
+    mode: chatModeSchema.optional(),
+    /**
+     * true = the server picks capabilities from the text (Auto chip); false =
+     * use `capabilities` as the owner's manual narrowing. Absent = the chat's
+     * stored preference.
+     */
+    capabilitiesAuto: z.boolean().optional(),
   })
   .refine((b) => b.text.length > 0 || (b.fileIds?.length ?? 0) > 0, {
     message: "Say something first.",
@@ -74,12 +84,23 @@ export const POST = ownerRoute<Ctx>(async ({ request, owner, ctx }) => {
     await updateChat(chatId, owner.userId, { model: model.id });
   }
 
+  const stored = await getChatPrefs(chatId);
+  const mode = body.data.mode ?? stored.mode;
+  const capsAuto = body.data.capabilitiesAuto ?? (body.data.capabilities ? false : stored.capsAuto);
+  const caps = capsAuto ? [] : (body.data.capabilities ?? stored.caps);
+  if (mode !== stored.mode || capsAuto !== stored.capsAuto || caps.join() !== stored.caps.join()) {
+    await updateChatPrefs(chatId, { mode, capsAuto, caps });
+  }
+
   const runId = await startAgentRun({
+    mode,
     chatId,
     userId: owner.userId,
     modelId: model.id,
-    capabilities: body.data.capabilities,
+    capabilities: caps,
+    capabilitiesAuto: capsAuto,
+    autoText: body.data.text,
   });
 
-  return json({ message, runId, model: model.id }, { status: 202 });
+  return json({ message, runId, model: model.id, mode }, { status: 202 });
 });

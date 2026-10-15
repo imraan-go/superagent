@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_TOOL_ALLOWLIST, filterTools } from "@/server/agent/allowlist";
+import { DEFAULT_TOOL_ALLOWLIST, OPERATOR_TOOLS, filterTools } from "@/server/agent/allowlist";
+import { lockedToolReason } from "@/server/agent/guard";
 
 describe("filterTools", () => {
   it("keeps only named tools", () => {
@@ -11,11 +12,18 @@ describe("filterTools", () => {
         { name: "set_pace" },
       ],
     );
-    expect(kept.map((t) => t.name)).toEqual(["desktop_screenshot", "set_pace"]);
+    expect(kept.map((t) => t.name)).toEqual(["desktop_screenshot", "desktop_click", "rdp_connect", "set_pace"]);
   });
 
-  it("does not include the raw click family or RDP by default", () => {
-    expect(DEFAULT_TOOL_ALLOWLIST).not.toContain("desktop_click");
-    expect(DEFAULT_TOOL_ALLOWLIST.some((n) => n.startsWith("rdp_"))).toBe(false);
+  it("includes the operator essentials by default (2026-10 parity)", () => {
+    for (const n of ["desktop_click", "click_text", "wait", "desktop_scroll", "rdp_connect", "rdp_type", "rdp_open_url"]) {
+      expect(DEFAULT_TOOL_ALLOWLIST).toContain(n);
+    }
+  });
+
+  it("default is a subset of the operator preset and has no locked tools", () => {
+    expect(DEFAULT_TOOL_ALLOWLIST.every((n) => OPERATOR_TOOLS.includes(n))).toBe(true);
+    expect(DEFAULT_TOOL_ALLOWLIST.filter((n) => lockedToolReason(n) !== null)).toEqual([]);
+    expect(OPERATOR_TOOLS.filter((n) => lockedToolReason(n) !== null)).toEqual([]);
   });
 });

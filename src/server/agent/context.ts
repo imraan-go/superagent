@@ -11,6 +11,9 @@ import { formatBytes, isVisionMime } from "@/lib/uploads";
 import { getFileRow, readFileBytes } from "@/server/files/store";
 import { recall } from "@/server/memory";
 import { UNTRUSTED_RULES, wrapUntrusted } from "./guard";
+import { loadAgentGuide } from "./guide";
+import { DEFAULT_CHAT_MODE, modeAddendum } from "@/lib/chat-mode";
+import type { ChatMode } from "@/lib/chat-mode";
 
 /**
  * Context assembly (skill-agent-loop §2), in order:
@@ -23,14 +26,20 @@ const RECENT_TURNS = 24;
 
 export interface AgentContext {
   system: string;
+  /** `system` split for prompt caching: stable prefix + per-run tail. */
+  systemParts: { stable: string; volatile: string };
   messages: AdapterMessage[];
+  guideSource: "file" | "embedded";
 }
 
 const BASE_PROMPT = `You are the agent behind Flight Deck, a single-owner control panel.
 
 You operate a real Linux desktop ("the agent computer") through the provided
-tools. It is a live machine: take a screenshot before acting on anything visual,
-and verify after acting rather than assuming a click landed.
+tools, and through it the owner's Windows PC over RDP when asked. It is a live
+machine: look before acting on anything visual (observe / screen_text first,
+a screenshot when you need to see layout), and verify after acting rather than
+assuming a click landed. Long tasks of 50-150 steps are normal; keep going
+until the task is done and verified.
 
 Working rules:
 - Prefer the smallest tool that answers the question. Reading the screen is
@@ -50,26 +59,35 @@ export async function buildContext(args: {
   model: ModelEntry;
   /** Settings → Agent. Layered on top of, never replacing, the base prompt. */
   systemPrompt?: string;
+  mode?: ChatMode;
 }): Promise<AgentContext> {
-  const [facts, turns] = await Promise.all([
+  const [facts, turns, guide] = await Promise.all([
     capabilityFacts(),
     recentTurns(args.chatId, args.model.vision),
+    loadAgentGuide(),
   ]);
   const remembered = await memoryRecall(turns);
 
   // The base rules (approval pauses, verify-after-act) are safety-relevant, so
   // the owner's prompt is appended rather than substituted.
   const owner = args.systemPrompt?.trim();
-  const sections = [
+  // Stable sections first (cached across steps and runs), volatile last.
+  const stable = [
     BASE_PROMPT,
     owner ? `## Owner instructions\n${owner}` : null,
+    guide.text || null,
+    modeAddendum(args.mode ?? DEFAULT_CHAT_MODE),
+  ].filter((s): s is string => Boolean(s)).join("\n\n");
+  const volatile = [
     remembered ? `## What you remember about the owner (may be outdated)\n${remembered}` : null,
     facts ? `## The agent computer right now\n${facts}` : null,
-  ].filter((s): s is string => Boolean(s));
+  ].filter((s): s is string => Boolean(s)).join("\n\n");
 
   return {
-    system: sections.join("\n\n"),
+    system: volatile ? `${stable}\n\n${volatile}` : stable,
+    systemParts: { stable, volatile },
     messages: turns,
+    guideSource: guide.source,
   };
 }
 

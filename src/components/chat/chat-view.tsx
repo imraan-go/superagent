@@ -17,6 +17,8 @@ import { RailAside, RailToggle, useRailDrawer } from "@/components/mission/rail-
 import { MissionRail } from "@/components/mission/mission-rail";
 import { PromptBar } from "./prompt-bar";
 import type { CapabilityId } from "./parts/composer";
+import type { SendOptions } from "./prompt-bar";
+import type { ChatPrefs } from "@/lib/chat-mode";
 import { Transcript } from "./transcript";
 import styles from "./chat-view.module.css";
 
@@ -90,12 +92,23 @@ export function ChatView({ chatId }: { chatId: string }) {
       model,
       fileIds,
       capabilities,
+      options,
     }: {
       text: string;
       model?: string;
       fileIds: string[];
       capabilities?: CapabilityId[];
-    }) => api.sendMessage(chatId, text, model, fileIds, capabilities),
+      options?: SendOptions;
+    }) =>
+      api.sendMessage(
+        chatId,
+        text,
+        model,
+        fileIds,
+        capabilities,
+        options?.mode ?? data?.chat.prefs?.mode,
+        options?.capabilitiesAuto,
+      ),
     // Played inside the click's task, which also unlocks WebAudio for the
     // later cues (done, approval) that fire without a gesture.
     onMutate: () => sound("send"),
@@ -108,6 +121,12 @@ export function ChatView({ chatId }: { chatId: string }) {
       sound("error");
       toast.push({ title: "Could not send", message: err.message, tone: "error" });
     },
+  });
+
+  const savePrefs = useMutation({
+    mutationFn: (prefs: ChatPrefs) => api.updateChat(chatId, prefs),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["chat", chatId] }),
+    onError: (err: Error) => toast.push({ title: "Could not save the mode", message: err.message, tone: "error" }),
   });
 
   const stop = useMutation({
@@ -199,6 +218,10 @@ export function ChatView({ chatId }: { chatId: string }) {
               runId={state.runId}
               usage={state.usage}
               approval={state.approval}
+              mode={data?.chat.prefs?.mode}
+              streamingThinking={state.streamingThinking}
+              debug={state.debug}
+              errorCode={state.errorCode}
               onRetry={
                 busy || send.isPending
                   ? undefined
@@ -224,8 +247,11 @@ export function ChatView({ chatId }: { chatId: string }) {
           onStop={() => stop.mutate()}
           chatId={chatId}
           chatModel={data?.chat.model ?? null}
-          onSend={(text, model, fileIds, capabilities) =>
-            send.mutate({ text, model, fileIds, capabilities })
+          initialPrefs={data?.chat.prefs ?? null}
+          onPrefsChange={(prefs) => savePrefs.mutate(prefs)}
+          autoPick={state.capabilities?.auto ? state.capabilities : null}
+          onSend={(text, model, fileIds, capabilities, options) =>
+            send.mutate({ text, model, fileIds, capabilities, options })
           }
         />
       </main>

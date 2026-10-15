@@ -15,6 +15,7 @@ import { cn } from "@/lib/cn";
 import { Dot, LiveGlyph, useToast } from "@/components/ui";
 import type { DotStatus } from "@/components/ui";
 import { PromptBar } from "@/components/chat/prompt-bar";
+import type { SendOptions } from "@/components/chat/prompt-bar";
 import { prefillPrompt } from "@/components/chat/parts/composer";
 import type { CapabilityId } from "@/components/chat/parts/composer";
 import { MissionRail } from "@/components/mission/mission-rail";
@@ -123,10 +124,19 @@ export function NewChatLanding() {
       model?: string;
       fileIds?: string[];
       capabilities?: CapabilityId[];
+      options?: SendOptions;
     }) => {
       const { chat } = await api.createChat();
       if (input?.text || input?.fileIds?.length) {
-        await api.sendMessage(chat.id, input.text ?? "", input.model, input.fileIds, input.capabilities);
+        await api.sendMessage(
+          chat.id,
+          input.text ?? "",
+          input.model,
+          input.fileIds,
+          input.capabilities,
+          input.options?.mode,
+          input.options?.capabilitiesAuto,
+        );
       }
       return chat.id;
     },
@@ -230,8 +240,8 @@ export function NewChatLanding() {
         <PromptBar
           busy={create.isPending}
           onStop={() => undefined}
-          onSend={(text, model, fileIds, capabilities) =>
-            create.mutate({ text, model, fileIds, capabilities })
+          onSend={(text, model, fileIds, capabilities, options) =>
+            create.mutate({ text, model, fileIds, capabilities, options })
           }
         />
       </main>

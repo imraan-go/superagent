@@ -62,6 +62,10 @@ export interface RunTraceProps {
   activity?: string | null;
   phase?: string;
   approval?: { tool: string; reason: string } | null;
+  /** Verbose/Debug modes: stay expanded after the run settles. */
+  keepOpen?: boolean;
+  /** Verbose/Debug modes: show each step's arguments and result inline. */
+  expandSteps?: boolean;
 }
 
 /**
@@ -70,9 +74,9 @@ export interface RunTraceProps {
  * activity line (DESIGN_SYSTEM §Signature elements) — the polite live region
  * in ChatView already announces transitions, so nothing here is aria-live.
  */
-export function RunTrace({ items, live, activity, phase, approval }: RunTraceProps) {
+export function RunTrace({ items, live, activity, phase, approval, keepOpen = false, expandSteps = false }: RunTraceProps) {
   const [override, setOverride] = useState<boolean | null>(null);
-  const open = override ?? (live || Boolean(approval));
+  const open = override ?? (live || Boolean(approval) || keepOpen);
   const tools = items.filter((i) => i.kind !== "thought");
   if (!live && items.length === 0) return null;
 
@@ -114,7 +118,7 @@ export function RunTrace({ items, live, activity, phase, approval }: RunTracePro
       {open && expandable && (
         <ol className={styles.steps}>
           {items.map((item) => (
-            <Step key={item.key} item={item} />
+            <Step key={item.key} item={item} defaultOpen={expandSteps} />
           ))}
           {approval && <ApprovalCard tool={approval.tool} reason={approval.reason} />}
         </ol>
@@ -123,8 +127,8 @@ export function RunTrace({ items, live, activity, phase, approval }: RunTracePro
   );
 }
 
-function Step({ item }: { item: TraceItem }) {
-  const [open, setOpen] = useState(false);
+function Step({ item, defaultOpen = false }: { item: TraceItem; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
 
   if (item.kind === "thought") {
     return (
