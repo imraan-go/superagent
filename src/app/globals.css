@@ -1,0 +1,130 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+
+/* Expose the design tokens to Tailwind's utility generator so `bg-ink-1`,
+   `text-signal`, `rounded-panel` etc. resolve to the same variables the
+   components use. Tokens remain the single source of truth. */
+@theme inline {
+  --color-ink-0: var(--ink-0);
+  --color-ink-1: var(--ink-1);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text-1: var(--text-1);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-signal: var(--signal);
+  --color-signal-dim: var(--signal-dim);
+  --color-amber: var(--amber);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-info: var(--info);
+  --color-on-signal: var(--on-signal);
+  --color-on-amber: var(--on-amber);
+  --color-on-danger: var(--on-danger);
+
+  --font-display: var(--font-display);
+  --font-ui: var(--font-ui);
+  --font-mono: var(--font-mono);
+
+  --radius-panel: var(--radius-panel);
+  --radius-control: var(--radius-control);
+  --radius-chip: var(--radius-chip);
+
+  --ease-out: var(--ease-out);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--ink-0);
+    color: var(--text-1);
+    font-family: var(--font-ui);
+    font-size: var(--fs-base);
+    line-height: var(--lh-base);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: var(--lh-tight);
+    margin: 0;
+  }
+
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  /* Focus ring is always visible — never removed (rule 10-design). */
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+    border-radius: var(--radius-control);
+  }
+
+  ::selection {
+    background: var(--signal-wash-strong);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: var(--radius-pill);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--line-strong);
+    background-clip: content-box;
+  }
+}
+
+@layer utilities {
+  /* Numeric readouts are always mono with tabular figures. */
+  .tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}

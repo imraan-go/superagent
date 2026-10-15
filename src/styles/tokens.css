@@ -1,0 +1,170 @@
+/* ============================================================================
+   Flight Deck — design tokens (spec: docs/DESIGN_SYSTEM.md)
+   Components reference these variables ONLY. Never a raw hex in a component.
+   ========================================================================= */
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces: 0 = deepest ink, 3 = raised control */
+  --ink-0: #0b0d10;
+  --ink-1: #111419;
+  --ink-2: #171b22;
+  --ink-3: #1f242e;
+
+  --line: #2a313d;
+  --line-strong: #3a4452;
+
+  --text-1: #e8ecf1;
+  --text-2: #9aa4b2;
+  --text-3: #5f6b7a;
+
+  /* Accents — one per view (rule 10-design) */
+  --signal: #2de2c5; /* agent activity, focus, primary action */
+  --signal-dim: #17816f;
+  --amber: #ffb224; /* approvals, attention, paused, Manage mode */
+  --amber-dim: #8a5c0d;
+  --danger: #ff5d5d;
+  --danger-dim: #8c2f2f;
+  --ok: #5de28a;
+  --info: #6ca8ff;
+
+  /* Accent foregrounds: text placed ON a filled accent */
+  --on-signal: #04201b;
+  --on-amber: #241602;
+  --on-danger: #2a0808;
+
+  /* Translucent accent washes for hover/selected states */
+  --signal-wash: rgb(45 226 197 / 0.1);
+  --signal-wash-strong: rgb(45 226 197 / 0.18);
+  --amber-wash: rgb(255 178 36 / 0.1);
+  --danger-wash: rgb(255 93 93 / 0.1);
+
+  --halo: 0 0 24px rgb(45 226 197 / 0.18);
+  --halo-amber: 0 0 24px rgb(255 178 36 / 0.18);
+  --halo-danger: 0 0 24px rgb(255 93 93 / 0.18);
+
+  /* Skeleton shimmer */
+  --skeleton-base: #171b22;
+  --skeleton-sheen: #222835;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --ink-0: #f6f8fa;
+  --ink-1: #ffffff;
+  --ink-2: #f0f3f6;
+  --ink-3: #e6ebf0;
+
+  --line: #d6dde5;
+  --line-strong: #b4c0cc;
+
+  --text-1: #10151c;
+  --text-2: #4d5a68;
+  --text-3: #7d8a98;
+
+  --signal: #0fa88f;
+  --signal-dim: #0b7a68;
+  --amber: #a96b00;
+  --amber-dim: #7d4f00;
+  --danger: #c62a2a;
+  --danger-dim: #8f1f1f;
+  --ok: #1c8f4a;
+  --info: #1f63c8;
+
+  --on-signal: #ffffff;
+  --on-amber: #ffffff;
+  --on-danger: #ffffff;
+
+  --signal-wash: rgb(15 168 143 / 0.1);
+  --signal-wash-strong: rgb(15 168 143 / 0.16);
+  --amber-wash: rgb(169 107 0 / 0.1);
+  --danger-wash: rgb(198 42 42 / 0.08);
+
+  --halo: 0 0 20px rgb(15 168 143 / 0.16);
+  --halo-amber: 0 0 20px rgb(169 107 0 / 0.14);
+  --halo-danger: 0 0 20px rgb(198 42 42 / 0.14);
+
+  --skeleton-base: #e6ebf0;
+  --skeleton-sheen: #f2f5f8;
+}
+
+:root {
+  /* ---- Geometry ---------------------------------------------------- */
+  --radius-panel: 14px;
+  --radius-control: 10px;
+  --radius-pill: 999px;
+  --radius-chip: 8px;
+
+  --border: 1px;
+
+  /* ---- Layout (docs/DESIGN_SYSTEM.md §Layout) ----------------------- */
+  --topbar-h: 64px;
+  --sidebar-l: 288px;
+  --sidebar-l-rail: 56px;
+  --sidebar-r: 360px;
+  --chat-max: 760px;
+
+  /* ---- Spacing scale (4px base) ------------------------------------ */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+
+  /* ---- Type -------------------------------------------------------- */
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-ui: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --fs-micro: 11px;
+  --fs-tiny: 12px;
+  --fs-small: 13px;
+  --fs-base: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 26px;
+  --fs-3xl: 34px;
+
+  --lh-tight: 1.2;
+  --lh-base: 1.55;
+
+  /* ---- Motion (docs/DESIGN_SYSTEM.md §Motion) ----------------------- */
+  --dur-micro: 120ms;
+  --dur-std: 200ms;
+  --dur-panel: 280ms;
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* ---- Elevation: border + glow, never heavy shadow ----------------- */
+  --elev-1: 0 1px 2px rgb(0 0 0 / 0.18);
+  --elev-2: 0 6px 20px rgb(0 0 0 / 0.24);
+
+  /* ---- Z-index scale ------------------------------------------------ */
+  --z-sticky: 10;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+}
+
+/* Manage mode recolors the primary accent to amber (docs/MANAGE_TAB.md). */
+[data-mode="manage"] {
+  --signal: var(--amber);
+  --signal-dim: var(--amber-dim);
+  --on-signal: var(--on-amber);
+  --signal-wash: var(--amber-wash);
+  --halo: var(--halo-amber);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-micro: 0ms;
+    --dur-std: 0ms;
+    --dur-panel: 0ms;
+  }
+}

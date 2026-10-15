@@ -116,6 +116,17 @@ arguments: `fast` → `min_gap_seconds 4 / max_actions_per_hour 60`; `careful` �
 | R9 | Secret leakage into model context or client bundle | Critical | Server-only modules, no `NEXT_PUBLIC_` for anything sensitive, `secrets` table AES-256-GCM, last-4 only in UI, no reveal endpoint, lint rule against `process.env` in client components |
 | R10 | Long-blocking tools (`ask_user` waits ≤110 s) stall the loop | Medium | 120 s client timeout, treat `PENDING id=` responses as a poll handoff to `hitl_check` |
 
+### Accepted dependency advisories (reviewed 2026-10-15)
+`npm audit` reports 5 high findings, all one chain:
+`eslint-config-next → @next/eslint-plugin-next → fast-glob → micromatch → braces`
+(GHSA-vfj7-8cjw-p6xm, stack exhaustion on deeply nested glob patterns).
+`braces@3.0.3` is the latest published release and **no patched version exists**;
+npm's only "fix" is downgrading `eslint-config-next` to 14. The package is a
+lint-time dependency, never bundled and absent from the production image
+(standalone output + prod-only deps). **Accepted** — re-check each release.
+The `@esbuild-kit/* → esbuild@0.18` findings inside `drizzle-kit` were resolved
+with a `package.json` override pinning that path to `esbuild ^0.25.12`.
+
 ## 5. Phase plan — deliverables and acceptance criteria
 
 Every phase ends with: `npm run lint && npm run typecheck && npm run build` clean,

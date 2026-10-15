@@ -1,0 +1,53 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: panel-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: panel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-panel}
+      POSTGRES_DB: panel
+    ports:
+      # Host 5433 — 5432 belongs to E2B's local-dev-postgres-1 (ADR-03).
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U panel -d panel"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  panel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: panel
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+      PORT: "3100"
+      # Inside the compose network the database is reached on its own port.
+      DATABASE_URL: postgres://panel:${POSTGRES_PASSWORD:-panel}@db:5432/panel
+    ports:
+      # Host Caddy reverse-proxies panel.hostx.h22t.com to this.
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - uploads:/data/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3100/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  pgdata:
+  uploads:
