@@ -14,6 +14,7 @@ import { logger } from "@/server/lib/logger";
 import { activityLabel } from "@/lib/activity";
 import type { MessagePart } from "@/lib/messages";
 import { filterTools, resolveAllowlist } from "./allowlist";
+import { narrowByCapabilities } from "@/lib/capabilities";
 import { notifyUsage } from "@/server/usage/live";
 import { requiresApproval } from "./policy";
 import { blockedToolReason, lockedToolReason, redactSecrets } from "./guard";
@@ -59,6 +60,8 @@ export interface StartRunInput {
   chatId: string;
   userId: string;
   modelId: string;
+  /** Composer chips; narrow the allowlist for this run only. */
+  capabilities?: string[];
 }
 
 export async function startAgentRun(input: StartRunInput): Promise<string> {
@@ -114,7 +117,9 @@ async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void>
     const maxSteps = agentSettings.maxSteps;
     const maxCostUsd = agentSettings.maxCostUsdPerRun;
 
-    const tools = model.tools ? await loadTools(resolveAllowlist(agentSettings.toolAllowlist)) : [];
+    const tools = model.tools
+      ? narrowByCapabilities(await loadTools(resolveAllowlist(agentSettings.toolAllowlist)), input.capabilities)
+      : [];
     // Server-side enforcement of the allowlist: only names actually offered run.
     const offered = new Set(tools.map((t) => t.name));
     const context = await buildContext({

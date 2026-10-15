@@ -19,6 +19,8 @@ const bodySchema = z
     model: z.string().trim().min(1).optional(),
     /** Ids from POST /api/uploads; become image/file parts on the turn. */
     fileIds: z.array(z.uuid()).max(MAX_ATTACHMENTS).optional(),
+    /** Composer chips — can only narrow the tool allowlist (src/lib/capabilities.ts). */
+    capabilities: z.array(z.string().max(32)).max(12).optional(),
   })
   .refine((b) => b.text.length > 0 || (b.fileIds?.length ?? 0) > 0, {
     message: "Say something first.",
@@ -76,6 +78,7 @@ export const POST = ownerRoute<Ctx>(async ({ request, owner, ctx }) => {
     chatId,
     userId: owner.userId,
     modelId: model.id,
+    capabilities: body.data.capabilities,
   });
 
   return json({ message, runId, model: model.id }, { status: 202 });
