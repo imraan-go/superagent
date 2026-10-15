@@ -48,7 +48,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
     <div className={styles.card}>
       <div className={styles.brand}>
         <LiveGlyph state={pending ? "thinking" : "idle"} size={48} label="" />
-        <h1 className={styles.title}>Flight Deck</h1>
+        <h1 className={styles.title}>LHOS</h1>
         <span className={styles.subtitle}>Owner access</span>
       </div>
 

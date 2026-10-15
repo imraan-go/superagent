@@ -18,11 +18,16 @@
     border-color var(--dur-micro) var(--ease-out),
     color var(--dur-micro) var(--ease-out),
     box-shadow var(--dur-std) var(--ease-out),
-    transform var(--dur-micro) var(--ease-out);
+    transform var(--dur-spring) var(--ease-spring);
+}
+
+.base:hover:not(:disabled) {
+  transform: translateY(-1px);
 }
 
 .base:active:not(:disabled) {
-  transform: translateY(0.5px);
+  transform: scale(0.97);
+  transition-duration: var(--dur-micro);
 }
 
 .base:disabled,

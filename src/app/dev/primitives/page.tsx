@@ -7,7 +7,7 @@ import { PrimitivesGallery } from "./gallery";
  * state, both themes, checked at 375 px and 1440 px (rule 40-workflow §5).
  * Development only — the route 404s in production.
  */
-export const metadata: Metadata = { title: "Primitives — Flight Deck" };
+export const metadata: Metadata = { title: "Primitives — LHOS" };
 
 export default function PrimitivesPage() {
   if (process.env.NODE_ENV === "production") notFound();

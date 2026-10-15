@@ -36,8 +36,32 @@
   margin-bottom: var(--sp-1);
   border-radius: 50%;
   background:
-    radial-gradient(circle, var(--signal-wash) 0, transparent 62%),
+    radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--c-agent) 22%, transparent) 0, transparent 55%),
+    radial-gradient(circle at 70% 75%, color-mix(in srgb, var(--c-think) 24%, transparent) 0, transparent 55%),
     repeating-radial-gradient(circle, transparent 0 17px, color-mix(in oklab, var(--line) 70%, transparent) 17px 18px);
+  box-shadow: 0 0 60px color-mix(in srgb, var(--c-agent) 14%, transparent);
+}
+
+/* A slow conic halo orbits the mark (static under reduced motion). */
+.glyph::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  padding: 1px;
+  background: conic-gradient(from 0deg, var(--c-agent), var(--c-think), var(--c-web), transparent 70%, var(--c-agent));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: halo-spin 9s linear infinite;
+}
+
+@keyframes halo-spin {
+  to { transform: rotate(360deg); }
+}
+
+.glyph .heroGlyph {
+  color: var(--c-agent);
 }
 
 .eyebrow {
@@ -57,6 +81,10 @@
   letter-spacing: -0.02em;
   line-height: var(--lh-tight);
   color: var(--text-1);
+  background: linear-gradient(100deg, var(--text-1) 40%, var(--c-agent) 80%, var(--c-think));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .sub {
@@ -73,9 +101,12 @@
   flex-wrap: wrap;
   justify-content: center;
   margin: var(--sp-3) 0 var(--sp-2);
-  border: var(--border) solid var(--line);
+  border: var(--border) solid var(--glass-line);
   border-radius: var(--radius-control);
-  background: var(--ink-1);
+  background:
+    linear-gradient(180deg, var(--glass-hi), transparent 60%),
+    var(--glass);
+  backdrop-filter: blur(10px);
   overflow: hidden;
 }
 
@@ -89,11 +120,23 @@
   text-align: left;
 }
 
+.stat dt::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--cat, var(--text-3));
+  box-shadow: 0 0 6px var(--cat, transparent);
+}
+
 .stat + .stat {
   border-left: var(--border) solid var(--line);
 }
 
 .stat dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-mono);
   font-size: var(--fs-micro);
   letter-spacing: 0.08em;
@@ -123,8 +166,8 @@
 }
 
 .suggestions li {
-  animation: rise var(--dur-panel) var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 60ms);
+  animation: rise var(--dur-spring) var(--ease-spring) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger) * 2);
 }
 
 @keyframes rise {
@@ -139,27 +182,32 @@
   width: 100%;
   height: 100%;
   padding: var(--sp-3);
-  border: var(--border) solid var(--line);
+  border: var(--border) solid var(--glass-line);
   border-radius: var(--radius-control);
-  background: var(--ink-1);
+  background:
+    linear-gradient(180deg, var(--glass-hi), transparent 60%),
+    var(--glass);
   color: var(--text-2);
   font: inherit;
   text-align: left;
   cursor: pointer;
   transition:
-    border-color var(--dur-micro) ease,
-    background-color var(--dur-micro) ease,
-    transform var(--dur-micro) ease;
+    border-color var(--dur-std) var(--ease-out),
+    box-shadow var(--dur-std) var(--ease-out),
+    transform var(--dur-spring) var(--ease-spring);
 }
 
 .suggestion:hover:not(:disabled) {
-  border-color: color-mix(in oklab, var(--signal) 60%, var(--line));
-  background: var(--ink-2);
+  border-color: color-mix(in oklab, var(--cat, var(--signal)) 60%, var(--line));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--cat, var(--signal)) 10%, transparent), transparent 70%),
+    var(--ink-2);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--cat, var(--signal)) 14%, transparent);
 }
 
-.suggestion:hover:not(:disabled) .sugIcon {
-  border-color: var(--signal);
-  color: var(--signal);
+.suggestion:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .suggestion:focus-visible {

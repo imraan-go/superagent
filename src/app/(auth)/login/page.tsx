@@ -4,7 +4,7 @@ import { getOwner } from "@/server/auth/session";
 import { LoginForm } from "./login-form";
 import styles from "./login.module.css";
 
-export const metadata: Metadata = { title: "Sign in — Flight Deck" };
+export const metadata: Metadata = { title: "Sign in — LHOS" };
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({

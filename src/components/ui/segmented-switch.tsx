@@ -17,6 +17,8 @@ export interface SegmentedSwitchProps<T extends string> {
   value: T;
   onChange: (value: T) => void;
   size?: "sm" | "md";
+  /** `pill`: sliding filled thumb (mode switch). `underline`: sliding bar (tab strips). */
+  variant?: "pill" | "underline";
   /** Accessible name for the group, e.g. "Workspace mode". */
   label: string;
   className?: string;
@@ -31,6 +33,7 @@ export function SegmentedSwitch<T extends string>({
   value,
   onChange,
   size = "md",
+  variant = "pill",
   label,
   className,
 }: SegmentedSwitchProps<T>) {
@@ -69,7 +72,7 @@ export function SegmentedSwitch<T extends string>({
       ref={rootRef}
       role="tablist"
       aria-label={label}
-      className={cn(styles.root, size === "sm" && styles.sm, className)}
+      className={cn(styles.root, size === "sm" && styles.sm, variant === "underline" && styles.underline, className)}
       onKeyDown={(e) => {
         if (e.key === "ArrowRight") {
           e.preventDefault();

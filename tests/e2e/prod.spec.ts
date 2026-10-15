@@ -160,7 +160,7 @@ test("1 login page, unauthenticated redirect, minted session, splash once", asyn
   watch(page, "auth");
   await page.goto("/");
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("heading", { name: "Flight Deck" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "LHOS" })).toBeVisible();
   await expect(page.getByLabel("Email")).toBeVisible();
   await expect(page.getByLabel("Password")).toBeVisible();
   await shot(page, "01-login");
@@ -175,7 +175,7 @@ test("1 login page, unauthenticated redirect, minted session, splash once", asyn
   // Splash: the login form arms it in sessionStorage; it must play once.
   await page.evaluate(() => sessionStorage.setItem("fd.splash", "pending"));
   await page.reload();
-  const splash = page.getByRole("status", { name: "Starting Flight Deck" });
+  const splash = page.getByRole("status", { name: "Starting LHOS" });
   await expect(splash).toBeVisible();
   await shot(page, "01-splash");
   await expect(splash).toBeHidden({ timeout: 10_000 });
@@ -366,15 +366,15 @@ test("5 computer tab: framed viewer, take control, expand, Esc releases", async 
   await expect(inner.locator("body")).not.toBeEmpty({ timeout: 20_000 });
   await shot(page, "05-computer-framed");
 
-  await hold(page, page.getByRole("button", { name: "Take control of the agent computer" }), 1000);
-  await expect(page.getByRole("status").filter({ hasText: "LIVE CONTROL" })).toBeVisible();
+  // No panel input layer: the viewer's own pill handles Take control.
+  await expect(page.getByRole("button", { name: /Take control of the agent computer/ })).toHaveCount(0);
   await page.getByRole("button", { name: "Expand view" }).click();
   await expect(page.getByRole("dialog", { name: "Agent computer, full view" })).toBeVisible();
-  await shot(page, "05-computer-control-expanded");
+  await shot(page, "05-computer-expanded");
   // Focus must be outside the iframe for Esc to reach the panel.
   await page.getByRole("dialog", { name: "Agent computer, full view" }).locator("span").first().click({ force: true });
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("status").filter({ hasText: "LIVE CONTROL" })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "Agent computer, full view" })).toHaveCount(0);
   await shot(page, "05-computer-released");
 });
 

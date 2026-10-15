@@ -226,7 +226,9 @@
   font-size: var(--fs-micro);
   font-variant-numeric: tabular-nums;
   cursor: pointer;
-  transition: background var(--dur-micro) var(--ease-out);
+  box-shadow: var(--halo-amber);
+  animation: badge-in var(--dur-spring) var(--ease-spring) both;
+  transition: background var(--dur-micro) var(--ease-out), transform var(--dur-spring) var(--ease-spring);
 }
 
 .badge:hover {
@@ -245,4 +247,25 @@
 .item:focus-visible {
   outline: 2px solid var(--signal);
   outline-offset: 2px;
+}
+
+.badge:hover {
+  transform: translateY(-1px);
+}
+
+.badge svg {
+  animation: bell-ring 2.4s var(--ease-out) infinite;
+  transform-origin: 50% 10%;
+}
+
+@keyframes badge-in {
+  from { opacity: 0; transform: scale(0.6); }
+}
+
+@keyframes bell-ring {
+  0%, 70%, 100% { transform: rotate(0); }
+  76% { transform: rotate(14deg); }
+  82% { transform: rotate(-12deg); }
+  88% { transform: rotate(8deg); }
+  94% { transform: rotate(-4deg); }
 }

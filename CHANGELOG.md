@@ -3,6 +3,24 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — LHOS rename + vivid "alive instrument" redesign
+- Renamed the platform to **LHOS** everywhere user-visible (topbar/sidebar wordmark,
+  titles/metadata, login, splash, agent prompt, OpenRouter x-title, e2e selectors).
+- Meaning palette (`--c-*`, `--hue-*`, `--cat-*`), glass surfaces and a static aurora
+  mesh; new `CategoryTile` + `CountUp` primitives; LiveGlyph colour per phase.
+- Left rail rebuilt: full height, brand + New chat, sticky date groups, category
+  tiles + status dots, pin/rename/delete, fixed dock (computer, Settings, owner);
+  collapsible icon rail (⌘B, persisted).
+- Right rail: full height with sticky header + sliding-underline tabs; minimisable
+  to a 56px live dock (⌘., persisted); stats and log rows get category tiles and
+  count-ups; budget bar in money lime.
+- Topbar: glass, ⌘K launcher, coloured LIVE pill and ringing waiting badge.
+- Motion system: CSS spring easing, staggered entrances, shimmer on running tools,
+  composer progress sweep, springy buttons/toasts; one global reduced-motion guard
+  honouring `data-motion`.
+- Computer tab: removed the panel Watch overlay + hold-to-take-control (it blocked
+  the viewer's own pill and sign-in); the takeover audit call went with it.
+
 ## 2026-10-15 — Composio as the connector + MCP layer
 - Composio client rewritten against the real v3.1 API (OpenAPI-verified): paginated full toolkit
   catalog (1 h cache), categories, auth configs, hosted Connect Link OAuth, credential-style

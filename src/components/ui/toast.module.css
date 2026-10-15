@@ -26,7 +26,7 @@
   border-left-color: var(--line-strong);
   border-radius: var(--radius-control);
   box-shadow: var(--elev-2);
-  animation: slideIn var(--dur-panel) var(--ease-out);
+  animation: slideIn var(--dur-spring) var(--ease-spring);
 }
 
 .leaving {
@@ -95,7 +95,7 @@
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateX(16px);
+    transform: translateX(24px) scale(0.94);
   }
 }
 

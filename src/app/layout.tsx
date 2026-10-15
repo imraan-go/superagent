@@ -6,7 +6,7 @@ import { getSection } from "@/server/settings/store";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Flight Deck",
+  title: "LHOS",
   description: "Personal super-agent dashboard",
   robots: { index: false, follow: false },
 };

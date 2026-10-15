@@ -35,3 +35,8 @@ export { SettingRow, SettingSection } from "./setting-row";
 export type { SettingRowProps } from "./setting-row";
 
 export { Drawer } from "./drawer";
+
+export { CategoryTile, CATEGORY_ICONS, THOUGHT_ICON } from "./category-tile";
+export type { CategoryTileProps, TileCategory } from "./category-tile";
+
+export { CountUp } from "./readout";

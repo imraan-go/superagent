@@ -26,7 +26,7 @@ export interface AgentContext {
   messages: AdapterMessage[];
 }
 
-const BASE_PROMPT = `You are the agent behind Flight Deck, a single-owner control panel.
+const BASE_PROMPT = `You are the agent behind LHOS, a single-owner control panel.
 
 You operate a real Linux desktop ("the agent computer") through the provided
 tools. It is a live machine: take a screenshot before acting on anything visual,

@@ -2,9 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { SlidersHorizontal, X } from "@phosphor-icons/react/dist/ssr";
-import { IconButton } from "@/components/ui";
+import { CaretDoubleLeft, CaretDoubleRight, SlidersHorizontal, X } from "@phosphor-icons/react/dist/ssr";
+import { CategoryTile, CountUp, Dot, IconButton, LiveGlyph } from "@/components/ui";
+import type { LiveGlyphState } from "@/components/ui";
 import { usePending } from "@/hooks/use-pending";
+import { useHotkeys } from "@/hooks/use-hotkeys";
+import { useCapabilities } from "@/hooks/use-capabilities";
+import { WIDE_QUERY, useMedia } from "@/hooks/use-media";
+import { useUsageTicker } from "@/hooks/use-usage-ticker";
+import type { RunPhase } from "@/hooks/use-run-stream";
+import { PREF_RIGHT_MINIMIZED, usePref } from "@/lib/ui-prefs";
+import { focusWaitingCard } from "@/lib/app-events";
 import { OPEN_COMPUTER_EVENT } from "@/lib/hitl";
 import styles from "./rail-drawer.module.css";
 
@@ -66,7 +74,51 @@ export function RailToggle({ drawer }: { drawer: RailDrawer }) {
   );
 }
 
-export function RailAside({ drawer, children }: { drawer: RailDrawer; children: ReactNode }) {
+function glyphFor(phase: RunPhase | undefined): LiveGlyphState {
+  switch (phase) {
+    case "thinking":
+      return "thinking";
+    case "tool":
+    case "waiting":
+      return "tool";
+    case "approval":
+      return "approval";
+    case "done":
+      return "done";
+    case "error":
+      return "error";
+    default:
+      return "idle";
+  }
+}
+
+/**
+ * The right rail. ≥1100px it is a fixed full-height column that can be
+ * MINIMISED (⌘.) to a 56px dock of live mini indicators; the choice persists.
+ * Below 1100px it is the drawer above, and minimise does not apply.
+ */
+export function RailAside({
+  drawer,
+  phase,
+  children,
+}: {
+  drawer: RailDrawer;
+  phase?: RunPhase;
+  children: ReactNode;
+}) {
+  const [pref, setMinimized] = usePref(PREF_RIGHT_MINIMIZED);
+  const wide = useMedia(WIDE_QUERY);
+  const minimized = pref && wide;
+
+  useHotkeys([{ keys: "mod+.", allowInInput: true, handler: () => setMinimized((v) => !v) }]);
+
+  // Anything that needs the full rail (Open computer, Waiting on you) expands it.
+  useEffect(() => {
+    const expand = () => setMinimized(false);
+    window.addEventListener(OPEN_COMPUTER_EVENT, expand);
+    return () => window.removeEventListener(OPEN_COMPUTER_EVENT, expand);
+  }, [setMinimized]);
+
   return (
     <>
       {drawer.open && <div className={styles.scrim} aria-hidden onClick={drawer.close} />}
@@ -74,6 +126,7 @@ export function RailAside({ drawer, children }: { drawer: RailDrawer; children: 
         id="mission-rail"
         className={styles.rail}
         data-open={drawer.open || undefined}
+        data-minimized={minimized || undefined}
         aria-label="Mission panel"
         onKeyDown={(e) => {
           if (e.key === "Escape" && drawer.open) drawer.close();
@@ -86,8 +139,80 @@ export function RailAside({ drawer, children }: { drawer: RailDrawer; children: 
           className={styles.close}
           onClick={drawer.close}
         />
-        {children}
+        <IconButton
+          label="Minimize panel"
+          size="sm"
+          aria-keyshortcuts="Control+Period Meta+Period"
+          icon={<CaretDoubleRight size={14} />}
+          className={styles.minimize}
+          onClick={() => setMinimized(true)}
+        />
+        <div className={styles.full} inert={minimized}>
+          {children}
+        </div>
+        {minimized && <MiniDock phase={phase} onExpand={() => setMinimized(false)} />}
       </aside>
     </>
+  );
+}
+
+/** The minimised rail: live mini indicators, every one of them click-to-expand. */
+function MiniDock({ phase, onExpand }: { phase?: RunPhase; onExpand: () => void }) {
+  const { data } = usePending();
+  const waiting = data?.count ?? 0;
+  const { summary, live } = useUsageTicker();
+  const { state, dot } = useCapabilities();
+  const cost = summary?.today.costUsd ?? null;
+  const glyph = glyphFor(phase);
+
+  return (
+    <div className={styles.dock}>
+      <IconButton
+        label="Expand panel"
+        aria-keyshortcuts="Control+Period Meta+Period"
+        icon={<CaretDoubleLeft size={16} />}
+        onClick={onExpand}
+      />
+      <span className={styles.dockSep} aria-hidden />
+      <button type="button" className={styles.dockItem} onClick={onExpand} title="Run state">
+        <LiveGlyph state={glyph} size={24} />
+      </button>
+      <button
+        type="button"
+        className={styles.dockItem}
+        data-tone={waiting > 0 ? "amber" : undefined}
+        onClick={() => {
+          onExpand();
+          if (waiting > 0) requestAnimationFrame(() => void focusWaitingCard());
+        }}
+        aria-label={`${waiting} waiting on you`}
+        title="Waiting on you"
+      >
+        <CategoryTile cat="human" size="sm" active={waiting > 0} />
+        {waiting > 0 && <span className={styles.dockBadge}>{waiting}</span>}
+      </button>
+      <button
+        type="button"
+        className={styles.dockItem}
+        onClick={onExpand}
+        aria-label={cost === null ? "Cost today: connecting" : `Cost today $${cost.toFixed(4)}`}
+        title="Cost today"
+      >
+        <CategoryTile cat="money" size="sm" />
+        <span className={styles.dockValue} data-live={live || undefined}>
+          {cost === null ? "—" : <CountUp value={cost} format={(n) => `$${n < 1 ? n.toFixed(2) : n.toFixed(1)}`} />}
+        </span>
+      </button>
+      <button
+        type="button"
+        className={styles.dockItem}
+        onClick={onExpand}
+        aria-label={`Agent computer ${state}`}
+        title={`Agent computer: ${state}`}
+      >
+        <CategoryTile cat="screen" size="sm" />
+        <Dot status={dot} size="sm" pulse={state === "awake"} className={styles.dockDot} />
+      </button>
+    </div>
   );
 }

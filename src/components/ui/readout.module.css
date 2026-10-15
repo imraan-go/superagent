@@ -82,7 +82,7 @@
 }
 
 .ok .value {
-  color: var(--ok);
+  color: var(--c-money);
 }
 
 /* Brief flash when the value changes, so a glance catches movement.

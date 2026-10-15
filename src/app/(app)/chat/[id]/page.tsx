@@ -13,13 +13,13 @@ export async function generateMetadata({
 }) {
   const { id } = await params;
   const owner = await getOwner();
-  if (!owner || !z.uuid().safeParse(id).success) return { title: "Flight Deck" };
+  if (!owner || !z.uuid().safeParse(id).success) return { title: "LHOS" };
 
   try {
     const chat = await getChat(id, owner.userId);
-    return { title: `${chat.title} — Flight Deck` };
+    return { title: `${chat.title} — LHOS` };
   } catch {
-    return { title: "Flight Deck" };
+    return { title: "LHOS" };
   }
 }
 

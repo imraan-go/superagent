@@ -65,12 +65,12 @@ export function Splash() {
   if (!visible) return null;
 
   return (
-    <div className={styles.overlay} role="status" aria-label="Starting Flight Deck">
+    <div className={styles.overlay} role="status" aria-label="Starting LHOS">
       <div className={styles.inner}>
         <div className={styles.glyph}>
           <LiveGlyph state="thinking" size={96} label="" />
         </div>
-        <div className={styles.wordmark}>Flight Deck</div>
+        <div className={styles.wordmark}>LHOS</div>
         <div className={styles.readouts}>
           {/* Self-test: the readouts count up as the panel wakes. */}
           <div className={styles.readout}>

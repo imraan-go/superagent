@@ -2,23 +2,8 @@
 
 import { Fragment, useState } from "react";
 import type { ReactNode } from "react";
-import {
-  Brain,
-  CalendarDots,
-  CaretRight,
-  ChatCenteredDots,
-  FolderSimple,
-  Globe,
-  HandPalm,
-  Monitor,
-  Plugs,
-  PlugsConnected,
-  ShieldWarning,
-  TerminalWindow,
-  WindowsLogo,
-  Wrench,
-} from "@phosphor-icons/react/dist/ssr";
-import { Dot, LiveGlyph } from "@/components/ui";
+import { CaretRight, ChatCenteredDots, Monitor, ShieldWarning } from "@phosphor-icons/react/dist/ssr";
+import { CategoryTile, Dot, LiveGlyph } from "@/components/ui";
 import type { LiveGlyphState } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { TraceItem } from "./exchanges";
@@ -28,20 +13,6 @@ import styles from "./run-trace.module.css";
 
 /** The rail listens for this and brings its "Waiting on you" card into view. */
 export const FOCUS_WAITING_EVENT = "fd:focus-waiting";
-
-const ICONS: Record<ToolCategory, typeof Monitor> = {
-  screen: Monitor,
-  browser: Globe,
-  shell: TerminalWindow,
-  rdp: WindowsLogo,
-  files: FolderSimple,
-  connector: Plugs,
-  mcp: PlugsConnected,
-  memory: Brain,
-  schedule: CalendarDots,
-  human: HandPalm,
-  other: Wrench,
-};
 
 /** Backtick spans in a title become inline code. */
 function renderTitle(title: string): ReactNode {
@@ -91,9 +62,19 @@ export function RunTrace({ items, live, activity, phase, approval }: RunTracePro
     ? (activity ?? "Working")
     : traceSummary(tools.map((t) => ({ toolName: t.toolName, ms: t.ms })));
   const expandable = items.length > 0 || Boolean(approval);
+  // Distinct categories in first-use order — the folded summary shows them as a tile stack.
+  const cats: ToolCategory[] = [];
+  for (const t of tools) {
+    const c = toolCategory(t.toolName);
+    if (!cats.includes(c)) cats.push(c);
+  }
 
   return (
-    <section className={cn(styles.trace, live && styles.live, open && styles.open)} aria-label="Run trace">
+    <section
+      className={cn(styles.trace, live && styles.live, open && styles.open)}
+      data-phase={glyph}
+      aria-label="Run trace"
+    >
       <button
         type="button"
         className={styles.head}
@@ -102,6 +83,13 @@ export function RunTrace({ items, live, activity, phase, approval }: RunTracePro
         onClick={() => setOverride(!open)}
       >
         <LiveGlyph state={glyph} size={16} label="" />
+        {!live && cats.length > 0 && (
+          <span className={styles.stack} aria-hidden>
+            {cats.slice(0, 4).map((c) => (
+              <CategoryTile key={c} cat={c} size="xs" />
+            ))}
+          </span>
+        )}
         <span className={styles.headline}>{headline}</span>
         {live && <span className={styles.dots} aria-hidden><i /><i /><i /></span>}
         <span className={styles.meta}>
@@ -113,8 +101,8 @@ export function RunTrace({ items, live, activity, phase, approval }: RunTracePro
 
       {open && expandable && (
         <ol className={styles.steps}>
-          {items.map((item) => (
-            <Step key={item.key} item={item} />
+          {items.map((item, i) => (
+            <Step key={item.key} item={item} index={i} />
           ))}
           {approval && <ApprovalCard tool={approval.tool} reason={approval.reason} />}
         </ol>
@@ -123,14 +111,14 @@ export function RunTrace({ items, live, activity, phase, approval }: RunTracePro
   );
 }
 
-function Step({ item }: { item: TraceItem }) {
+function Step({ item, index }: { item: TraceItem; index: number }) {
   const [open, setOpen] = useState(false);
 
   if (item.kind === "thought") {
     return (
-      <li className={cn(styles.step, styles.thought)}>
+      <li className={cn(styles.step, styles.thought)} style={{ "--i": index } as React.CSSProperties}>
         <span className={styles.rail} aria-hidden>
-          <ChatCenteredDots size={13} />
+          <CategoryTile cat="think" size="sm" icon={ChatCenteredDots} />
         </span>
         <p className={styles.thoughtText}>{renderTitle(item.detail ?? "")}</p>
       </li>
@@ -142,15 +130,19 @@ function Step({ item }: { item: TraceItem }) {
   }
 
   const cat = toolCategory(item.toolName);
-  const Icon = ICONS[cat];
   const hasArgs = item.args && Object.keys(item.args).length > 0;
   const expandable = Boolean(hasArgs || item.detail?.trim());
   const status = item.ok === null ? "pending" : item.ok ? "ok" : "error";
 
   return (
-    <li className={cn(styles.step, styles[`cat_${cat}`])} data-status={status}>
+    <li
+      className={styles.step}
+      data-cat={cat}
+      data-status={status}
+      style={{ "--i": index } as React.CSSProperties}
+    >
       <span className={styles.rail} aria-hidden>
-        <Icon size={13} weight="bold" />
+        <CategoryTile cat={status === "error" ? "error" : cat} size="sm" active={item.ok === null} />
       </span>
       <div className={styles.card}>
         <button
@@ -220,7 +212,7 @@ function ApprovalCard({ tool, reason }: { tool: string; reason: string }) {
   return (
     <li className={cn(styles.step, styles.approval)}>
       <span className={styles.rail} aria-hidden>
-        <ShieldWarning size={13} weight="fill" />
+        <CategoryTile cat="human" size="sm" icon={ShieldWarning} active />
       </span>
       <div className={styles.approvalCard}>
         <p className={styles.approvalTitle}>Approval needed</p>

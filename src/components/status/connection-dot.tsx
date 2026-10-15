@@ -39,7 +39,7 @@ export function ConnectionDot() {
   const { status, text, title, pulse } = describe(data, isPending, isError);
 
   return (
-    <span className={styles.wrap} title={title}>
+    <span className={styles.wrap} title={title} data-status={status}>
       <Dot status={status} pulse={pulse} label={`Agent computer: ${text}`} />
       <span className={styles.text}>{text}</span>
     </span>

@@ -2,18 +2,34 @@
 .trace {
   --trace-accent: var(--line-strong);
   position: relative;
-  border: var(--border) solid var(--line);
+  border: var(--border) solid var(--glass-line);
   border-radius: var(--radius-control);
-  background: var(--ink-1);
+  background:
+    linear-gradient(180deg, var(--glass-hi), transparent 60%),
+    var(--glass);
   overflow: hidden;
   transition: border-color var(--dur-std) var(--ease-out);
 }
 
-.live {
-  --trace-accent: var(--signal);
-  border-color: color-mix(in oklab, var(--signal) 40%, var(--line));
-  box-shadow: var(--halo);
+/* Phase colour: thinking violet → tool teal → approval amber → done lime → error coral. */
+.trace[data-phase="thinking"] { --trace-accent: var(--c-think); }
+.trace[data-phase="tool"] { --trace-accent: var(--c-agent); }
+.trace[data-phase="approval"] { --trace-accent: var(--c-approval); }
+.trace[data-phase="done"] { --trace-accent: var(--c-money); }
+.trace[data-phase="error"] { --trace-accent: var(--c-error); }
+
+.live,
+.trace[data-phase="approval"] {
+  border-color: color-mix(in oklab, var(--trace-accent) 45%, var(--line));
+  box-shadow: 0 0 28px color-mix(in srgb, var(--trace-accent) 16%, transparent);
+  transition: border-color var(--dur-panel) var(--ease-out), box-shadow var(--dur-panel) var(--ease-out);
 }
+
+.stack {
+  display: inline-flex;
+  flex: none;
+}
+.stack > * + * { margin-left: -6px; box-shadow: 0 0 0 2px var(--ink-1); }
 
 /* A 1px scanline along the top edge while live — the "frame is alive" cue. */
 .live::before {
@@ -21,7 +37,7 @@
   position: absolute;
   inset: 0 0 auto;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--signal), transparent);
+  background: linear-gradient(90deg, transparent, var(--trace-accent), transparent);
   background-size: 50% 100%;
   background-repeat: no-repeat;
   animation: sweep 1.8s linear infinite;
@@ -87,7 +103,7 @@
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background: var(--signal);
+  background: var(--trace-accent);
   animation: breathe 1.2s ease-in-out infinite;
 }
 .dots i:nth-child(2) { animation-delay: 0.15s; }
@@ -124,7 +140,8 @@
   grid-template-columns: 23px minmax(0, 1fr);
   gap: var(--sp-2);
   padding-top: var(--sp-2);
-  animation: enter var(--dur-std) var(--ease-out) both;
+  animation: enter var(--dur-spring) var(--ease-spring) both;
+  animation-delay: calc(min(var(--i, 0), 10) * var(--stagger));
 }
 
 @keyframes enter {
@@ -140,28 +157,38 @@
   width: 23px;
   height: 23px;
   margin-top: 4px;
-  border: var(--border) solid var(--line);
-  border-radius: 50%;
+  border-radius: 7px;
   background: var(--ink-1);
-  color: var(--text-3);
 }
-
-.step[data-status="pending"] .rail {
-  border-color: var(--signal);
-  color: var(--signal);
-  box-shadow: var(--halo);
-}
-.step[data-status="error"] .rail { border-color: var(--danger); color: var(--danger); }
-.cat_rdp .rail { color: var(--info); }
-.cat_mcp .rail,
-.cat_connector .rail { color: var(--signal-dim); }
 
 .card {
+  --cat: var(--line-strong);
+  position: relative;
   min-width: 0;
   border: var(--border) solid var(--line);
+  border-left: 2px solid color-mix(in srgb, var(--cat) 70%, transparent);
   border-radius: var(--radius-chip);
   background: var(--ink-0);
   overflow: hidden;
+  transition: transform var(--dur-spring) var(--ease-spring), border-color var(--dur-std) var(--ease-out);
+}
+.step[data-cat] .card { --cat: inherit; }
+.step:hover .card { transform: translateX(2px); }
+.step[data-status="error"] .card { border-left-color: var(--c-error); }
+
+/* Running tool: a soft shimmer crosses the card in its category hue. */
+.step[data-status="pending"] .card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--cat) 14%, transparent) 50%, transparent 80%);
+  transform: translateX(-100%);
+  animation: card-shimmer 1.6s var(--ease-out) infinite;
+}
+
+@keyframes card-shimmer {
+  to { transform: translateX(100%); }
 }
 
 .cardHead {
@@ -269,7 +296,6 @@
   overflow-wrap: anywhere;
 }
 
-.thought .rail { border-style: dashed; }
 .thoughtText {
   margin: 0;
   padding-top: 6px;
@@ -281,11 +307,6 @@
 }
 
 /* --- approval ---------------------------------------------------------- */
-.approval .rail {
-  border-color: var(--amber);
-  color: var(--amber);
-  box-shadow: var(--halo-amber);
-}
 
 .approvalCard {
   padding: var(--sp-2) var(--sp-3);

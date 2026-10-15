@@ -66,7 +66,7 @@ function Gallery() {
   return (
     <div className={styles.page} data-theme={theme} data-mode={mode}>
       <header className={styles.topbar}>
-        <h1 className={styles.brand}>Flight Deck — primitives</h1>
+        <h1 className={styles.brand}>LHOS — primitives</h1>
         <div className={styles.topbarControls}>
           <SegmentedSwitch
             label="Workspace mode"

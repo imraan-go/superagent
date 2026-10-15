@@ -76,8 +76,9 @@
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: inherit;
-  background: var(--signal);
-  transition: width var(--dur-std) var(--ease-out);
+  background: linear-gradient(90deg, var(--c-money), var(--c-agent));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c-money) 50%, transparent);
+  transition: width var(--dur-panel) var(--ease-spring);
 }
 
 .budget[data-state="warn"] .budgetFill {
@@ -114,13 +115,28 @@
 }
 
 .stat {
+  position: relative;
   display: grid;
   gap: 2px;
   min-width: 0;
   padding: var(--sp-2);
-  border: var(--border) solid var(--line);
+  border: var(--border) solid var(--glass-line);
   border-radius: var(--radius-control);
-  background: var(--ink-1);
+  background:
+    linear-gradient(160deg, var(--glass-hi), transparent 60%),
+    var(--ink-1);
+  transition: transform var(--dur-spring) var(--ease-spring), border-color var(--dur-std) var(--ease-out);
+}
+
+.stat:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+}
+
+.statIcon {
+  position: absolute;
+  top: var(--sp-2);
+  right: var(--sp-2);
 }
 
 .statValue {
@@ -134,7 +150,7 @@
 }
 
 .stat[data-tone="ok"] .statValue {
-  color: var(--ok);
+  color: var(--c-money);
 }
 
 .stat[data-tone="warn"] .statValue {
@@ -186,6 +202,14 @@
   background: var(--ink-2);
 }
 
+.chip {
+  transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-spring) var(--ease-spring);
+}
+
+.chip:active {
+  transform: scale(0.94);
+}
+
 .chip[aria-pressed="true"] {
   border-color: var(--signal-dim);
   background: var(--signal-wash);
@@ -212,6 +236,7 @@
 .entry {
   display: grid;
   grid-template-columns: auto auto auto minmax(0, 1fr) auto;
+  transition: background-color var(--dur-micro) var(--ease-out);
   align-items: center;
   gap: var(--sp-2);
   min-height: 26px;
@@ -233,6 +258,18 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   color: var(--text-3);
+}
+
+.entryIcon {
+  position: relative;
+  display: inline-grid;
+}
+
+.entryDot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  box-shadow: 0 0 0 2px var(--ink-1);
 }
 
 .src {
