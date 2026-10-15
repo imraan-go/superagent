@@ -146,3 +146,23 @@ export function isImageMime(mime: string): boolean {
 export function isVisionMime(mime: string): boolean {
   return ["image/png", "image/jpeg", "image/gif", "image/webp"].includes(mime);
 }
+
+/**
+ * Response headers for `GET /api/uploads/[id]`. Bytes are served with the
+ * stored (server-derived) MIME, `nosniff`, a no-script CSP + sandbox and
+ * private caching. Only raster images render inline; everything else is a
+ * download, so an uploaded text file can never execute in the panel origin.
+ */
+export function servingHeaders(file: { mime: string; name: string; bytes: number }): Record<string, string> {
+  const inline = isVisionMime(file.mime);
+  const ascii = file.name.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_");
+  return {
+    "content-type": file.mime,
+    "content-length": String(file.bytes),
+    "content-disposition": `${inline ? "inline" : "attachment"}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(file.name)}`,
+    "x-content-type-options": "nosniff",
+    "content-security-policy": "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox",
+    "cross-origin-resource-policy": "same-origin",
+    "cache-control": "private, max-age=86400, immutable",
+  };
+}
