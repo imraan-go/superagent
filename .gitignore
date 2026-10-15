@@ -4,7 +4,7 @@ out/
 dist/
 .env.local
 .env*.local
-uploads/
+/uploads/
 *.log
 pgdata/
 .DS_Store
