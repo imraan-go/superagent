@@ -48,10 +48,9 @@ const schema = z.object({
   E2B_API_URL: z.url(),
   E2B_API_KEY: z.string().min(1),
 
-  // Manage-mode host bridge
-  MANAGE_SSH_HOST: z.string().default("local"),
-  MANAGE_SSH_USER: z.string().default("root"),
-  MANAGE_SSH_KEY_PATH: z.string().optional(),
+  // Manage-mode host bridge (e2b-agent-vm/bin/host_bridge.py, loopback only)
+  BRIDGE_URL: z.url().default("http://127.0.0.1:7071"),
+  BRIDGE_TOKEN: z.string().min(1),
 
   // Model vendors — optional here; the owner may instead store them encrypted
   // via Settings → Models. Absence is a product state, not a config error.

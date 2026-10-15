@@ -26,6 +26,7 @@ echo "sync-env → $ENVF"
 put LHOS_MCP_TOKEN      "$SRC/mcp_token"
 put LHOS_APPROVE_TOKEN  "$SRC/approve_token"
 put E2B_API_KEY         "$E2B_KEY_FILE"
+put BRIDGE_TOKEN        "$SRC/bridge_token"
 
 grep -Eq '^PANEL_SECRET_KEY=[^ #]+' "$ENVF" || {
   sed -i "s|^PANEL_SECRET_KEY=.*|PANEL_SECRET_KEY=$(openssl rand -base64 32)|" "$ENVF"

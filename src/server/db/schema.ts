@@ -298,6 +298,23 @@ export const schedules = pgTable("schedules", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * Inbound webhooks (INTEGRATIONS.md §5/§7). `POST /api/webhooks/<id>` with an
+ * HMAC-SHA256 signature over the raw body using the sealed `secretEnc`.
+ * `target.kind` = "prompt" (start an agent run) | "workflow" (LHOS workflow_run_saved).
+ */
+export const webhooks = pgTable("webhooks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  /** AES-256-GCM sealed signing secret (server/lib/crypto). */
+  secretEnc: text("secret_enc").notNull(),
+  target: jsonb("target").$type<{ kind: "prompt" | "workflow"; prompt?: string; workflow?: string; model?: string }>().notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  lastFiredAt: timestamp("last_fired_at", { withTimezone: true }),
+  fireCount: integer("fire_count").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 /* ------------------------------------------------------------- memories -- */
 
 export const memories = pgTable(

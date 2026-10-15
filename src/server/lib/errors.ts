@@ -21,6 +21,8 @@ export const ERROR_CODES = [
   "vendor_error",
   /** No vendor API key configured for the selected model. */
   "no_model_key",
+  /** Host bridge unreachable or failed (Manage mode). */
+  "bridge_unavailable",
   "internal",
 ] as const;
 
@@ -38,6 +40,7 @@ const STATUS: Record<ErrorCode, number> = {
   budget_exceeded: 402,
   vendor_error: 502,
   no_model_key: 412,
+  bridge_unavailable: 502,
   internal: 500,
 };
 
@@ -45,6 +48,7 @@ const RETRYABLE: ReadonlySet<ErrorCode> = new Set<ErrorCode>([
   "lhos_unavailable",
   "computer_waking",
   "rate_limited",
+  "bridge_unavailable",
 ]);
 
 export class AppError extends Error {
