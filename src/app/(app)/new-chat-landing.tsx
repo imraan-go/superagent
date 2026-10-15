@@ -2,18 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  CalendarDots,
-  ChartLineUp,
-  Globe,
-  Monitor,
-  PlugsConnected,
-  WindowsLogo,
-} from "@phosphor-icons/react/dist/ssr";
+import { ChartLineUp } from "@phosphor-icons/react/dist/ssr";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/cn";
-import { Dot, LiveGlyph, useToast } from "@/components/ui";
-import type { DotStatus } from "@/components/ui";
+import { CategoryTile, Dot, LiveGlyph, useToast } from "@/components/ui";
+import type { DotStatus, TileCategory } from "@/components/ui";
 import { PromptBar } from "@/components/chat/prompt-bar";
 import { prefillPrompt } from "@/components/chat/parts/composer";
 import type { CapabilityId } from "@/components/chat/parts/composer";
@@ -28,27 +21,29 @@ import styles from "./landing.module.css";
  * rather than firing — the owner reads, tweaks, sends.
  */
 const SUGGESTIONS: Array<{
-  icon: typeof Monitor;
+  cat: TileCategory;
+  icon?: typeof ChartLineUp;
   title: string;
   sub: string;
   text: string;
   caps: CapabilityId[];
 }> = [
   {
-    icon: WindowsLogo,
+    cat: "rdp",
     title: "Operate my Windows PC",
     sub: "Over RDP",
     text: "Connect to my Windows PC over RDP, open Chrome and tell me what's on screen.",
     caps: ["rdp"],
   },
   {
-    icon: Globe,
+    cat: "browser",
     title: "Check LinkedIn notifications",
     sub: "Browser",
     text: "Open LinkedIn in the browser and summarise my unread notifications and messages.",
     caps: ["browser"],
   },
   {
+    cat: "think",
     icon: ChartLineUp,
     title: "Summarise today's activity",
     sub: "Runs, tools, approvals",
@@ -56,21 +51,21 @@ const SUGGESTIONS: Array<{
     caps: [],
   },
   {
-    icon: CalendarDots,
+    cat: "schedule",
     title: "Schedule a daily inbox brief",
     sub: "Weekdays 08:00",
     text: "Create a schedule that runs every weekday at 08:00 and sends me a short brief of my unread inbox.",
     caps: ["connectors"],
   },
   {
-    icon: Monitor,
+    cat: "screen",
     title: "Look at the computer",
     sub: "Linux desktop",
     text: "Take a screenshot of the agent computer and tell me what's open.",
     caps: ["computer"],
   },
   {
-    icon: PlugsConnected,
+    cat: "mcp",
     title: "Explore my MCP servers",
     sub: "Tools and ideas",
     text: "List the tools my MCP servers expose and suggest three automations I'd find useful.",
@@ -160,7 +155,7 @@ export function NewChatLanding() {
         <div className={styles.scroll}>
           <div className={styles.hero}>
             <div className={styles.glyph}>
-              <LiveGlyph state={create.isPending ? "thinking" : "idle"} size={64} label="" />
+              <LiveGlyph state={create.isPending ? "thinking" : "idle"} size={64} label="" className={styles.heroGlyph} />
             </div>
             <p className={styles.eyebrow}>LHOS · super-agent</p>
             <h1 className={styles.title}>What should the agent do?</h1>
@@ -171,25 +166,25 @@ export function NewChatLanding() {
             </p>
 
             <dl className={styles.status} aria-label="Agent status">
-              <div className={styles.stat}>
+              <div className={styles.stat} data-cat="screen">
                 <dt>Computer</dt>
                 <dd>
                   <Dot status={computer[0]} size="sm" pulse={computer[0] === "warn"} />
                   {computer[1]}
                 </dd>
               </div>
-              <div className={styles.stat}>
+              <div className={styles.stat} data-cat="rdp">
                 <dt>Windows PC</dt>
                 <dd>
                   <Dot status={rdp[0]} size="sm" />
                   {rdp[1]}
                 </dd>
               </div>
-              <div className={styles.stat}>
+              <div className={styles.stat} data-cat="connector">
                 <dt>Connectors</dt>
                 <dd>{connectors ?? "—"}</dd>
               </div>
-              <div className={styles.stat}>
+              <div className={styles.stat} data-cat="mcp">
                 <dt>MCP servers</dt>
                 <dd>{mcpCount ?? "—"}</dd>
               </div>
@@ -203,18 +198,16 @@ export function NewChatLanding() {
 
             <ul className={styles.suggestions} aria-label="Suggestions">
               {SUGGESTIONS.map((s, i) => {
-                const Icon = s.icon;
                 return (
                   <li key={s.title} style={{ ["--i" as string]: i }}>
                     <button
                       type="button"
                       className={cn(styles.suggestion)}
+                      data-cat={s.cat}
                       disabled={create.isPending}
                       onClick={() => prefillPrompt({ text: s.text, capabilities: s.caps })}
                     >
-                      <span className={styles.sugIcon} aria-hidden>
-                        <Icon size={16} />
-                      </span>
+                      <CategoryTile cat={s.cat} icon={s.icon} size="md" />
                       <span className={styles.sugText}>
                         <span className={styles.sugTitle}>{s.title}</span>
                         <span className={styles.sugSub}>{s.sub}</span>

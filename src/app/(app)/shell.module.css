@@ -199,6 +199,7 @@
 
 /* Crossfade the workspace when the mode (route) changes. */
 .body > main {
+  position: relative;
   animation: mode-in var(--dur-panel) var(--ease-out);
 }
 

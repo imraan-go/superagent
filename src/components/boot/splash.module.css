@@ -25,8 +25,14 @@
 
 .wordmark {
   font-family: var(--font-display);
-  font-size: var(--fs-2xl);
-  letter-spacing: -0.01em;
+  font-size: var(--fs-3xl);
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  padding-left: 0.32em;
+  background: linear-gradient(95deg, var(--text-1) 25%, var(--c-agent) 65%, var(--c-think));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   animation: rise 360ms var(--ease-out) 220ms both;
 }
 

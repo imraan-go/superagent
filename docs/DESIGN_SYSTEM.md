@@ -1,4 +1,7 @@
-# Design System — "Flight Deck"
+# Design System — LHOS
+
+> Product name: **LHOS** (wordmark: tracked caps, teal→violet gradient, LiveGlyph as
+> the mark). "Flight Deck" was the design-system codename until 2026-10-15.
 
 Identity: a **precision instrument for commanding an agent fleet** — cockpit/mission-
 control DNA, calm surfaces, luminous signal accents, numeric readouts everywhere.
@@ -20,6 +23,35 @@ Dark (default):
 Light theme: same token names remapped (`--ink-0:#F6F8FA` … `--text-1:#10151C`,
 signal darkened `#0FA88F`). Components use tokens ONLY.
 
+### Meaning palette (2026-10-15)
+Colour maps to MEANING, never decoration. `--hue-*` are raw per-theme values
+(dark vivid / light AA-darkened, all ≥4.5:1 on ink surfaces); components use the
+semantic roles:
+
+| role | hue | meaning |
+|---|---|---|
+| `--c-agent` | teal | agent activity, focus, primary |
+| `--c-think` | violet | model / AI thinking, memory |
+| `--c-approval` | amber | approvals, attention, waiting on you |
+| `--c-web` | sky | browser / web |
+| `--c-connect` | magenta | connectors (MCP is fuchsia) |
+| `--c-money` | lime | success, done, cost/tokens |
+| `--c-error` | coral | errors |
+
+Tool categories (`ToolCategory` in `chat/parts/tool-meta.ts`) have `--cat-*` tokens:
+screen teal, browser sky, rdp indigo, shell lime, files peach, connector magenta,
+mcp fuchsia, memory violet, schedule gold, human amber. Any element with
+`data-cat="<category>"` exposes its hue as `--cat`. **`<CategoryTile cat>`**
+(`components/ui/category-tile.tsx`) is the one way to show a category: a rounded-
+square Phosphor-duotone tile tinted by `--cat`, with an `active` sheen while
+running. Used by trace cards, the rail activity log + stats, the sidebar chat rows,
+composer capability chips, landing suggestions and the minimised dock.
+
+Surfaces: `--glass`, `--glass-strong`, `--glass-line`, `--glass-hi` give translucent
+panels with a fine top highlight (rails, topbar, panels, composer). The shell carries
+a static **aurora mesh** (`--aurora-1..3`, three faint radial glows) — painted once,
+never animated.
+
 ## Typography
 - Display/headings: **Space Grotesk** (600/500) — tracking -1%.
 - UI/body: **Instrument Sans** (400/500) — 14px base, 1.55 line-height.
@@ -27,8 +59,23 @@ signal darkened `#0FA88F`). Components use tokens ONLY.
   token & cost counters always mono. Self-host via `next/font` (no CDN).
 
 ## Layout
-- App grid: `64px topbar / [288px left | 1fr chat | 360px right]`; sidebars collapse
-  (left → icon rail 56px, right → floating status pill). Chat column max 760px.
+- App grid (2026-10-15): `[left rail, full height] [64px glass topbar / centre]
+  [right rail, full height]`. `.body` is `display: contents`, so each route's
+  `<main>` and `<aside>` land straight in the grid; the topbar spans the centre only.
+- **Left rail** (288px, fixed): brand + prominent New chat (⌘J), search, then the
+  ONLY scroller — Pinned / Today / Yesterday / Previous 7 days / Older with sticky
+  frosted headers; each row = category tile + status dot + title + status/relative
+  time, hover actions pin / rename / delete. Fixed bottom dock: agent-computer
+  mini-card, Settings, owner avatar + sign out. Collapses to a 56px icon rail
+  (toggle or ⌘B; `fd.layout.leftCollapsed` in localStorage). 820–1100px is always
+  the icon rail; <820px it is the history drawer.
+- **Right rail** (360px, fixed): sticky header (computer identity + sliding-underline
+  tabs) and independent scroll body. **Minimise** (button or ⌘.) folds it to a 56px
+  dock of live indicators — run-state LiveGlyph, waiting badge, cost-today count-up,
+  computer dot — each click expands; persisted as `fd.layout.rightMinimized`.
+  The content stays mounted (inert) so the live view keeps its connection.
+  <1100px it remains the drawer (minimise does not apply).
+- Chat column max 760px.
   The right rail is **tabbed** (`Mission | Library | Computer`) — see §Reference
   reading; 360px cannot hold those three stacked.
 - Radii: panels 14px, controls 10px, pills 999. Borders 1px `--line`; elevation via
@@ -52,12 +99,27 @@ signal darkened `#0FA88F`). Components use tokens ONLY.
 - **Step chips** in chat: tool icon + name + ms + status dot; expand to args/result;
   screenshots as thumbnails → lightbox. **Collapsed behind the activity line by
   default** — the line is the summary, the chips are the audit trail.
-- **Computer panel**: right-sidebar card with live VNC thumbnail (iframe, pointer-
-  events none in Watch), status dot, buttons `Watch` / `Take control` (amber,
-  requires hold-to-confirm 600ms) / `Expand`. Expanded = full-height sheet over chat.
+- **Computer panel**: right-sidebar card with the live viewer iframe, which always
+  receives input directly — the viewer is view-only by default and has its own
+  Take control pill. The panel toolbar is only status + Reload / Expand / Open in
+  new tab. Expanded = full-height sheet over chat.
 
 ## Motion
-- Durations: micro 120ms, standard 200ms, panels 280ms spring (stiffness 320/d 32).
+- Durations: micro 120ms, standard 200ms, panels 280ms; `--dur-spring` 420ms with
+  `--ease-spring` (a CSS `linear()` spring — compositor-only, no JS).
+- Vocabulary: spring lift on hover / scale-press on buttons, cards and chips;
+  staggered `rise-in` entrances (`--i` × `--stagger` 28ms, capped) for sidebar rows,
+  log rows, trace steps, suggestions; `CountUp` on every meter; shimmer across
+  running trace cards and tiles; two-tone progress sweep on the composer while a
+  run is live; sliding thumb (mode switch) and sliding underline (rail tabs);
+  rails slide/resize on the spring; toasts and badges pop.
+- LiveGlyph phase colours: thinking violet (teal inner arc) → tool teal (sky arc)
+  → approval amber → done lime → error coral. Run-trace borders follow the phase.
+- Transform/opacity only for anything that loops. The rail width change is the one
+  layout animation (280ms, once per toggle).
+- Reduced motion: one global guard in `globals.css` honours the OS setting (unless
+  Settings forces motion on) and `data-motion="reduce"`; `useReducedMotion()` reads
+  both, so count-ups and Motion springs stop too.
 - Splash/boot after login: ink screen → LiveGlyph draws in → readouts "self-test"
   count up → grid slides in staggered 60ms. Total ≤ 1.6 s, skippable, once per session.
 - Streaming text: no per-char fade (perf); cursor block in `--signal`.
@@ -81,7 +143,7 @@ rings always visible; SR announcements for run state changes.
 
 ## Reference reading — Grok Bot (`docs/reference/grok-0*.png`, owner-supplied 2026-10-15)
 
-Not a style to copy; a set of structural answers worth adopting. Flight Deck keeps
+Not a style to copy; a set of structural answers worth adopting. LHOS keeps
 its own cockpit identity (dark ink, mono readouts, Agent/Manage, edge-light).
 
 **Adopt:**
@@ -111,7 +173,7 @@ its own cockpit identity (dark ink, mono readouts, Agent/Manage, edge-light).
   Phase 4 connectors follow this rather than a plain list.
 
 **Reject:**
-- Right-aligned filled user bubbles. Flight Deck keeps both roles left-aligned on
+- Right-aligned filled user bubbles. LHOS keeps both roles left-aligned on
   the 760px column with a role gutter — long technical turns read better, and the
   transcript stays scannable.
 - Per-bot avatars and labels. Single-owner, single agent; the identity block
