@@ -3,6 +3,20 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — Snapshot cleanup (Manage -> Snapshots)
+- Cleanup panel replaces the locked "Prune snapshots" checkbox: keep-N stepper, Preview
+  (count, GB, list with status, kept roots), Move to quarantine (hold-to-confirm), and a
+  quarantine card with Verify desktop (restarts `e2b-desktop-vnc`, polls services +
+  `bridge.desktop()`), Delete permanently (hold + typed DELETE, gated on Verify or an
+  explicit "verified manually" box) and Restore. Pre-existing quarantines are listed too.
+  Disk free before/after from `bridge.stats()`.
+- Builds table: per-row badge kept-root / kept-ancestor / deletable / in-flight from the plan.
+- API (owner-only, `hostAction` rate limit, audited): `GET snapshots/plan|quarantines`,
+  `POST snapshots/quarantine`, `POST snapshots/quarantines/[name]/{restore,purge}`.
+  Bridge 409 refusals now map to `conflict` and are surfaced verbatim; no route accepts
+  build ids, so nothing can bypass the bridge plan.
+- Pure logic + zod shapes in `src/lib/manage/snapshot-cleanup.ts` (14 unit tests).
+
 ## 2026-10-15 — Wave 2: ops + loose ends
 - LHOS approve/reject: `decideApproval` timeout 15 s -> 45 s; on a timeout it
   re-reads `/api/approvals` and reports success if the record is gone
