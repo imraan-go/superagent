@@ -66,12 +66,12 @@
 - [ ] Memories: extraction + pgvector recall + Memories viewer in Settings→Data
 
 ## Phase 5 — Manage mode
-- [ ] Host bridge with allowlist (MANAGE_TAB.md §Host bridge) + audit table
-- [ ] Overview: service cards + restart, desktop sleep/wake/new, host stats
-- [ ] Activity feed + reports browser (rendered daily .md) + generate-now
-- [ ] Persist file manager + snapshots (read-only prune) + schedules/maintenance
-- [ ] System settings: masked config viewer, rotate-auth flow, lock-ip, panel ops
-- [ ] Logs viewer (journalctl follow via SSE)
+- [x] Host bridge with allowlist (MANAGE_TAB.md §Host bridge) + audit table
+- [x] Overview: service cards + restart, desktop sleep/wake/new, host stats
+- [x] Activity feed + reports browser (rendered daily .md) + generate-now
+- [x] Persist file manager + snapshots (read-only prune) + schedules/maintenance
+- [x] System settings: masked config viewer, rotate-auth flow, audit log (lock-ip form and panel DB backup-now deferred: bridge has no endpoint)
+- [x] Logs viewer (journalctl follow via SSE)
 
 ## Phase 6 — Polish & ship
 - [ ] Command palette (⌘K), keyboard map, shortcut sheet (?)
