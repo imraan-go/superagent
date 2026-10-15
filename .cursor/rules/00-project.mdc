@@ -1,0 +1,43 @@
+---
+description: Core project context — always applied
+alwaysApply: true
+---
+
+# tj-lhos-panel — core rules
+
+You are building a **single-user personal super-agent dashboard** ("Grok-style")
+on **Next.js 16 (App Router, TypeScript)** — frontend **and** backend in one app,
+Dockerized, fronted by the existing Caddy on the host.
+
+## Before writing any code
+- Read `docs/CONTEXT.md` (master context), `TODO.md` (current phase), `CHANGELOG.md`.
+- The backend integrates with an existing, running system — **do not mock it**:
+  - LHOS REST API + MCP server: see `docs/API_REFERENCE.md`, `docs/MCP_REFERENCE.md`
+  - Endpoints base: `https://mcp.hostx.h22t.com` (REST under `/api/*`, MCP at `/mcp`)
+  - Live VNC desktop: `https://vnc.hostx.h22t.com/` (see `docs/INTEGRATIONS.md` §VNC)
+
+## Stack decisions (fixed — do not re-litigate)
+- Next.js 16 App Router + TypeScript strict; Node runtime for API routes (not edge).
+- DB: **PostgreSQL + pgvector** via Drizzle ORM. Schema in `docs/ARCHITECTURE.md`.
+- Realtime: Server-Sent Events (SSE) for chat streaming + usage ticker; no socket.io.
+- State: Zustand (client), TanStack Query (server cache).
+- Styling: Tailwind v4 + CSS variables from `docs/DESIGN_SYSTEM.md`. No component
+  library theme defaults — we have our own design language.
+- Animation: Motion (framer-motion successor) + CSS; sound via small WebAudio helper.
+- Auth: single-owner credential login (email+password+TOTP optional) with iron-session
+  or Auth.js Credentials — owner only, registration disabled.
+- Global settings → `.env` / `.env.local`; runtime-editable settings → DB + JSON
+  schema validation from `config/settings.schema.json`; model list → `config/models.json`.
+
+## Hard rules
+- **Never hardcode tokens/keys.** All secrets come from env. `.env.local` is produced
+  by `scripts/sync-env.sh`. If an env var is missing, fail loudly with a clear message.
+- **The browser never receives LHOS/vendor API keys.** All vendor + LHOS calls go
+  through Next.js API routes (`/app/api/*`).
+- Reusable components live in `src/components/ui/*`; never duplicate a pattern twice —
+  extract on second use.
+- Every feature you finish: tick it in `TODO.md` and add a line to `CHANGELOG.md`.
+- Irreversible agent actions (post/send/pay/delete) must round-trip the **approval
+  system** (`docs/skills/skill-approvals-hitl.md`). Never auto-approve.
+- Keep LHOS pace/rate-limits: this platform does plain automation of the owner's own
+  accounts; do not build anti-detection / bot-evasion behavior of any kind.

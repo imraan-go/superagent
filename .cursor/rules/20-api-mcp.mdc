@@ -1,0 +1,38 @@
+---
+description: How to call the LHOS agent server (REST + MCP) and model vendors
+globs: ["src/server/**", "src/app/api/**", "src/lib/**"]
+alwaysApply: false
+---
+
+# Backend integration rules
+
+## LHOS agent server (the "computer")
+- Base URL: env `LHOS_BASE_URL` (prod: `https://mcp.hostx.h22t.com`).
+- Auth: `Authorization: Bearer ${LHOS_MCP_TOKEN}` (env; set by scripts/sync-env.sh).
+- REST surface (full detail: docs/API_REFERENCE.md):
+  - `GET  /api/tools` → tool catalog `[{name, description, input_schema}]`
+  - `POST /api/tools/<name>` → execute tool, JSON body = args
+  - `GET  /api/capabilities` | `/api/events?date=&limit=` | `/api/report?date=` | `/api/approvals`
+- MCP endpoint `POST /mcp` (Streamable HTTP, same bearer) — used by the orchestrator
+  loop via `@modelcontextprotocol/sdk` client. Prefer REST for dashboard data,
+  MCP for the agent loop.
+- All LHOS calls go through one typed client: `src/server/lhos/client.ts`
+  (timeouts, retries on 5xx only, zod-parsed responses, usage/latency logging).
+- Tool results can contain base64 images — persist to `files` table + object dir,
+  pass URLs to the UI, never inline megabytes into chat state.
+
+## Model vendors (orchestrator brains)
+- Registry: `config/models.json` (OpenAI, Anthropic, OpenRouter). Keys from env only:
+  `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`.
+- One adapter interface `ModelAdapter` (stream, toolCall, countUsage) per vendor in
+  `src/server/models/*`; selection + per-model pricing comes from the registry.
+- Every completion writes a `usage_events` row (tokens in/out, cached, cost USD,
+  vendor, model, chat_id, purpose) — the live billing ticker reads this via SSE.
+
+## Agent orchestration
+- The agent loop runs **server-side** (`src/server/agent/loop.ts`): plan → tool call
+  (LHOS MCP) → observe → repeat, streaming step events to the client over SSE.
+- Steps are persisted (`runs`, `run_steps`) so a refresh reattaches to a live run.
+- Approval checkpoints: when LHOS returns `awaiting_approval` or policy requires it,
+  pause the run, emit `approval_required`, resume only after owner action.
+- Takeover: `request_takeover` → surface the embedded VNC panel immediately.

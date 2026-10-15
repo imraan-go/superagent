@@ -1,0 +1,31 @@
+---
+description: Design language — apply when touching UI, styles, layout, motion, sound
+globs: ["**/*.tsx", "**/*.css"]
+alwaysApply: false
+---
+
+# Design rules (full spec: docs/DESIGN_SYSTEM.md)
+
+The look is **"Flight Deck"**: Grok's layout familiarity, but a distinct identity —
+precision-instrument UI, not another dark SaaS clone. Screenshots the owner attaches
+are *layout references only*; never copy their visual style 1:1.
+
+- Tokens only. Colors/space/radii/type come from CSS variables defined in
+  `src/styles/tokens.css` (spec in docs/DESIGN_SYSTEM.md). Never use raw hex in components.
+- Type: Space Grotesk (display), Instrument Sans (UI/body), JetBrains Mono (data/code).
+  Numeric readouts (tokens, cost, latency) are ALWAYS mono with tabular-nums.
+- Dark-first (`#0B0D10` ink base), light theme supported via the same tokens.
+- Signature accents: `--signal` (electric teal #2DE2C5) for agent activity,
+  `--amber` (#FFB224) for approvals/attention, `--danger` (#FF5D5D). One accent per view.
+- Motion: 120–240ms ease-out for UI, springs for panels; agent "thinking" uses the
+  LiveGlyph reactive loader (docs/DESIGN_SYSTEM.md §Motion) in sidebar edges, chat and
+  prompt bar. Respect `prefers-reduced-motion`.
+- Sound FX: tiny WebAudio cues (send, done, approval needed, error) via `useSound()`;
+  master toggle in Settings; default volume 0.3.
+- Notifications: in-app toast stack (bottom-right) + Chrome `Notification` API for
+  approval-needed / run-finished when tab unfocused (permission requested in Settings).
+- Icons: Phosphor icons (duotone for nav, regular inline). No emoji in chrome UI.
+- Every interactive element: visible focus ring (`--signal` 2px offset), hover state,
+  pressed state, disabled state. Keyboard navigable.
+- Loading: skeletons shaped like final content (never spinners-in-the-void), plus the
+  splash boot sequence on login (§Splash).

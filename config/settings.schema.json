@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "tj-lhos-panel runtime settings",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "agent": {
+      "type": "object",
+      "properties": {
+        "systemPrompt": { "type": "string", "maxLength": 20000 },
+        "defaultModel": { "type": "string" },
+        "maxSteps": { "type": "integer", "minimum": 1, "maximum": 200, "default": 40 },
+        "maxCostUsdPerRun": { "type": "number", "minimum": 0, "default": 2 },
+        "pace": { "enum": ["fast", "careful"], "default": "careful" },
+        "toolAllowlist": { "type": "array", "items": { "type": "string" } },
+        "memoryRecallTopK": { "type": "integer", "minimum": 0, "maximum": 32, "default": 8 }
+      }
+    },
+    "approvals": {
+      "type": "object",
+      "properties": {
+        "checkpointPatterns": {
+          "type": "array", "items": { "type": "string" },
+          "default": ["send", "post", "publish", "pay", "delete", "trash", "submit"]
+        },
+        "notifyChrome": { "type": "boolean", "default": true },
+        "autoExpandComputerOnTakeover": { "type": "boolean", "default": true }
+      }
+    },
+    "appearance": {
+      "type": "object",
+      "properties": {
+        "theme": { "enum": ["dark", "light", "system"], "default": "dark" },
+        "reducedMotion": { "enum": ["system", "on", "off"], "default": "system" },
+        "density": { "enum": ["comfortable", "compact"], "default": "comfortable" }
+      }
+    },
+    "sound": {
+      "type": "object",
+      "properties": {
+        "master": { "type": "boolean", "default": true },
+        "volume": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.3 },
+        "events": {
+          "type": "object",
+          "properties": {
+            "send": { "type": "boolean", "default": true },
+            "done": { "type": "boolean", "default": true },
+            "approval": { "type": "boolean", "default": true },
+            "error": { "type": "boolean", "default": true },
+            "takeover": { "type": "boolean", "default": true }
+          }
+        }
+      }
+    },
+    "notifications": {
+      "type": "object",
+      "properties": {
+        "chrome": { "type": "boolean", "default": false },
+        "events": { "type": "array", "items": { "enum": ["approval", "runDone", "takeover", "serviceDown"] },
+          "default": ["approval", "runDone", "takeover", "serviceDown"] }
+      }
+    },
+    "connectors": {
+      "type": "object",
+      "properties": {
+        "composioEnabled": { "type": "boolean", "default": false },
+        "pipedreamEnabled": { "type": "boolean", "default": false }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "properties": {
+        "dailyBudgetUsd": { "type": "number", "minimum": 0, "default": 10 },
+        "warnAtPct": { "type": "integer", "minimum": 1, "maximum": 100, "default": 80 }
+      }
+    },
+    "manage": {
+      "type": "object",
+      "properties": {
+        "statsPollSeconds": { "type": "integer", "minimum": 2, "maximum": 60, "default": 5 },
+        "confirmHoldMs": { "type": "integer", "minimum": 300, "maximum": 2000, "default": 600 }
+      }
+    }
+  }
+}

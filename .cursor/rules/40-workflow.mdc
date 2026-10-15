@@ -1,0 +1,23 @@
+---
+description: Working discipline — context, memory, changelog upkeep
+alwaysApply: true
+---
+
+# Workflow rules (how to work in this repo)
+
+1. **Session start:** read `TODO.md` (find current phase), skim `CHANGELOG.md` tail,
+   and open the doc(s) the current task links to. If anything contradicts the code,
+   the code wins — then fix the doc.
+2. **Session end / after each completed item:** update `TODO.md` checkboxes,
+   append to `CHANGELOG.md` (`## YYYY-MM-DD — <summary>` + bullets), and record any
+   new decisions in `docs/CONTEXT.md` §Decisions. Future AIs rely on these.
+3. **Skills:** when a task matches a file in `docs/skills/`, follow it exactly.
+   When you solve something non-obvious that will recur, add a new skill file
+   (same format: Goal / Steps / Gotchas) and link it from docs/CONTEXT.md.
+4. One feature per commit where possible. Conventional commits (`feat:`, `fix:`,
+   `ui:`, `docs:`, `chore:`). Do not commit `.env.local`, `node_modules`, uploads.
+5. Verify before claiming done: run `npm run lint && npm run typecheck`; for UI,
+   check both themes + mobile width; for API routes, hit them once (curl or test).
+6. Ask the owner (don't guess) only for: product scope changes, anything spending
+   money, anything irreversible. Everything else: decide, note it in CONTEXT.md.
+7. New ideas out of current scope → `FUTURE_SCOPE.md`, not the codebase.
