@@ -49,6 +49,26 @@ All notable changes to tj-lhos-panel. Newest first. Format:
   blocks (newest 3 kept per call); other files become text references (small
   text files inlined). Tool screenshots are saved to `files` (origin=tool).
 - Library tab: grid of this chat's files with lightbox.
+## 2026-10-15 — Settings suite; Phase 3 complete
+- Settings store (`src/server/settings/store.ts`, zod mirror in `src/lib/settings.ts`
+  kept in lockstep with `config/settings.schema.json`, which gains `data`,
+  `models` and `usage.archivedAt`). `GET /api/settings`, `GET|PUT
+  /api/settings/<section>` (body = the section JSON, defaults applied; PUT
+  merges a partial patch). Approvals can only get stricter (defaults re-added
+  server-side).
+- Models: write-only vendor keys (`PUT|DELETE /api/settings/keys/<vendor>`,
+  sealed, last4 only, `POST …/test` hits a free metadata endpoint),
+  enable/disable + price overrides + default/fallback (`/api/settings/models`).
+  `/api/models` and new-chat default honour overrides and stored keys.
+- Usage tab: grouped/sortable table, date range, totals, daily budget meter +
+  warning; `/api/usage/report`, `/api/usage/export` (CSV).
+- Agent loop reads Settings per run: maxSteps, maxCostUsdPerRun, tool
+  allowlist, owner system prompt (appended to base rules), checkpoint
+  patterns (bare verbs match whole words). Pace change calls LHOS `set_pace`
+  (ADR-08 mapping).
+- Appearance (reduced motion, density via `<html data-*>`), Notifications &
+  Sound, Data (chat JSON export `/api/data/export`, retention days), Danger
+  zone (archive usage mark, sign out everywhere via session epoch).
 
 ## 2026-10-15 — Live spend ticker; Phase 1 complete
 - `/api/usage/live` (SSE, owner session): pushes today's totals — and one

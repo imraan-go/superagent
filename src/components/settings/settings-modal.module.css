@@ -45,6 +45,10 @@
   color: var(--text-1);
 }
 
+.navItemDanger {
+  color: var(--danger);
+}
+
 .content {
   padding: var(--sp-6);
   overflow-y: auto;

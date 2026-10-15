@@ -54,11 +54,11 @@
       (pushing files to the agent computer via LHOS not done)
 
 ## Phase 3 — Settings suite
-- [ ] Settings modal w/ left tabs; settings store (DB + schema validation)
-- [ ] Models tab (keys encrypted, enable/disable, default, pricing override)
-- [ ] Usage view (sortable table, CSV export, daily budget warn)
-- [ ] Agent tab (system prompt, max steps/cost, tool allowlist, pace)
-- [ ] Approvals & takeover policy tab · Appearance · Notifications & Sound · Data
+- [x] Settings modal w/ left tabs; settings store (DB + schema validation)
+- [x] Models tab (keys encrypted, enable/disable, default, pricing override)
+- [x] Usage view (sortable table, CSV export, daily budget warn)
+- [x] Agent tab (system prompt, max steps/cost, tool allowlist, pace)
+- [x] Approvals & takeover policy tab · Appearance · Notifications & Sound · Data
 
 ## Phase 4 — Automation & connectors
 - [ ] Schedules tab ↔ LHOS schedule_* + panel-native scheduled prompts

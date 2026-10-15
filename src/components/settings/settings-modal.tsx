@@ -1,125 +1,104 @@
 "use client";
 
 import { useState } from "react";
+import type { ComponentType } from "react";
 import {
-  Bell,
-  Desktop,
+  ChartBar,
   Gear,
   HardDrives,
   Palette,
   Robot,
+  ShieldCheck,
+  SpeakerHigh,
   Sparkle,
+  Warning,
 } from "@phosphor-icons/react/dist/ssr";
-import { Modal, SegmentedSwitch, SettingRow, SettingSection } from "@/components/ui";
-import { useTheme } from "@/hooks/use-theme";
-import type { ThemePreference } from "@/lib/theme";
+import { Modal } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import styles from "./settings-modal.module.css";
+import { AgentTab } from "./tabs/agent-tab";
+import { AppearanceSync, AppearanceTab } from "./tabs/appearance-tab";
+import { ApprovalsTab } from "./tabs/approvals-tab";
+import { DangerTab } from "./tabs/danger-tab";
+import { DataTab } from "./tabs/data-tab";
+import { ModelsTab } from "./tabs/models-tab";
+import { NotificationsTab } from "./tabs/notifications-tab";
+import { UsageTab } from "./tabs/usage-tab";
 
 /**
- * Settings shell. The left rail and SettingRow layout come from the Grok Bot
- * reference; only Appearance is wired today. Other tabs stay as honest
- * placeholders so the owner can see the map without a half-built form.
+ * Settings: left rail + one component per tab. Each tab owns its data
+ * (react-query, keyed `["settings", <section>]`), so adding a tab is one entry
+ * in `TABS` and one file under `./tabs`.
  */
-type Tab =
-  | "appearance"
-  | "models"
-  | "agent"
-  | "computer"
-  | "notifications"
-  | "data";
-
-const TABS: Array<{
-  id: Tab;
+interface SettingsTab {
+  id: string;
   label: string;
   icon: typeof Palette;
-}> = [
-  { id: "appearance", label: "Appearance", icon: Palette },
-  { id: "models", label: "Models", icon: Sparkle },
-  { id: "agent", label: "Agent", icon: Robot },
-  { id: "computer", label: "Computer", icon: Desktop },
-  { id: "notifications", label: "Notifications", icon: Bell },
-  { id: "data", label: "Data", icon: HardDrives },
+  Component: ComponentType;
+}
+
+const TABS: SettingsTab[] = [
+  { id: "models", label: "Models", icon: Sparkle, Component: ModelsTab },
+  { id: "usage", label: "Usage", icon: ChartBar, Component: UsageTab },
+  { id: "agent", label: "Agent", icon: Robot, Component: AgentTab },
+  { id: "approvals", label: "Approvals & Takeover", icon: ShieldCheck, Component: ApprovalsTab },
+  // ── Phase 4 tabs go here: Schedules · Triggers · Connectors · Memories ──
+  { id: "appearance", label: "Appearance", icon: Palette, Component: AppearanceTab },
+  { id: "notifications", label: "Notifications & Sound", icon: SpeakerHigh, Component: NotificationsTab },
+  { id: "data", label: "Data", icon: HardDrives, Component: DataTab },
+  { id: "danger", label: "Danger zone", icon: Warning, Component: DangerTab },
 ];
 
 export function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [tab, setTab] = useState<Tab>("appearance");
+  const [tab, setTab] = useState<string>(TABS[0]!.id);
   const active = TABS.find((t) => t.id === tab) ?? TABS[0]!;
+  const Active = active.Component;
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={
-        <span className={styles.title}>
-          <Gear size={16} weight="duotone" aria-hidden />
-          Settings
-        </span>
-      }
-      wide
-      bodyFlush
-    >
-      <div className={styles.layout}>
-        <nav className={styles.nav} aria-label="Settings sections">
-          {TABS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className={cn(styles.navItem, tab === item.id && styles.navItemActive)}
-                aria-current={tab === item.id ? "page" : undefined}
-                onClick={() => setTab(item.id)}
-              >
-                <Icon size={16} weight={tab === item.id ? "fill" : "regular"} />
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
+    <>
+      <AppearanceSync />
+      <Modal
+        open={open}
+        onClose={onClose}
+        title={
+          <span className={styles.title}>
+            <Gear size={16} weight="duotone" aria-hidden />
+            Settings
+          </span>
+        }
+        wide
+        bodyFlush
+      >
+        <div className={styles.layout}>
+          <nav className={styles.nav} aria-label="Settings sections">
+            {TABS.map((item) => {
+              const Icon = item.icon;
+              const selected = tab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={cn(
+                    styles.navItem,
+                    selected && styles.navItemActive,
+                    item.id === "danger" && styles.navItemDanger,
+                  )}
+                  aria-current={selected ? "page" : undefined}
+                  onClick={() => setTab(item.id)}
+                >
+                  <Icon size={16} weight={selected ? "fill" : "regular"} aria-hidden />
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
 
-        <div className={styles.content}>
-          {tab === "appearance" ? <AppearanceTab /> : <ComingSoon title={active.label} />}
+          <div className={styles.content}>
+            {/* Mounted only while open so closed Settings costs no requests. */}
+            {open && <Active />}
+          </div>
         </div>
-      </div>
-    </Modal>
-  );
-}
-
-function AppearanceTab() {
-  const { theme, setTheme } = useTheme();
-
-  return (
-    <SettingSection title="Appearance">
-      <SettingRow
-        label="Theme"
-        description="Follow the system, or lock the deck to ink or paper."
-      >
-        <SegmentedSwitch<ThemePreference>
-          label="Theme"
-          size="sm"
-          value={theme}
-          onChange={setTheme}
-          options={[
-            { value: "dark", label: "Dark" },
-            { value: "light", label: "Light" },
-            { value: "system", label: "System" },
-          ]}
-        />
-      </SettingRow>
-    </SettingSection>
-  );
-}
-
-function ComingSoon({ title }: { title: string }) {
-  return (
-    <SettingSection title={title}>
-      <SettingRow
-        label={`${title} arrives in a later phase`}
-        description="The layout is fixed so this tab will fill in without a redesign."
-      >
-        <span className={styles.soon}>Soon</span>
-      </SettingRow>
-    </SettingSection>
+      </Modal>
+    </>
   );
 }
