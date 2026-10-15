@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { db } from "@/server/db";
 import { audit } from "@/server/db/schema";
+import { redactSecrets, redactValue } from "@/server/lib/redact";
 import { AppError } from "@/server/lib/errors";
 import { lhos, resultText } from "@/server/lhos/client";
 import { MANAGED_UNITS } from "@/server/manage/bridge";
@@ -71,7 +72,8 @@ export async function recordAudit(
 ): Promise<void> {
   await db
     .insert(audit)
-    .values({ action, detail: detail as object, ok, result: result.slice(0, 2000) })
+    // Defence in depth: signed/share/trigger URLs never land in the audit log.
+    .values({ action, detail: redactValue(detail) as object, ok, result: redactSecrets(result).slice(0, 2000) })
     .catch(() => {});
 }
 

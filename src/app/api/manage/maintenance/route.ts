@@ -2,6 +2,7 @@ import { z } from "zod";
 import { json, ownerRoute } from "@/server/lib/route";
 import { RUNNABLE_MAINTENANCE_TASKS } from "@/server/manage/locks";
 import { auditedTool, parseBody, toolJson, toolText } from "@/server/manage/ops";
+import { enforceRateLimit } from "@/server/lib/rate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,6 +37,7 @@ const runSchema = z.object({
 });
 
 export const POST = ownerRoute(async ({ request }) => {
+  enforceRateLimit("hostAction");
   const { task, dryRun } = await parseBody(request, runSchema);
   const text = await auditedTool("maintenance.run", { task, dryRun }, () =>
     toolText("maintenance_run_now", { task, dry_run: dryRun }),

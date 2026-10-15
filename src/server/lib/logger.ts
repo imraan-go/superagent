@@ -1,4 +1,5 @@
 import "server-only";
+import { redactValue } from "./redact";
 
 /**
  * Minimal structured logger (IMPLEMENTATION_PLAN §6).
@@ -21,7 +22,9 @@ function emit(level: Level, scope: string, fields: Record<string, unknown> = {})
 
   const safe: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(fields)) {
-    safe[key] = REDACT.test(key) ? "[redacted]" : value;
+    // Key-based redaction plus value scrubbing: an error string can carry a
+    // `?token=` URL or a `Bearer …` header even under an innocent key.
+    safe[key] = REDACT.test(key) ? "[redacted]" : redactValue(value);
   }
 
   const line = JSON.stringify({

@@ -6,6 +6,7 @@ import { AppError } from "@/server/lib/errors";
 import { json, ownerRoute } from "@/server/lib/route";
 import { attachmentParts } from "@/server/files/attachments";
 import { MAX_ATTACHMENTS } from "@/lib/uploads";
+import { enforceRateLimit } from "@/server/lib/rate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,6 +33,7 @@ const bodySchema = z
  * the tab does not cancel it.
  */
 export const POST = ownerRoute<Ctx>(async ({ request, owner, ctx }) => {
+  enforceRateLimit("run");
   const { id: chatId } = await ctx.params;
   if (!z.uuid().safeParse(chatId).success) {
     throw new AppError("not_found", "That chat does not exist.");

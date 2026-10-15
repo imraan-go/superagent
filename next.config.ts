@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { DEFAULT_VNC_ORIGIN, originOf, securityHeaders } from "./src/lib/security-headers";
 
 const nextConfig: NextConfig = {
   // Docker image ships the minimal server bundle (docs/ARCHITECTURE.md §Docker).
@@ -17,12 +18,10 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/:path*",
-        headers: [
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "same-origin" },
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "Permissions-Policy", value: "camera=(), geolocation=(), payment=()" },
-        ],
+        headers: securityHeaders({
+          dev: process.env.NODE_ENV !== "production",
+          vncOrigin: originOf(process.env.LHOS_VNC_URL, DEFAULT_VNC_ORIGIN),
+        }),
       },
       {
         // SSE must never be buffered by an intermediate proxy.

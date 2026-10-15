@@ -3,6 +3,16 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — Security hardening before go-live
+- Agent loop enforces the tool allowlist server-side and refuses vault, trigger, schedule and approval tools.
+- Approval checkpoints match canonical tool names, and any http-style tool that writes is gated.
+- SSRF guard on MCP, Pipedream and custom-connector URLs, with no redirects followed.
+- Tool results, files and memories are wrapped as untrusted data; third-party tool descriptions are sanitised.
+- Signed URLs and bearer values are redacted from model context, audit rows and logs.
+- Production CSP and HSTS headers; login and webhook limiters use the proxy-appended IP; limiter memory is bounded.
+- Rate limits on runs, key tests, host actions and exports.
+- See docs/SECURITY_REVIEW.md; tests in tests/unit/security.test.ts.
+
 ## 2026-10-15 — Manage mode (Phase 5)
 - `/manage` is now the full admin dashboard behind a left rail: Overview (9
   service cards with hold-to-confirm restart / caddy reload, desktop card with

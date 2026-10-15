@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { invalidateExternalTools } from "@/server/connectors/external-tools";
-import { getPipedream, setPipedreamSource } from "@/server/connectors/store";
+import { assertSafeConnectorUrl, getPipedream, setPipedreamSource } from "@/server/connectors/store";
 import { env } from "@/server/env";
 import { parseBody } from "@/server/lib/body";
 import { json, ownerRoute } from "@/server/lib/route";
@@ -37,6 +37,7 @@ export const POST = ownerRoute(async ({ request }) => {
     request,
     z.object({ sourceUrl: z.url().refine((u) => u.startsWith("https://"), "Must be an https URL.").nullable() }),
   );
+  if (body.sourceUrl) await assertSafeConnectorUrl(body.sourceUrl, { requireHttps: true });
   await setPipedreamSource(body.sourceUrl);
   invalidateExternalTools();
   return json({ ok: true });

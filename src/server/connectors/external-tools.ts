@@ -1,8 +1,10 @@
 import "server-only";
 import { requiresApproval } from "@/server/agent/policy";
 import type { ApprovalDecision } from "@/server/agent/policy";
+import { sanitizeSchema, sanitizeToolDescription } from "@/server/agent/guard";
 import { AppError } from "@/server/lib/errors";
 import { logger } from "@/server/lib/logger";
+import { assertPublicUrl } from "@/server/lib/ssrf";
 import type { AdapterTool } from "@/server/models/types";
 import { ComposioClient } from "./composio-client";
 import { McpClient } from "./mcp-client";
@@ -75,8 +77,8 @@ async function build(): Promise<Cache> {
           add(
             {
               name: namespacedTool("composio", tk, t.slug.replace(new RegExp(`^${tk}_`, "i"), "")),
-              description: `[Composio · ${tk}] ${t.description ?? t.name ?? t.slug}`.slice(0, 1000),
-              inputSchema: t.input_parameters ?? { type: "object", properties: {} },
+              description: `[Composio · ${tk}] ${sanitizeToolDescription(t.description ?? t.name ?? t.slug)}`,
+              inputSchema: (sanitizeSchema(t.input_parameters) as AdapterTool["inputSchema"] | undefined) ?? { type: "object", properties: {} },
             },
             { kind: "composio", slug: t.slug },
           );
@@ -96,8 +98,8 @@ async function build(): Promise<Cache> {
             add(
               {
                 name: namespacedTool("mcp", server.name, t.name),
-                description: `[MCP · ${server.name}] ${t.description ?? t.name}`.slice(0, 1000),
-                inputSchema: t.inputSchema ?? { type: "object", properties: {} },
+                description: `[MCP · ${server.name}] ${sanitizeToolDescription(t.description ?? t.name)}`,
+                inputSchema: (sanitizeSchema(t.inputSchema) as AdapterTool["inputSchema"] | undefined) ?? { type: "object", properties: {} },
               },
               { kind: "mcp", serverId: server.id, tool: t.name, readOnly: t.annotations?.readOnlyHint === true },
             );
@@ -148,8 +150,11 @@ export { isExternalToolName };
  * Approval decision for external tools: the default policy (send/post/delete…)
  * plus `pipedream__emit`, which always leaves the box.
  */
-export function externalApproval(name: string): ApprovalDecision {
-  const base = requiresApproval(name);
+export function externalApproval(
+  name: string,
+  opts: { extraPatterns?: readonly string[]; args?: Record<string, unknown> } = {},
+): ApprovalDecision {
+  const base = requiresApproval(name, { extraPatterns: opts.extraPatterns ?? [] }, opts.args);
   if (base.required) return base;
   if (name === PIPEDREAM_EMIT) return { required: true, reason: "emits an event to an external system" };
   return base;
@@ -185,11 +190,13 @@ export async function executeExternalTool(
     case "pipedream": {
       const pd = await getPipedream();
       if (!pd) throw new AppError("bad_request", "No Pipedream source URL is configured.");
+      await assertPublicUrl(pd.url, { requireHttps: true });
       const res = await fetch(pd.url, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(args.event ?? args),
         signal: AbortSignal.timeout(30_000),
+        redirect: "error",
       });
       const body = (await res.text()).slice(0, 2000);
       return { ok: res.ok, text: `HTTP ${res.status} from ${pd.host}${body ? `: ${body}` : ""}`, ms: Date.now() - started };

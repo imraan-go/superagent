@@ -5,6 +5,7 @@ import { webhooks } from "@/server/db/schema";
 import { unseal } from "@/server/lib/crypto";
 import { logger } from "@/server/lib/logger";
 import { json } from "@/server/lib/route";
+import { clientIp } from "@/server/auth/rate-limit";
 import { fireWebhook } from "@/server/automation/webhooks";
 import {
   ReplayGuard,
@@ -41,7 +42,7 @@ const deny = (status: number, code: string, message: string) =>
 
 export async function POST(request: Request, ctx: Ctx): Promise<Response> {
   const { id } = await ctx.params;
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+  const ip = clientIp(request.headers);
 
   if (!perIp.allow(ip)) return deny(429, "rate_limited", "Too many requests.");
   if (!z.uuid().safeParse(id).success) return deny(404, "not_found", "Unknown webhook.");

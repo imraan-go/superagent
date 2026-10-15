@@ -2,6 +2,7 @@ import { asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/server/db";
 import { chats, messages } from "@/server/db/schema";
 import { ownerRoute } from "@/server/lib/route";
+import { enforceRateLimit } from "@/server/lib/rate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +12,7 @@ export const dynamic = "force-dynamic";
  * Images are referenced by file id (ADR-07), not inlined.
  */
 export const GET = ownerRoute(async ({ owner }) => {
+  enforceRateLimit("export");
   const chatRows = await db
     .select()
     .from(chats)

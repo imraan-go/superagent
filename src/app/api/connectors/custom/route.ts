@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { callLhosJson, callLhosText } from "@/server/automation/lhos-tools";
+import { assertPublicUrl } from "@/server/lib/ssrf";
 import { parseBody } from "@/server/lib/body";
 import { json, ownerRoute } from "@/server/lib/route";
 
@@ -38,6 +39,9 @@ export const POST = ownerRoute(async ({ request }) => {
       note: z.string().trim().max(300).default(""),
     }),
   );
+  // Called from the agent computer, not this host, but a private/loopback
+  // base URL is never a legitimate REST connector.
+  await assertPublicUrl(body.baseUrl, { requireHttps: true });
   const out = await callLhosText("connector_save", {
     name: body.name,
     base_url: body.baseUrl,
