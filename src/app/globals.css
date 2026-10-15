@@ -124,6 +124,38 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* Screen-reader-only text and live regions. */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* First tab stop: jumps past the topbar and rails to the main region. */
+  .skip-link {
+    position: fixed;
+    top: var(--sp-2);
+    left: var(--sp-2);
+    z-index: var(--z-toast);
+    padding: var(--sp-2) var(--sp-4);
+    border-radius: var(--radius-control);
+    background: var(--signal);
+    color: var(--on-signal);
+    font-weight: 600;
+    text-decoration: none;
+    transform: translateY(-200%);
+  }
+
+  .skip-link:focus-visible {
+    transform: none;
+  }
+
   .text-balance {
     text-wrap: balance;
   }

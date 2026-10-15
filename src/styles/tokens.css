@@ -18,7 +18,7 @@
 
   --text-1: #e8ecf1;
   --text-2: #9aa4b2;
-  --text-3: #5f6b7a;
+  --text-3: #8592a0; /* AA on ink-0..3 (>=4.9) */
 
   /* Accents — one per view (rule 10-design) */
   --signal: #2de2c5; /* agent activity, focus, primary action */
@@ -63,28 +63,28 @@
 
   --text-1: #10151c;
   --text-2: #4d5a68;
-  --text-3: #7d8a98;
+  --text-3: #5d6977; /* AA on ink-0..3 (>=4.67) */
 
-  --signal: #0fa88f;
-  --signal-dim: #0b7a68;
-  --amber: #a96b00;
-  --amber-dim: #7d4f00;
+  --signal: #087564; /* AA text on all light surfaces (>=4.68) */
+  --signal-dim: #055a4c;
+  --amber: #8a5600; /* AA (>=5.13) */
+  --amber-dim: #5e3c00;
   --danger: #c62a2a;
   --danger-dim: #8f1f1f;
-  --ok: #1c8f4a;
+  --ok: #146c37;
   --info: #1f63c8;
 
   --on-signal: #ffffff;
   --on-amber: #ffffff;
   --on-danger: #ffffff;
 
-  --signal-wash: rgb(15 168 143 / 0.1);
-  --signal-wash-strong: rgb(15 168 143 / 0.16);
-  --amber-wash: rgb(169 107 0 / 0.1);
+  --signal-wash: rgb(8 117 100 / 0.1);
+  --signal-wash-strong: rgb(8 117 100 / 0.16);
+  --amber-wash: rgb(138 86 0 / 0.1);
   --danger-wash: rgb(198 42 42 / 0.08);
 
-  --halo: 0 0 20px rgb(15 168 143 / 0.16);
-  --halo-amber: 0 0 20px rgb(169 107 0 / 0.14);
+  --halo: 0 0 20px rgb(8 117 100 / 0.16);
+  --halo-amber: 0 0 20px rgb(138 86 0 / 0.14);
   --halo-danger: 0 0 20px rgb(198 42 42 / 0.14);
 
   --skeleton-base: #e6ebf0;

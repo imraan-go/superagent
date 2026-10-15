@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Bell } from "@phosphor-icons/react/dist/ssr";
 import { useToast } from "@/components/ui";
 import { usePending } from "@/hooks/use-pending";
@@ -23,11 +23,22 @@ export function HitlWatcher() {
   const { notify } = useDesktopNotify();
   const router = useRouter();
   const previous = useRef<PendingItem[] | undefined>(undefined);
+  const [spoken, setSpoken] = useState("");
 
   useEffect(() => {
     if (!data) return;
     const fresh = newItems(previous.current, data.items);
     previous.current = data.items;
+
+    if (fresh.length > 0) {
+      // Assertive: something is blocked on the owner. Toasts also announce, but
+      // they vanish; this region is the guaranteed SR path.
+      setSpoken(
+        fresh.length === 1
+          ? `New request waiting on you: ${fresh[0]!.prompt}`
+          : `${fresh.length} new requests waiting on you.`,
+      );
+    }
 
     for (const item of fresh.slice(0, 3)) {
       const href = item.chatId ? `/chat/${item.chatId}` : undefined;
@@ -57,13 +68,18 @@ export function HitlWatcher() {
     }
   }, [data, notify, router, sound, toast]);
 
-  return null;
+  return (
+    <p className="sr-only" role="status" aria-live="assertive" aria-atomic="true">
+      {spoken}
+    </p>
+  );
 }
 
 /** Topbar count of everything waiting on the owner. */
 export function PendingBadge() {
   const { data } = usePending();
   const router = useRouter();
+  const manage = usePathname().startsWith("/manage");
   const count = data?.count ?? 0;
   if (count === 0) return null;
 
@@ -77,7 +93,9 @@ export function PendingBadge() {
       aria-label={label}
       title={label}
       onClick={() => {
-        if (first?.chatId) router.push(`/chat/${first.chatId}`);
+        // In Manage the badge opens the HITL inbox; elsewhere the oldest chat waiting.
+        if (manage || !first?.chatId) router.push("/manage?section=hitl");
+        else router.push(`/chat/${first.chatId}`);
       }}
     >
       <Bell size={16} weight="duotone" aria-hidden />

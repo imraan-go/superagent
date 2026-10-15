@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { LiveGlyph, useToast } from "@/components/ui";
 import { PromptBar } from "@/components/chat/prompt-bar";
 import { MissionRail } from "@/components/mission/mission-rail";
+import { RailAside, RailToggle, useRailDrawer } from "@/components/mission/rail-drawer";
 import { IDLE_RUN } from "@/hooks/use-run-stream";
 import styles from "./landing.module.css";
 
@@ -24,6 +25,7 @@ export function NewChatLanding() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const drawer = useRailDrawer();
 
   const create = useMutation({
     mutationFn: async (input?: { text?: string; model?: string; fileIds?: string[] }) => {
@@ -43,7 +45,8 @@ export function NewChatLanding() {
 
   return (
     <>
-      <main className={styles.center}>
+      <main id="main" tabIndex={-1} className={styles.center}>
+        <RailToggle drawer={drawer} />
         <div className={styles.scroll}>
           <div className={styles.hero}>
             <LiveGlyph state="idle" size={56} label="" />
@@ -75,9 +78,9 @@ export function NewChatLanding() {
         />
       </main>
 
-      <aside className={styles.rail} aria-label="Mission panel">
+      <RailAside drawer={drawer}>
         <MissionRail run={IDLE_RUN} />
-      </aside>
+      </RailAside>
     </>
   );
 }

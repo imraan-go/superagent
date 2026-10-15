@@ -2,13 +2,21 @@
 
 import { Fragment, useState } from "react";
 import { CaretRight, FileText, Warning } from "@phosphor-icons/react/dist/ssr";
-import { Dot, LiveGlyph } from "@/components/ui";
+import dynamic from "next/dynamic";
+import { Dot, LiveGlyph, SkeletonText } from "@/components/ui";
 import type { ChatMessage, MessagePart } from "@/lib/messages";
 import type { RunStepView } from "@/lib/run-events";
-import { Markdown } from "./markdown";
 import { cn } from "@/lib/cn";
 import { formatBytes } from "@/lib/uploads";
 import styles from "./transcript.module.css";
+
+/**
+ * react-markdown + remark-gfm are the heaviest thing on the chat route, so they
+ * load as their own chunk. Until then a text-shaped skeleton holds the space.
+ */
+const Markdown = dynamic(() => import("./markdown").then((m) => m.Markdown), {
+  loading: () => <SkeletonText lines={3} />,
+});
 
 /**
  * The chat column. Both roles are left-aligned on one 760px measure with a role
