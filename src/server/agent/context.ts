@@ -6,7 +6,9 @@ import { lhos } from "@/server/lhos/client";
 import { logger } from "@/server/lib/logger";
 import type { AdapterMessage, AdapterPart } from "@/server/models/types";
 import type { ModelEntry } from "@/server/models/catalog";
-import type { MessagePart } from "@/lib/messages";
+import type { FilePart, MessagePart } from "@/lib/messages";
+import { formatBytes, isVisionMime } from "@/lib/uploads";
+import { getFileRow, readFileBytes } from "@/server/files/store";
 
 /**
  * Context assembly (skill-agent-loop §2), in order:
@@ -45,7 +47,7 @@ export async function buildContext(args: {
 }): Promise<AgentContext> {
   const [facts, turns] = await Promise.all([
     capabilityFacts(),
-    recentTurns(args.chatId),
+    recentTurns(args.chatId, args.model.vision),
   ]);
 
   return {
@@ -77,7 +79,7 @@ async function capabilityFacts(): Promise<string | null> {
   }
 }
 
-async function recentTurns(chatId: string): Promise<AdapterMessage[]> {
+async function recentTurns(chatId: string, vision: boolean): Promise<AdapterMessage[]> {
   const rows = await db
     .select({ role: messages.role, content: messages.content })
     .from(messages)
@@ -88,41 +90,131 @@ async function recentTurns(chatId: string): Promise<AdapterMessage[]> {
   const out: AdapterMessage[] = [];
 
   for (const row of rows.reverse()) {
-    const parts = toAdapterParts((row.content ?? []) as MessagePart[]);
+    const parts = await toAdapterParts((row.content ?? []) as MessagePart[], { vision });
     if (parts.length === 0) continue;
     // Tool results are the agent's observations; vendors expect them on the
     // user side of the conversation.
     out.push({ role: row.role === "assistant" ? "assistant" : "user", content: parts });
   }
 
+  pruneOldImages(out);
   return out;
 }
 
+/** Inline cap for small text attachments; larger ones are referenced only. */
+const INLINE_TEXT_BYTES = 16 * 1024;
+/** Only the newest N screenshots are re-sent each turn; older ones cost tokens for little value. */
+export const KEEP_RECENT_IMAGES = 3;
+
 /**
- * Translates stored message parts into adapter parts. Images are dropped here
- * rather than resolved — the files route that turns a `fileId` into bytes lands
- * in Phase 2.
+ * Translates stored message parts into adapter parts, resolving file ids to
+ * bytes. Images become image blocks only when the model supports vision;
+ * everything else is a short text reference so the model still knows the file
+ * exists.
  */
-export function toAdapterParts(parts: MessagePart[]): AdapterPart[] {
-  return parts.flatMap((part): AdapterPart[] => {
+export async function toAdapterParts(
+  parts: MessagePart[],
+  opts: { vision: boolean },
+): Promise<AdapterPart[]> {
+  const out: AdapterPart[] = [];
+  for (const part of parts) {
     switch (part.type) {
       case "text":
-        return [{ type: "text", text: part.text }];
+        out.push({ type: "text", text: part.text });
+        break;
       case "tool_use":
-        return [{ type: "tool_use", id: part.id, name: part.name, args: part.args }];
-      case "tool_result":
-        return [
-          {
-            type: "tool_result",
-            toolUseId: part.toolUseId,
-            ok: part.ok,
-            text: part.text,
-            images: [],
-          },
-        ];
-      case "image":
-        // Resolved to bytes once the files route exists (Phase 2).
-        return [];
+        out.push({ type: "tool_use", id: part.id, name: part.name, args: part.args });
+        break;
+      case "tool_result": {
+        const images = opts.vision ? await loadImages(part.images) : [];
+        out.push({
+          type: "tool_result",
+          toolUseId: part.toolUseId,
+          ok: part.ok,
+          text: part.text,
+          images,
+        });
+        break;
+      }
+      case "image": {
+        const label = part.alt ?? "image";
+        const [img] = opts.vision ? await loadImages([part.fileId]) : [];
+        out.push(
+          img
+            ? { type: "image", mime: img.mime, data_b64: img.data_b64 }
+            : {
+                type: "text",
+                text: `[Image attached: ${label} (file ${part.fileId})${
+                  opts.vision ? " - could not be loaded" : " - this model cannot view images"
+                }]`,
+              },
+        );
+        break;
+      }
+      case "file":
+        out.push({ type: "text", text: await describeFile(part) });
+        break;
     }
-  });
+  }
+  return out;
+}
+
+async function loadImages(ids: string[]): Promise<Array<{ mime: string; data_b64: string }>> {
+  const out: Array<{ mime: string; data_b64: string }> = [];
+  for (const id of ids) {
+    try {
+      const row = await getFileRow(id);
+      if (!row || !isVisionMime(row.mime)) continue;
+      const bytes = await readFileBytes(row);
+      out.push({ mime: row.mime, data_b64: bytes.toString("base64") });
+    } catch (err) {
+      logger.debug("agent", { msg: "image unavailable", id, detail: String(err) });
+    }
+  }
+  return out;
+}
+
+async function describeFile(part: FilePart): Promise<string> {
+  const head = `[File attached: ${part.name} (${part.mime}, ${formatBytes(part.bytes)}, file ${part.fileId})]`;
+  if (!part.mime.startsWith("text/") && part.mime !== "application/json") return head;
+  if (part.bytes > INLINE_TEXT_BYTES) return `${head}\n(too large to inline)`;
+  try {
+    const row = await getFileRow(part.fileId);
+    if (!row) return head;
+    const text = (await readFileBytes(row)).toString("utf8");
+    return `${head}\n<file_content>\n${text}\n</file_content>`;
+  } catch {
+    return head;
+  }
+}
+
+/**
+ * Replaces all but the newest `keep` images (in tool results and user turns)
+ * with a text note. Mutates in place; run before every model call.
+ */
+export function pruneOldImages(messages: AdapterMessage[], keep = KEEP_RECENT_IMAGES): void {
+  let seen = 0;
+  for (let m = messages.length - 1; m >= 0; m -= 1) {
+    const content = messages[m]?.content ?? [];
+    for (let p = content.length - 1; p >= 0; p -= 1) {
+      const part = content[p];
+      if (!part) continue;
+      if (part.type === "image") {
+        seen += 1;
+        if (seen > keep) content[p] = { type: "text", text: "[earlier image omitted to save tokens]" };
+      } else if (part.type === "tool_result" && part.images.length > 0) {
+        const kept: typeof part.images = [];
+        for (let i = part.images.length - 1; i >= 0; i -= 1) {
+          seen += 1;
+          if (seen <= keep) kept.unshift(part.images[i]!);
+        }
+        const dropped = part.images.length - kept.length;
+        content[p] = {
+          ...part,
+          images: kept,
+          text: dropped > 0 ? `${part.text}\n[${dropped} earlier screenshot(s) omitted to save tokens]` : part.text,
+        };
+      }
+    }
+  }
 }

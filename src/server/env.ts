@@ -44,6 +44,9 @@ const schema = z.object({
   LHOS_APPROVE_TOKEN: z.string().min(1),
   LHOS_VNC_URL: z.url(),
 
+  /** Where uploads live (outside the web root). Default: /var/lib/tj-lhos-panel/uploads in production, ./uploads in dev. */
+  UPLOAD_DIR: z.string().optional(),
+
   // E2B core API (Manage mode)
   E2B_API_URL: z.url(),
   E2B_API_KEY: z.string().min(1),

@@ -35,8 +35,8 @@ export function ChatView({ chatId }: { chatId: string }) {
   const { state, messages: liveMessages, start, reset } = useRunStream(onSettled);
 
   const send = useMutation({
-    mutationFn: ({ text, model }: { text: string; model: string }) =>
-      api.sendMessage(chatId, text, model),
+    mutationFn: ({ text, model, fileIds }: { text: string; model: string; fileIds: string[] }) =>
+      api.sendMessage(chatId, text, model, fileIds),
     onSuccess: ({ runId }) => {
       start(runId);
       void queryClient.invalidateQueries({ queryKey: ["chat", chatId] });
@@ -107,7 +107,8 @@ export function ChatView({ chatId }: { chatId: string }) {
         <PromptBar
           busy={busy}
           onStop={() => stop.mutate()}
-          onSend={(text, model) => send.mutate({ text, model })}
+          chatId={chatId}
+          onSend={(text, model, fileIds) => send.mutate({ text, model, fileIds })}
         />
       </main>
 

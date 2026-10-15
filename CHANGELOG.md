@@ -29,6 +29,26 @@ All notable changes to tj-lhos-panel. Newest first. Format:
   since the bridge landed).
 - Dev note: in a linked worktree with a symlinked `node_modules`, run
   `next dev --webpack` (Turbopack refuses symlinks leaving the project root).
+## 2026-10-15 — Computer panel (VNC) + file/image uploads
+- Computer tab: live-view iframe with Watch overlay, Take control (600 ms hold,
+  amber frame, LIVE CONTROL timer, Esc/Release, audit rows `computer.takeover.*`),
+  Expand as a Motion layout animation of the same iframe (no reconnect), "Connect
+  computer view" sign-in popup, iframe kept mounted while hidden and unmounted
+  after 10 idle minutes, Wake button (`POST /api/computer/wake` ->
+  `bridge.desktopAction('wake')`, polled via `GET /api/computer/jobs/[id]`).
+  `GET /api/computer/viewer` exposes the viewer URL and probes embeddability.
+  FINDING: the viewer sends `X-Frame-Options: DENY`, so browsers refuse to frame
+  it; the panel shows a deep-link card until the viewer allows the panel origin.
+- `lhos:open-computer` event and `request_takeover` steps switch to the tab and expand.
+- Uploads: `POST /api/uploads` (20 MB, extension allowlist + magic-byte check,
+  sha256 dedupe, stored under `UPLOAD_DIR`, images re-encoded with sharp, now a
+  dependency), `GET /api/uploads/[id]` (auth, nosniff, CSP, attachment for
+  non-images), `GET /api/chats/[id]/files`. Drag-drop, paste and `+` menu in the
+  prompt bar; attachment chips/thumbnails in the transcript; new `file` message part.
+- Agent: image attachments and tool screenshots go to vision models as image
+  blocks (newest 3 kept per call); other files become text references (small
+  text files inlined). Tool screenshots are saved to `files` (origin=tool).
+- Library tab: grid of this chat's files with lightbox.
 
 ## 2026-10-15 — Live spend ticker; Phase 1 complete
 - `/api/usage/live` (SSE, owner session): pushes today's totals — and one
