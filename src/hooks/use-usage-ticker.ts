@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { BudgetStatus } from "@/lib/usage-budget";
 
 export interface UsageTotals {
   tokensIn: number;
@@ -14,6 +15,7 @@ export interface UsageSummary {
   day: string;
   today: UsageTotals;
   chat: UsageTotals | null;
+  budget: BudgetStatus | null;
 }
 
 /**

@@ -5,7 +5,7 @@ import type { FileInfo } from "./uploads";
  * Typed client for the panel's own API.
  *
  * Every mutating call sends JSON from the same origin, which satisfies the
- * middleware's same-site CSRF guard; no token plumbing is needed in the client.
+ * proxy's same-site CSRF guard; no token plumbing is needed in the client.
  */
 export interface ApiErrorBody {
   error: { code: string; message: string; retryable?: boolean };

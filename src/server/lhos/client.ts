@@ -18,6 +18,7 @@ import type {
   ToolDef,
   ToolResult,
 } from "./types";
+import { decideWithRecheck, DECIDE_TIMEOUT_MS } from "./decide";
 import {
   backoffMs,
   classifyFailure,
@@ -282,29 +283,34 @@ export const lhos: LhosClient = {
     }
 
     const target = `${env.LHOS_BASE_URL.replace(/\/$/, "")}/approvals/${id}/${decision}?token=${encodeURIComponent(env.LHOS_APPROVE_TOKEN)}`;
-    const { signal, done } = withTimeout(undefined, READ_TIMEOUT_MS);
 
-    try {
-      const response = await fetch(target, { method: "POST", signal, cache: "no-store" });
-      const text = await response.text();
+    return decideWithRecheck(id, {
+      listPendingIds: async () => (await lhos.getPendingApprovals()).map((a) => a.id),
+      post: async () => {
+        const { signal, done } = withTimeout(undefined, DECIDE_TIMEOUT_MS);
+        try {
+          const response = await fetch(target, { method: "POST", signal, cache: "no-store" });
+          const text = await response.text();
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new AppError(
-            "not_found",
-            "That approval is no longer pending, or is not a confirm checkpoint.",
-          );
+          if (!response.ok) {
+            if (response.status === 404) {
+              throw new AppError(
+                "not_found",
+                "That approval is no longer pending, or is not a confirm checkpoint.",
+              );
+            }
+            // Never echo the URL back — it contains the token.
+            throw new AppError("lhos_unavailable", "The approvals service rejected the decision.", {
+              detail: { status: response.status },
+            });
+          }
+
+          return approvalDecisionSchema.parse(JSON.parse(text));
+        } finally {
+          done();
         }
-        // Never echo the URL back — it contains the token.
-        throw new AppError("lhos_unavailable", "The approvals service rejected the decision.", {
-          detail: { status: response.status },
-        });
-      }
-
-      return approvalDecisionSchema.parse(JSON.parse(text));
-    } finally {
-      done();
-    }
+      },
+    });
   },
 };
 

@@ -1,7 +1,7 @@
 /**
- * Appearance theme. The authoritative value will live in Settings once that
- * store exists; until then this localStorage mirror is what ThemeScript and
- * the Appearance tab both read.
+ * Appearance theme. The authoritative value is Settings `appearance.theme`,
+ * seeded into ThemeScript by the root layout; this localStorage mirror is what
+ * the theme store reads between loads.
  */
 export type ThemePreference = "dark" | "light" | "system";
 

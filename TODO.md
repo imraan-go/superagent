@@ -90,3 +90,12 @@
       never restart — IMPLEMENTATION_PLAN §7);
       nightly pg_dump; deploy; smoke-test every Phase 1–5 flow in prod
 - [ ] Rotate all LHOS tokens after first deploy (`manage.sh rotate-auth` + sync-env)
+
+## Wave 2 — ops & loose ends
+- [x] LHOS reject timeout (45 s + pending re-check)
+- [x] Budget banner in Mission "Spend today" (warn/over)
+- [x] `data.retentionDays` daily prune job (audited)
+- [x] Server-saved theme seeds ThemeScript
+- [x] Settings pace reflects LHOS when never saved
+- [x] `scripts/backup.sh` + `deploy/tj-lhos-panel-backup.{service,timer}` (install on host: copy to /etc/systemd/system, `systemctl enable --now tj-lhos-panel-backup.timer`)
+- [x] `middleware.ts` -> `proxy.ts` (Next 16)

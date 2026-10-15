@@ -89,7 +89,7 @@ const manageSchema = z.object({
 });
 
 const dataSchema = z.object({
-  /** 0 = keep forever. Pruning itself is a Phase 6 job; this is the policy. */
+  /** 0 = keep forever. Enforced daily by the in-process scheduler (automation/retention.ts). */
   retentionDays: z.number().int().min(0).max(3650).default(0),
 });
 
@@ -244,4 +244,23 @@ export function paceArgs(pace: "fast" | "careful"): {
   return pace === "fast"
     ? { mode: "fast", min_gap_seconds: 4, max_actions_per_hour: 60 }
     : { mode: "careful", min_gap_seconds: 12, max_actions_per_hour: 20 };
+}
+
+/**
+ * Settings → Agent → pace defaults to "careful", but LHOS may already be on
+ * another pace. When no pace was ever saved (no row, or a row without a `pace`
+ * key), reflect LHOS's actual mode instead of the default. Never writes.
+ */
+export function pacePristine(rawAgent: unknown): boolean {
+  return !isPlainObject(rawAgent) || typeof rawAgent.pace !== "string";
+}
+
+export function reconcilePace(
+  agent: AgentSettings,
+  rawAgent: unknown,
+  lhosMode: string | null | undefined,
+): AgentSettings {
+  if (!pacePristine(rawAgent)) return agent;
+  if (lhosMode !== "fast" && lhosMode !== "careful") return agent;
+  return { ...agent, pace: lhosMode };
 }

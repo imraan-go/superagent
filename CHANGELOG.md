@@ -3,6 +3,26 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — Wave 2: ops + loose ends
+- LHOS approve/reject: `decideApproval` timeout 15 s -> 45 s; on a timeout it
+  re-reads `/api/approvals` and reports success if the record is gone
+  (`src/server/lhos/decide.ts`, unit-tested).
+- Mission "Spend today": warn banner at >= `usage.warnAtPct` % of
+  `usage.dailyBudgetUsd`, danger banner when exceeded. Computed server-side
+  (`budget` field added to the `/api/usage/live` summary; budget 0 = none).
+- Retention: `data.retentionDays` enforced once per 24 h from the in-process
+  scheduler (`automation/retention.ts`): deletes non-pinned chats idle longer
+  than N days (messages/runs/steps cascade; usage_events keep rows with
+  chat_id NULL; chat uploads and orphaned blobs removed), audit `retention.prune`.
+- Theme: root layout reads `appearance.theme` per request and seeds ThemeScript,
+  which refreshes the localStorage mirror before paint (server value wins).
+- Pace: with no saved `agent.pace`, Settings reads LHOS's live pace from
+  `/api/capabilities` (60 s cache, 3 s timeout, read-only; never set_pace).
+- Backups: `scripts/backup.sh` (pg_dump via `panel-db` + uploads tarball, 14-day
+  prune, `--db-only`) and `deploy/tj-lhos-panel-backup.{service,timer}` (03:30
+  nightly). NOT installed on the host.
+- Next 16: `src/middleware.ts` renamed to `src/proxy.ts` (`proxy` export);
+  behaviour unchanged (public `/api/webhooks`, same-site CSRF guard).
 ## 2026-10-15 — Manage mode (Phase 5)
 - `/manage` is now the full admin dashboard behind a left rail: Overview (9
   service cards with hold-to-confirm restart / caddy reload, desktop card with

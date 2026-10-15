@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
  *
  * Security invariants (rule 30-security, skill-approvals-hitl):
  *  - Reachable only behind the owner's authenticated session. `ownerRoute`
- *    enforces this; middleware additionally requires a same-site Origin.
+ *    enforces this; proxy additionally requires a same-site Origin.
  *  - `APPROVE_TOKEN` is read inside the LHOS client and never leaves the
  *    server, never appears in a response, and is never put in a model prompt.
  *  - The agent loop must never call this route or `decideCheckpoint`. It
