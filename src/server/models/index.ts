@@ -100,7 +100,7 @@ export async function getAdapter(modelId: string): Promise<{
         adapter: new OpenAiCompatibleAdapter("openrouter", key, vendor.baseUrl, {
           // OpenRouter attribution headers; harmless if the app is private.
           "http-referer": env.APP_URL,
-          "x-title": "Flight Deck",
+          "x-title": "LHOS",
         }),
         model,
       };

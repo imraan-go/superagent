@@ -162,7 +162,7 @@ export function NewChatLanding() {
             <div className={styles.glyph}>
               <LiveGlyph state={create.isPending ? "thinking" : "idle"} size={64} label="" />
             </div>
-            <p className={styles.eyebrow}>Flight Deck · super-agent</p>
+            <p className={styles.eyebrow}>LHOS · super-agent</p>
             <h1 className={styles.title}>What should the agent do?</h1>
             <p className={styles.sub}>
               It drives a Linux computer and your Windows PC, calls your connectors and MCP

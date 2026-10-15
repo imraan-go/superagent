@@ -14,7 +14,7 @@ test.describe("owner auth", () => {
   test("unauthenticated root redirects to the login page", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByRole("heading", { name: "Flight Deck" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "LHOS" })).toBeVisible();
   });
 
   test("protected API returns 401 without a session", async ({ request }) => {
