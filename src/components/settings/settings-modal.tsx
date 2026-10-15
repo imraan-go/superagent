@@ -3,7 +3,11 @@
 import { useState } from "react";
 import {
   Bell,
+  Brain,
+  CalendarDots,
   Desktop,
+  Lightning,
+  PlugsConnected,
   Gear,
   HardDrives,
   Palette,
@@ -15,6 +19,10 @@ import { useTheme } from "@/hooks/use-theme";
 import type { ThemePreference } from "@/lib/theme";
 import { cn } from "@/lib/cn";
 import styles from "./settings-modal.module.css";
+import { SchedulesTab } from "./tabs/schedules-tab";
+import { TriggersTab } from "./tabs/triggers-tab";
+import { ConnectorsTab } from "./tabs/connectors-tab";
+import { MemoriesTab } from "./tabs/memories-tab";
 
 /**
  * Settings shell. The left rail and SettingRow layout come from the Grok Bot
@@ -27,12 +35,17 @@ type Tab =
   | "agent"
   | "computer"
   | "notifications"
-  | "data";
+  | "data"
+  | "schedules"
+  | "triggers"
+  | "connectors"
+  | "memories";
 
 const TABS: Array<{
   id: Tab;
   label: string;
   icon: typeof Palette;
+  render?: () => React.ReactNode;
 }> = [
   { id: "appearance", label: "Appearance", icon: Palette },
   { id: "models", label: "Models", icon: Sparkle },
@@ -40,6 +53,10 @@ const TABS: Array<{
   { id: "computer", label: "Computer", icon: Desktop },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "data", label: "Data", icon: HardDrives },
+  { id: "schedules", label: "Schedules", icon: CalendarDots, render: () => <SchedulesTab /> },
+  { id: "triggers", label: "Triggers & Webhooks", icon: Lightning, render: () => <TriggersTab /> },
+  { id: "connectors", label: "Connectors", icon: PlugsConnected, render: () => <ConnectorsTab /> },
+  { id: "memories", label: "Memories", icon: Brain, render: () => <MemoriesTab /> },
 ];
 
 export function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -79,7 +96,13 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
         </nav>
 
         <div className={styles.content}>
-          {tab === "appearance" ? <AppearanceTab /> : <ComingSoon title={active.label} />}
+          {tab === "appearance" ? (
+            <AppearanceTab />
+          ) : active.render ? (
+            active.render()
+          ) : (
+            <ComingSoon title={active.label} />
+          )}
         </div>
       </div>
     </Modal>

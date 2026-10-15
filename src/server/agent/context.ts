@@ -7,6 +7,7 @@ import { logger } from "@/server/lib/logger";
 import type { AdapterMessage, AdapterPart } from "@/server/models/types";
 import type { ModelEntry } from "@/server/models/catalog";
 import type { MessagePart } from "@/lib/messages";
+import { recall } from "@/server/memory";
 
 /**
  * Context assembly (skill-agent-loop §2), in order:
@@ -47,11 +48,12 @@ export async function buildContext(args: {
     capabilityFacts(),
     recentTurns(args.chatId),
   ]);
+  const remembered = await memoryRecall(turns);
 
-  return {
-    system: facts ? `${BASE_PROMPT}\n\n## The agent computer right now\n${facts}` : BASE_PROMPT,
-    messages: turns,
-  };
+  let system = BASE_PROMPT;
+  if (remembered) system += `\n\n## What you remember about the owner (may be outdated)\n${remembered}`;
+  if (facts) system += `\n\n## The agent computer right now\n${facts}`;
+  return { system, messages: turns };
 }
 
 /**
@@ -73,6 +75,22 @@ async function capabilityFacts(): Promise<string | null> {
     // The loop still works without this; the first tool call will report the
     // real state anyway.
     logger.debug("agent", { msg: "capability facts unavailable", detail: String(err) });
+    return null;
+  }
+}
+
+/** Memory recall keyed on the latest user text (skill-agent-loop §2). */
+async function memoryRecall(turns: AdapterMessage[]): Promise<string | null> {
+  try {
+    const lastUser = [...turns].reverse().find((t) => t.role === "user");
+    const query = (lastUser?.content ?? [])
+      .map((p) => (p.type === "text" ? p.text : ""))
+      .join(" ")
+      .slice(0, 2000);
+    const rows = await recall(query);
+    return rows.length ? rows.map((m) => `- ${m.text}`).join("\n") : null;
+  } catch (err) {
+    logger.debug("agent", { msg: "memory recall unavailable", detail: String(err) });
     return null;
   }
 }

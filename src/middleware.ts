@@ -13,7 +13,12 @@ import type { NextRequest } from "next/server";
  * and trigger routes are exempt because they authenticate with their own
  * signed tokens.
  */
-const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/health"];
+/**
+ * `/api/webhooks/<id>` is public on purpose: it carries no cookie and is
+ * authenticated by its own HMAC signature in the route handler. Owner-side
+ * webhook management lives under `/api/automation/webhooks` (session-gated).
+ */
+const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/health", "/api/webhooks"];
 const CSRF_EXEMPT_PREFIXES = ["/api/webhooks/", "/api/triggers/"];
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
