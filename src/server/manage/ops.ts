@@ -7,6 +7,7 @@ import { AppError } from "@/server/lib/errors";
 import { lhos, resultText } from "@/server/lhos/client";
 import { MANAGED_UNITS } from "@/server/manage/bridge";
 import type { ManagedUnit } from "@/server/manage/bridge";
+import { QUARANTINE_NAME_RE } from "@/lib/manage/snapshot-cleanup";
 
 /**
  * Shared helpers for the /api/manage routes: input parsing and audited LHOS
@@ -28,6 +29,11 @@ export function parseUnit(raw: string): ManagedUnit {
   const parsed = unitSchema.safeParse(raw);
   if (!parsed.success) throw new AppError("bad_request", "Unknown or disallowed unit.");
   return parsed.data;
+}
+
+export function parseQuarantineName(raw: string): string {
+  if (!QUARANTINE_NAME_RE.test(raw)) throw new AppError("bad_request", "Invalid quarantine name.");
+  return raw;
 }
 
 export async function parseBody<T>(request: Request, schema: z.ZodType<T>): Promise<T> {

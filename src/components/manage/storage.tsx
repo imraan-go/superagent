@@ -1,12 +1,23 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { LockKey } from "@phosphor-icons/react/dist/ssr";
 import { Button, Dot, HoldToConfirm, Panel, Readout, useToast } from "@/components/ui";
 import { usageTone } from "@/lib/manage/thresholds";
+import { BADGE_LABEL, badgeFor } from "@/lib/manage/snapshot-cleanup";
+import type { BuildBadge, CleanupPlan } from "@/lib/manage/snapshot-cleanup";
 import { apiGet, apiPost } from "./api";
+import { CleanupPanel } from "./snapshot-cleanup";
 import { ErrorNote, formatAgeMinutes, SectionHeader, SkeletonRows } from "./shared";
 import styles from "./shared.module.css";
+
+const BADGE_DOT: Record<BuildBadge, "ok" | "warn" | "idle" | "pending"> = {
+  "kept-root": "ok",
+  "kept-ancestor": "idle",
+  deletable: "warn",
+  "in-flight": "pending",
+};
 
 /* ---------------------------------------------------------- snapshots -- */
 
@@ -24,26 +35,16 @@ export function Snapshots() {
     queryFn: () => apiGet<SnapshotList>("/api/manage/snapshots"),
   });
   const d = query.data;
+  const [plan, setPlan] = useState<CleanupPlan | undefined>();
 
   return (
     <>
-      <SectionHeader title="Snapshots">Desktop snapshot builds on the host disk. Read-only.</SectionHeader>
+      <SectionHeader title="Snapshots">
+        Desktop snapshot builds on the host disk. Cleanup is planned by the host bridge and is always reversible until you
+        delete the quarantine.
+      </SectionHeader>
 
-      <div className={styles.lockNote} role="note">
-        <LockKey size={20} weight="duotone" aria-hidden />
-        <div>
-          <strong>Snapshot pruning is locked off.</strong>
-          <label className={styles.check} style={{ margin: "var(--sp-2) 0" }}>
-            <input type="checkbox" checked={false} disabled readOnly aria-label="Prune snapshots (locked)" />
-            Prune snapshots
-          </label>
-          <div>
-            Pruning broke the diff-layer chain in the 2026-10 incident, so the panel never calls it. Snapshots are
-            reclaimed on the host by hand.
-          </div>
-        </div>
-      </div>
-
+      <CleanupPanel onPlan={setPlan} />
       <div style={{ height: "var(--sp-4)" }} />
       {query.isError && <ErrorNote error={query.error} onRetry={() => void query.refetch()} />}
       {query.isPending && <SkeletonRows rows={6} height={30} />}
@@ -63,6 +64,7 @@ export function Snapshots() {
                   <th>Size</th>
                   <th>Age</th>
                   <th>Protected</th>
+                  <th>Cleanup</th>
                 </tr>
               </thead>
               <tbody>
@@ -76,6 +78,21 @@ export function Snapshots() {
                         <Dot status={s.protected ? "ok" : "idle"} size="sm" />
                         {s.protected ? "yes" : "no"}
                       </span>
+                    </td>
+                    <td>
+                      {(() => {
+                        const badge = badgeFor(s.build, s.age_min, plan);
+                        return badge ? (
+                          <span className={styles.cell}>
+                            <Dot status={BADGE_DOT[badge]} size="sm" />
+                            {BADGE_LABEL[badge]}
+                          </span>
+                        ) : (
+                          <span className={styles.meta} style={{ margin: 0 }}>
+                            run Preview
+                          </span>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))}

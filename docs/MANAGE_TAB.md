@@ -29,8 +29,18 @@ for the self-hosted E2B + agent stack. Amber accent theme variant. Layout: left 
   visible but not downloadable; never render secret file contents.
 
 ### 4. Snapshots
-- `snapshot_list` table (id, age, size). Prune stays **disabled** (incident
-  2026-10: diff-layer chain corruption) — show the toggle locked-off with the reason.
+- `snapshot_list` table (id, size, age, **cleanup badge**: kept-root / kept-ancestor /
+  deletable / in-flight, derived from the bridge plan).
+- **Cleanup panel** (2026-10-15): "Keep newest N desktop snapshots" (2..20, default 3) ->
+  **Preview** (`GET /api/manage/snapshots/plan`) -> **Move to quarantine** (hold-to-confirm)
+  -> quarantine card: **Verify desktop** (restarts `e2b-desktop-vnc`, polls until it and
+  `bridge.desktop()` are active), **Delete permanently** (hold + typed `DELETE`; needs a
+  successful Verify this session or the "I verified manually" box), **Restore**.
+- Safety: build dirs are chained diff layers, so the panel never names ids. The host
+  bridge collector (`snapshot_gc.py`) computes the plan (newest N desktops + newest good
+  build per template + every ancestor + in-flight / <6 h) and refuses with 409 when it
+  cannot prove it safe; the refusal text is shown verbatim. Purge only addresses an
+  existing quarantine dir. The old `snapshot_prune` tool stays uncalled.
 
 ### 5. Schedules & maintenance
 - LHOS `schedule_list` with enable/disable/run-now; `maintenance_status` +

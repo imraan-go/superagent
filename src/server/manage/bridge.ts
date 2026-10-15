@@ -5,6 +5,13 @@ import { audit } from "@/server/db/schema";
 import { redactSecrets, redactValue } from "@/server/lib/redact";
 import { env } from "@/server/env";
 import { AppError } from "@/server/lib/errors";
+import {
+  planSchema,
+  purgeResultSchema,
+  quarantineResultSchema,
+  quarantinesSchema,
+  restoreResultSchema,
+} from "@/lib/manage/snapshot-cleanup";
 
 /**
  * Typed client for the host bridge (`/root/e2b-agent-vm/bin/host_bridge.py`).
@@ -121,7 +128,8 @@ async function call<T>(
   if (!res.ok && res.status !== 202) {
     const msg = (json as { error?: string; output?: string } | null)?.error ?? `Bridge error ${res.status}`;
     if (res.status === 404) throw new AppError("not_found", msg);
-    if (res.status === 400 || res.status === 409) throw new AppError("bad_request", msg);
+    if (res.status === 409) throw new AppError("conflict", msg); // bridge refusal, shown verbatim
+    if (res.status === 400) throw new AppError("bad_request", msg);
     throw new AppError("bridge_unavailable", msg);
   }
   return schema.parse(json);
@@ -167,7 +175,33 @@ export const bridge = {
   jobs: async () => (await call("/jobs", z.object({ jobs: z.array(jobSchema) }))).jobs,
   job: (id: string) => call(`/jobs/${encodeURIComponent(id)}`, jobSchema),
 
+  /** Snapshot GC (bridge-side collector; the panel never names ids to delete). */
+  snapshotPlan: (keep: number) =>
+    call(`/snapshots/plan?keep=${encodeURIComponent(String(keep))}`, planSchema, { timeoutMs: 120_000 }),
+  snapshotQuarantines: async () =>
+    (await call("/snapshots/quarantines", quarantinesSchema, { timeoutMs: 120_000 })).quarantines,
+
   /** Mutations — audited. */
+  snapshotQuarantine: (keep: number) =>
+    audited("snapshots.quarantine", { keep }, () =>
+      call("/snapshots/quarantine", quarantineResultSchema, { method: "POST", body: { keep }, timeoutMs: 180_000 }),
+    ),
+  snapshotRestore: (name: string) =>
+    audited("snapshots.restore", { name }, () =>
+      call(`/snapshots/quarantines/${encodeURIComponent(name)}/restore`, restoreResultSchema, {
+        method: "POST",
+        body: {},
+        timeoutMs: 180_000,
+      }),
+    ),
+  snapshotPurge: (name: string) =>
+    audited("snapshots.purge", { name }, () =>
+      call(`/snapshots/quarantines/${encodeURIComponent(name)}/purge`, purgeResultSchema, {
+        method: "POST",
+        body: {},
+        timeoutMs: 300_000,
+      }),
+    ),
   restartService: (unit: ManagedUnit) =>
     audited("service.restart", { unit }, () =>
       call(`/services/${unit}/restart`, okOutput.extend({ unit: z.string(), action: z.string() }), {
