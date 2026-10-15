@@ -23,6 +23,19 @@ All notable changes to tj-lhos-panel. Newest first. Format:
   nightly). NOT installed on the host.
 - Next 16: `src/middleware.ts` renamed to `src/proxy.ts` (`proxy` export);
   behaviour unchanged (public `/api/webhooks`, same-site CSRF guard).
+## 2026-10-15 — Command palette + keyboard map (Phase 6)
+- ⌘K / Ctrl+K opens a combobox command palette (fuzzy search, grouped: Actions,
+  Navigate, Recent chats from the `["chats"]` query, Settings tabs, Manage
+  sections). Settings deep-links via a `fd:open-settings` event and a
+  `requestedTab` prop; Manage sections via `requestManageSection()`.
+- Global shortcuts through the new `useHotkeys` hook (`src/lib/hotkeys.ts`,
+  unit-tested): ⌘J new chat, ⌘/ focus prompt, `?` shortcut sheet, `g a` / `g m`
+  / `g w`. Bare keys and sequences are ignored in text fields and while a
+  dialog is open; Esc is the native `<dialog>` close (topmost first).
+- HITL cards are focusable: `R` rejects, `Enter` sends the typed answer, and
+  approve is press-and-hold `A` via `HoldToConfirm`'s new `holdKey`/`keyScope`
+  (same hold duration; early release or repeat never approves).
+
 ## 2026-10-15 — Manage mode (Phase 5)
 - `/manage` is now the full admin dashboard behind a left rail: Overview (9
   service cards with hold-to-confirm restart / caddy reload, desktop card with

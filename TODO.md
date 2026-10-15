@@ -82,7 +82,7 @@
 - [x] Logs viewer (journalctl follow via SSE)
 
 ## Phase 6 — Polish & ship
-- [ ] Command palette (⌘K), keyboard map, shortcut sheet (?)
+- [x] Command palette (⌘K), keyboard map, shortcut sheet (?)
 - [ ] Motion pass (page transitions, mode-switch scanline, edge-light), perf pass
       (bundle, lazy sidebars), a11y pass (AA, focus, SR announcements)
 - [ ] Dockerfile (standalone) + compose + Caddy block `panel.hostx.h22t.com`

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ChartLine,
   Camera,
@@ -13,6 +13,7 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import { ToastProvider } from "@/components/ui";
 import { cn } from "@/lib/cn";
+import { MANAGE_SECTION_EVENT, consumePendingManageSection } from "@/lib/app-events";
 import { Activity } from "./activity";
 import { Hitl } from "./hitl";
 import { Logs } from "./logs";
@@ -39,8 +40,28 @@ const SECTIONS: Array<{ id: Section; label: string; icon: typeof Desktop }> = [
   { id: "hitl", label: "HITL inbox", icon: HandPalm },
 ];
 
+/** Section ids + labels for the command palette. */
+export const MANAGE_SECTION_LIST = SECTIONS.map(({ id, label }) => ({ id, label }));
+
+const isSection = (id: unknown): id is Section => SECTIONS.some((s) => s.id === id);
+
 export function ManageView() {
-  const [section, setSection] = useState<Section>("overview");
+  // A palette deep-link queued before this mounted wins the initial section.
+  const [section, setSection] = useState<Section>(() => {
+    const queued = consumePendingManageSection();
+    return isSection(queued) ? queued : "overview";
+  });
+
+  // Live deep-links while Manage is already open.
+  useEffect(() => {
+    const onSection = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (isSection(id)) setSection(id);
+      consumePendingManageSection();
+    };
+    window.addEventListener(MANAGE_SECTION_EVENT, onSection);
+    return () => window.removeEventListener(MANAGE_SECTION_EVENT, onSection);
+  }, []);
 
   return (
     <ToastProvider>

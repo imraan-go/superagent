@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
+import { isTypingTarget } from "@/lib/hotkeys";
 import { cn } from "@/lib/cn";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import styles from "./hold-to-confirm.module.css";
@@ -28,6 +29,13 @@ export interface HoldToConfirmProps {
   className?: string;
   /** Accessible name when `children` is not descriptive on its own. */
   label?: string;
+  /**
+   * Extra key that holds the control from elsewhere in `keyScope` (e.g. `a` on
+   * a focused approval card). It is a *hold*, never a tap: releasing early
+   * cancels, auto-repeat is ignored, and typing in a field never triggers it.
+   */
+  holdKey?: string;
+  keyScope?: RefObject<HTMLElement | null>;
 }
 
 export function HoldToConfirm({
@@ -41,6 +49,8 @@ export function HoldToConfirm({
   hint = "hold",
   className,
   label,
+  holdKey,
+  keyScope,
 }: HoldToConfirmProps) {
   const [progress, setProgress] = useState(0);
   const [holding, setHolding] = useState(false);
@@ -81,11 +91,42 @@ export function HoldToConfirm({
 
   useEffect(() => stop, [stop]);
 
+  // Latest start/stop for the scoped key listeners without re-subscribing.
+  const controlsRef = useRef({ start, stop });
+  useEffect(() => {
+    controlsRef.current = { start, stop };
+  });
+
+  useEffect(() => {
+    const scope = keyScope?.current;
+    if (!holdKey || !scope) return;
+    const want = holdKey.toLowerCase();
+    const down = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== want || e.repeat) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e.target as Element)) return;
+      e.preventDefault();
+      controlsRef.current.start();
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === want) controlsRef.current.stop();
+    };
+    scope.addEventListener("keydown", down);
+    scope.addEventListener("keyup", up);
+    const cancel = () => controlsRef.current.stop();
+    scope.addEventListener("focusout", cancel);
+    return () => {
+      scope.removeEventListener("keydown", down);
+      scope.removeEventListener("keyup", up);
+      scope.removeEventListener("focusout", cancel);
+    };
+  }, [holdKey, keyScope]);
+
   return (
     <button
       type="button"
       disabled={disabled}
       aria-label={label}
+      aria-keyshortcuts={holdKey ? holdKey.toUpperCase() : undefined}
       aria-describedby={undefined}
       className={cn(
         styles.base,

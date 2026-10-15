@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ChatCircleDots,
@@ -15,6 +15,7 @@ import { useDesktopNotify } from "@/hooks/use-desktop-notify";
 import { OPEN_COMPUTER_EVENT, RUN_RESUMED_EVENT } from "@/lib/hitl";
 import type { PendingItem, RunResumedDetail } from "@/lib/hitl";
 import { formatAge } from "@/lib/hitl";
+import { isTypingTarget } from "@/lib/hotkeys";
 import styles from "./hitl.module.css";
 
 /**
@@ -129,9 +130,44 @@ function WaitingItem({ item }: { item: PendingItem }) {
   });
 
   const busy = decide.isPending || reply.isPending || done.isPending;
+  const cardRef = useRef<HTMLLIElement>(null);
+  const answerRef = useRef<HTMLTextAreaElement>(null);
+
+  // Card keys, only while the card itself (or a button in it) has focus.
+  // Approve is deliberately NOT here: `A` is a press-and-hold wired through
+  // HoldToConfirm, so a single tap can never approve.
+  const onCardKeyDown = (e: React.KeyboardEvent<HTMLLIElement>) => {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || busy) return;
+    if (isTypingTarget(e.target as Element)) return;
+    if (e.key.toLowerCase() === "r" && item.kind === "confirm") {
+      e.preventDefault();
+      decide.mutate("reject");
+    } else if (e.key === "Enter" && item.kind === "ask" && e.target === e.currentTarget) {
+      e.preventDefault();
+      if (answer.trim()) reply.mutate(answer.trim());
+      else answerRef.current?.focus();
+    }
+  };
+
+  const shortcut =
+    item.kind === "confirm"
+      ? "Hold A to approve, R to reject"
+      : item.kind === "ask"
+        ? "Enter to answer"
+        : undefined;
 
   return (
-    <li className={styles.item} data-kind={item.kind} aria-busy={busy}>
+    <li
+      ref={cardRef}
+      className={styles.item}
+      data-kind={item.kind}
+      data-waiting-card=""
+      tabIndex={0}
+      aria-busy={busy}
+      aria-label={`${label}: ${item.prompt || "no details given"}${shortcut ? `. ${shortcut}` : ""}`}
+      aria-keyshortcuts={item.kind === "confirm" ? "R" : undefined}
+      onKeyDown={onCardKeyDown}
+    >
       <div className={styles.itemHead}>
         <span className={styles.kindIcon} aria-hidden>
           <Icon size={16} weight="duotone" />
@@ -153,6 +189,8 @@ function WaitingItem({ item }: { item: PendingItem }) {
             disabled={busy}
             icon={<CheckCircle size={14} weight="bold" />}
             label={`Approve: ${item.prompt}`}
+            holdKey="a"
+            keyScope={cardRef}
             onConfirm={() => decide.mutate("approve")}
           >
             Approve
@@ -176,6 +214,7 @@ function WaitingItem({ item }: { item: PendingItem }) {
           </label>
           <textarea
             id={`${promptId}-answer`}
+            ref={answerRef}
             className={styles.input}
             rows={2}
             maxLength={4000}

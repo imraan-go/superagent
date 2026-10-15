@@ -60,8 +60,27 @@ const TABS: SettingsTab[] = [
   { id: "danger", label: "Danger zone", icon: Warning, Component: DangerTab },
 ];
 
-export function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+/** Tab ids + labels for the command palette ("Settings: Models"). */
+export const SETTINGS_TAB_LIST = TABS.map(({ id, label }) => ({ id, label }));
+
+export function SettingsModal({
+  open,
+  onClose,
+  requestedTab,
+}: {
+  open: boolean;
+  onClose: () => void;
+  /** Deep-link: select this tab whenever Settings opens (palette, shortcuts). */
+  requestedTab?: string;
+}) {
   const [tab, setTab] = useState<string>(TABS[0]!.id);
+
+  // Apply a deep-link on the closed -> open transition (adjust-during-render).
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open && requestedTab && TABS.some((t) => t.id === requestedTab)) setTab(requestedTab);
+  }
   const active = TABS.find((t) => t.id === tab) ?? TABS[0]!;
   const Active = active.Component;
 
