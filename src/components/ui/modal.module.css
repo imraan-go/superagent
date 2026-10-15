@@ -9,8 +9,9 @@
   width: 100%;
   max-height: 86vh;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  /* Closed <dialog> must stay display:none — a permanent `flex` overrides the
+     UA rule and the invisible shell intercepts clicks (caught by e2e). */
+  display: none;
 }
 
 .dialog::backdrop {
@@ -19,6 +20,8 @@
 }
 
 .dialog[open] {
+  display: flex;
+  flex-direction: column;
   animation: rise var(--dur-panel) var(--ease-out);
 }
 

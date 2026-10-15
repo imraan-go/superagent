@@ -1,0 +1,128 @@
+.wrap {
+  width: min(100%, var(--chat-max));
+  margin: 0 auto;
+  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+}
+
+.bar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--ink-2);
+  transition:
+    border-color var(--dur-micro) ease,
+    box-shadow var(--dur-std) ease;
+}
+
+.bar:focus-within {
+  border-color: var(--signal);
+  box-shadow: var(--halo);
+}
+
+.barDisabled {
+  opacity: 0.6;
+}
+
+.menuAnchor {
+  position: relative;
+  flex: none;
+}
+
+.menu {
+  position: absolute;
+  bottom: calc(100% + var(--sp-2));
+  left: 0;
+  z-index: var(--z-popover);
+  min-width: 190px;
+  padding: var(--sp-1);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--ink-2);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+.menu button {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-1);
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu button:hover:not(:disabled) {
+  background: var(--ink-3, var(--ink-1));
+}
+
+.menu button:disabled {
+  color: var(--text-3);
+  cursor: default;
+}
+
+.menuNote {
+  margin: var(--sp-1) 0 0;
+  padding: var(--sp-1) var(--sp-3);
+  border-top: var(--border) solid var(--line);
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: var(--fs-base);
+  line-height: 22px;
+  resize: none;
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--text-3);
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: none;
+}
+
+.model {
+  max-width: 150px;
+  padding: 4px var(--sp-2);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--ink-2);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  cursor: pointer;
+}
+
+.hint {
+  margin: var(--sp-2) 0 0;
+  text-align: center;
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+}
+
+@media (max-width: 640px) {
+  .model {
+    max-width: 90px;
+  }
+}

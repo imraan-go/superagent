@@ -50,13 +50,37 @@ test.describe("app shell", () => {
     );
   });
 
-  test("mode switch recolors the workspace", async ({ page }) => {
+  test("mode switch opens Manage and returns to Agent", async ({ page }) => {
     await signIn(page);
 
     await page.getByRole("tab", { name: "Manage" }).click();
+    await expect(page).toHaveURL(/\/manage$/);
     await expect(page.locator("html")).toHaveAttribute("data-mode", "manage");
+    await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Manage sections" })).toBeVisible();
 
     await page.getByRole("tab", { name: "Agent" }).click();
+    await expect(page).toHaveURL(/\/$/);
     await expect(page.locator("html")).toHaveAttribute("data-mode", "agent");
+  });
+
+  test("landing shows a prompt bar and the mission rail", async ({ page }) => {
+    await signIn(page);
+
+    await expect(page.getByRole("heading", { name: "What should the agent do?" })).toBeVisible();
+    await expect(page.getByLabel("Message the agent")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Agent computer" })).toBeVisible();
+  });
+
+  test("settings modal opens from the sidebar foot", async ({ page }) => {
+    await signIn(page);
+
+    await page.getByRole("button", { name: "Settings" }).click();
+    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Appearance" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    await expect(page.getByRole("tablist", { name: "Theme" })).toBeVisible();
   });
 });

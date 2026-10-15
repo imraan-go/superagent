@@ -1,0 +1,72 @@
+.center {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.scroll {
+  overflow-y: auto;
+  min-height: 0;
+  /* Anchor growth to the bottom so streaming text does not push the view. */
+  overflow-anchor: auto;
+}
+
+.loading {
+  padding: var(--sp-6);
+  text-align: center;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+
+.approval {
+  width: min(100%, var(--chat-max));
+  margin: 0 auto var(--sp-4);
+  padding: var(--sp-4);
+  border: var(--border) solid var(--amber, var(--signal));
+  border-radius: var(--radius-panel);
+  background: color-mix(in oklab, var(--amber, var(--signal)) 8%, transparent);
+}
+
+.approval strong {
+  display: block;
+  margin-bottom: var(--sp-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-1);
+}
+
+.approval p {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+.approval code {
+  padding: 0.1em 0.35em;
+  border-radius: 5px;
+  background: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.approvalNote {
+  font-size: var(--fs-micro) !important;
+  color: var(--text-3) !important;
+}
+
+.rail {
+  width: var(--sidebar-r);
+  border-left: var(--border) solid var(--line);
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 1100px) {
+  .rail {
+    display: none;
+  }
+}

@@ -119,11 +119,18 @@ Run `bash scripts/sync-env.sh` to populate `.env.local` with the live tokens
   `LHOS_LIVE=1` (`npm run test:smoke`), never in the default unit run. The tool
   envelope is the one contract types cannot verify, and read-only tools make it
   safe to assert against the real server.
+- 2026-10-15 ADR-17 Layout follows the Grok Bot screenshots as *structure*, not
+  style: always-on three columns, pill prompt, grouped history with status
+  lines, Settings at the sidebar foot, tabbed right rail, sleeping-computer
+  card. Flight Deck identity (ink, signal, LiveGlyph, left-aligned turns) stays.
+- 2026-10-15 ADR-18 Settings modal exists from Phase 1 so the sidebar foot has
+  a real destination. Only Appearance is wired; other tabs are placeholders.
+  Phase 3 fills them in place — no second modal.
 
 ## 5. State (update as you go)
-- Phase: **1 — shell & chat core.** The LHOS gateway, the `/api/lhos/*` proxies
-  and the live connection dot are done and verified against the real sandbox.
-  Next action: chat CRUD + message persistence, then the model adapters.
+- Phase: **1 — shell & chat core.** Chat CRUD, adapters (mock + vendors), the
+  agent loop, and the three-column workspace are in. Next action: daily usage
+  SSE ticker, then Phase 2 HITL / VNC.
 - Local dev works: `docker compose up -d db` → `npm run db:migrate` → `npm run dev`
   on :3100. Owner account exists (`owner@h22t.com`); primitives proof sheet at
   `/dev/primitives`.

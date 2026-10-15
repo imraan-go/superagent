@@ -1,0 +1,157 @@
+.root {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: var(--sp-3);
+  height: 100%;
+  min-height: 0;
+  padding: var(--sp-4) var(--sp-3);
+}
+
+.identity {
+  display: grid;
+  justify-items: center;
+  gap: var(--sp-1);
+  text-align: center;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: var(--border) solid var(--line);
+  border-radius: 18px;
+  background: var(--ink-2);
+  color: var(--text-2);
+}
+
+.name {
+  margin: var(--sp-1) 0 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.sub {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+}
+
+.labelBtn {
+  margin-top: var(--sp-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font-family: inherit;
+  font-size: var(--fs-micro);
+  cursor: default;
+}
+
+.tabs {
+  justify-self: stretch;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  overflow-y: auto;
+  min-height: 0;
+  padding-bottom: var(--sp-4);
+}
+
+.readouts {
+  display: flex;
+  gap: var(--sp-5);
+}
+
+.cost {
+  margin: var(--sp-3) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+
+.muted {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: var(--text-3);
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-2);
+}
+
+.stepName {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stepMs {
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Asleep/live card — Grok Bot's Computer tab: a quiet stage, one verb. */
+.screen {
+  display: grid;
+  justify-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-10) var(--sp-4);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--ink-0);
+  color: var(--text-3);
+}
+
+.screen[data-state="asleep"] {
+  background:
+    radial-gradient(circle at 50% 40%, var(--ink-2), transparent 64%),
+    var(--ink-0);
+}
+
+.screenGlyph {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-pill);
+  background: var(--ink-2);
+  color: var(--text-3);
+}
+
+.screenLabel {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+
+.screenCaption {
+  margin: var(--sp-3) 0 var(--sp-2);
+  text-align: center;
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+}

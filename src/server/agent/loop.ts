@@ -13,6 +13,7 @@ import { AppError, toAppError } from "@/server/lib/errors";
 import { logger } from "@/server/lib/logger";
 import { activityLabel } from "@/lib/activity";
 import type { MessagePart } from "@/lib/messages";
+import { filterTools } from "./allowlist";
 import { requiresApproval } from "./policy";
 import { emit, finishRun, startRun } from "./registry";
 import { buildContext, toAdapterParts } from "./context";
@@ -398,7 +399,7 @@ async function endRun(
 
 async function loadTools(): Promise<AdapterTool[]> {
   const catalog = await getToolCatalog();
-  return catalog.map((t) => ({
+  return filterTools(catalog).map((t) => ({
     name: t.name,
     description: t.description,
     inputSchema: t.input_schema,

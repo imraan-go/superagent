@@ -1,0 +1,148 @@
+.prose {
+  font-size: var(--fs-base);
+  line-height: 1.65;
+  color: var(--text-1);
+  overflow-wrap: anywhere;
+}
+
+.prose > :first-child {
+  margin-top: 0;
+}
+
+.prose > :last-child {
+  margin-bottom: 0;
+}
+
+.prose p,
+.prose ul,
+.prose ol,
+.prose blockquote,
+.prose table {
+  margin: 0 0 var(--sp-3);
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  margin: var(--sp-5) 0 var(--sp-2);
+  font-family: var(--font-display);
+  line-height: 1.3;
+}
+
+.prose h1 { font-size: var(--fs-lg); }
+.prose h2 { font-size: var(--fs-md); }
+.prose h3 { font-size: var(--fs-base); }
+
+.prose ul,
+.prose ol {
+  padding-left: 1.25rem;
+}
+
+.prose li {
+  margin-bottom: var(--sp-1);
+}
+
+.prose li::marker {
+  color: var(--text-3);
+}
+
+.prose a {
+  color: var(--signal);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose blockquote {
+  padding-left: var(--sp-3);
+  border-left: 2px solid var(--line);
+  color: var(--text-2);
+}
+
+.prose hr {
+  margin: var(--sp-5) 0;
+  border: 0;
+  border-top: var(--border) solid var(--line);
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.prose th,
+.prose td {
+  padding: var(--sp-2) var(--sp-3);
+  border: var(--border) solid var(--line);
+  text-align: left;
+}
+
+.prose th {
+  background: var(--ink-2);
+  font-weight: 600;
+}
+
+.inline {
+  padding: 0.1em 0.35em;
+  border-radius: 5px;
+  background: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: var(--text-1);
+}
+
+.block {
+  margin: 0 0 var(--sp-3);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  background: var(--ink-1);
+}
+
+.blockHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: 2px 2px 2px var(--sp-3);
+  border-bottom: var(--border) solid var(--line);
+  background: var(--ink-2);
+}
+
+.lang {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.plain,
+.shiki :global(pre) {
+  margin: 0;
+  padding: var(--sp-3);
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  background: none;
+}
+
+.plain code {
+  font-family: inherit;
+  color: var(--text-2);
+}
+
+/* Shiki emits both themes as CSS variables; pick per the app's theme instead of
+   its own media query, which would ignore a manual theme switch. */
+.shiki :global(.shiki),
+.shiki :global(.shiki span) {
+  color: var(--shiki-dark);
+  background-color: transparent;
+}
+
+:global([data-theme="light"]) .shiki :global(.shiki),
+:global([data-theme="light"]) .shiki :global(.shiki span) {
+  color: var(--shiki-light);
+}

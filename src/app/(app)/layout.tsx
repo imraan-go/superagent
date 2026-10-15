@@ -3,6 +3,7 @@ import { getOwner } from "@/server/auth/session";
 import { ToastProvider } from "@/components/ui";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Splash } from "@/components/boot/splash";
+import { AppShell } from "./app-shell";
 
 /**
  * Everything inside this group is owner-only. Middleware redirects on a missing
@@ -16,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <QueryProvider>
       <ToastProvider>
         <Splash />
-        {children}
+        <AppShell email={owner.email}>{children}</AppShell>
       </ToastProvider>
     </QueryProvider>
   );

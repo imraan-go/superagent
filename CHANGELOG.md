@@ -3,6 +3,31 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — Manage nav opens a real workspace
+- The Agent / Manage switch now routes. Manage goes to `/manage` (amber accent);
+  Agent returns to the chat workspace. The chat history rail hides while Manage
+  is open.
+- `/manage` is a read-only system view: Overview (desktop, pace, RDP, pending
+  HITL), Activity (latest tool calls), and today's report. Restart, sleep/wake
+  and logs stay out until the host bridge — a control that cannot act is not
+  shown.
+
+## 2026-10-15 — Design pass from Grok Bot refs + chat workspace
+- Adopted the structural answers from the owner-supplied Grok Bot screenshots
+  (`docs/reference/grok-0*.png`) without copying the look: three columns always
+  on (landing included), type-to-start pill prompt, sidebar status lines +
+  Today/Yesterday grouping, Settings at the rail foot, right rail tabbed
+  Mission | Library | Computer, sleeping-computer card with a single Wake.
+- **SettingRow** primitive (label + muted description + right-aligned control)
+  and a Settings modal shell — Appearance (theme) is live; other tabs are
+  honest placeholders so Phase 3 fills them without a redesign.
+- Theme toggle in the topbar swaps via `data-theme` (no hydration flicker).
+- Landing prompt creates the chat on first send so the owner types once.
+- ADR-06 default tool allowlist wired into the loop (RDP / raw click-family
+  stay opt-in). `filterTools` is unit-tested.
+- Rejected Grok's right-aligned user bubbles — transcript stays left-aligned
+  on the 760px measure with a role gutter.
+
 ## 2026-10-15 — Phase 1a: LHOS gateway, `/api/lhos/*` proxies, live connection dot
 - **LHOS client** (`src/server/lhos/*`, ADR-01 — REST, not the MCP SDK): typed
   gateway over `POST /api/tools/<name>` with zod schemas for every wire shape,

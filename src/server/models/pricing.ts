@@ -58,10 +58,5 @@ export function addUsage(a: TokenUsage, b: TokenUsage): TokenUsage {
 
 export const ZERO_USAGE: TokenUsage = { in: 0, out: 0, cached: 0 };
 
-/** `$0.0042` — mono, tabular-nums in the UI (DESIGN_SYSTEM §Readout). */
-export function formatCost(usd: number): string {
-  if (usd === 0) return "$0";
-  if (usd < 0.01) return `$${usd.toFixed(4)}`;
-  if (usd < 1) return `$${usd.toFixed(3)}`;
-  return `$${usd.toFixed(2)}`;
-}
+// Display formatting is shared with the browser; see src/lib/format.ts.
+export { formatCost, formatTokens } from "@/lib/format";

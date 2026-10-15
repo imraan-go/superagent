@@ -17,6 +17,8 @@ import {
   Panel,
   Readout,
   SegmentedSwitch,
+  SettingRow,
+  SettingSection,
   Skeleton,
   SkeletonText,
   ToastProvider,
@@ -248,6 +250,26 @@ function Gallery() {
               error + action
             </Button>
           </div>
+        </Panel>
+
+        <Panel title="SettingRow">
+          <SettingSection>
+            <SettingRow label="Theme" description="Dark ink, paper, or follow the system.">
+              <SegmentedSwitch
+                label="Theme demo"
+                size="sm"
+                value={theme}
+                onChange={setTheme}
+                options={[
+                  { value: "dark", label: "Dark" },
+                  { value: "light", label: "Light" },
+                ]}
+              />
+            </SettingRow>
+            <SettingRow label="Check spelling" description="Placeholder control for the row layout.">
+              <span style={{ color: "var(--text-3)", fontSize: "var(--fs-micro)" }}>Soon</span>
+            </SettingRow>
+          </SettingSection>
         </Panel>
       </div>
 

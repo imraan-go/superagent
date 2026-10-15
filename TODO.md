@@ -24,19 +24,22 @@
 - [x] Dockerfile (standalone, non-root) + `/api/health` for the compose healthcheck
 
 ## ➤ Phase 1 — Shell & chat core
-- [ ] App grid: topbar (Agent/Manage switch, connection dot), left sidebar
-      (history groups, pinned, search, settings at bottom), right Mission panel shell
+- [x] App grid: topbar (Agent/Manage switch, connection dot, theme), left sidebar
+      (history grouped by time, pinned, search, settings at bottom), right rail
+      tabbed Mission | Library | Computer — landing has the same three columns
+      and a type-to-start prompt bar
 - [x] LHOS client (`src/server/lhos/client.ts`, REST per ADR-01 — parse the
       `{ok,tool,ms,result[]}` envelope) + `/api/lhos/*` proxies; connection
       dot live against `/api/capabilities`; retryable-error classifier ("waking up")
       — + 5-min tool-catalogue cache, owner-only `ownerRoute` wrapper, and an
       opt-in live contract suite (`npm run test:smoke`)
-- [ ] Chat CRUD + message persistence; prompt bar (model picker, pace toggle,
-      attach, LiveGlyph); streaming SSE render (markdown, code blocks)
-- [ ] Anthropic adapter first (stream + tools + usage) → then OpenAI, OpenRouter
-- [ ] Agent loop v1 per docs/skills/skill-agent-loop.md (tools, steps persisted,
-      step chips UI, images in chat, cancel)
+- [x] Chat CRUD + message persistence + deriveTitle; prompt bar (pill, `+` menu,
+      model picker); streaming SSE render (markdown, code, activity line)
+- [x] ModelAdapter + mock (no key) + Anthropic + OpenAI/OpenRouter adapters
+- [x] Agent loop v1 per docs/skills/skill-agent-loop.md (tools, steps persisted,
+      step chips UI, cancel, Last-Event-ID resume, ADR-06 default allowlist)
 - [ ] Usage metering + right-sidebar live token/cost ticker (skill-token-metering)
+      — per-run readouts exist; the daily SSE ticker is still open
 
 ## Phase 2 — HITL: approvals, takeover, computer panel
 - [ ] Approval checkpoints + approvals card + `confirm` proxy
