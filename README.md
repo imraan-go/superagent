@@ -11,14 +11,6 @@ connectors (Composio / Pipedream), and a **Manage** mode for the E2B system itse
 ## Layout
 ```
 .cursor/rules/        Cursor AI rules (project, design, api, security, workflow)
-docs/CONTEXT.md       Master context & memory — the single source of truth
-docs/ARCHITECTURE.md  App architecture, DB schema (Postgres+pgvector), Docker/Caddy
-docs/API_REFERENCE.md LHOS REST API (what the Next.js backend calls)
-docs/MCP_REFERENCE.md All 100 MCP tools, grouped, with usage order
-docs/DESIGN_SYSTEM.md Directive design spec (non-generic, Grok-inspired-but-distinct)
-docs/INTEGRATIONS.md  Model vendors, Composio, Pipedream, webhooks, VNC embed
-docs/MANAGE_TAB.md    The Agent/Manage switch — E2B system dashboard spec
-docs/skills/          Reusable how-to skills for the AI building this
 config/               JSON schemas + model registry (loaded at runtime)
 scripts/sync-env.sh   Pulls live tokens from the agent server into .env.local
 TODO.md               Build order (phased)
