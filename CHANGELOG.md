@@ -3,6 +3,18 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — Live spend ticker; Phase 1 complete
+- `/api/usage/live` (SSE, owner session): pushes today's totals — and one
+  chat's when `?chatId=` — on connect, after every `usage_events` insert
+  (in-process bus `src/server/usage/live.ts`, `notifyUsage()` from the loop,
+  250 ms debounce), and at midnight rollover; 15 s heartbeats.
+- Mission tab opens with **Spend today**: cost (signal readout), tokens in/out,
+  "this chat" cost and model-call count; live dot reflects the stream.
+- Verified live: 401 without session; exact totals delta on an inserted row;
+  a real mock-model run pushed the new totals 1.2 s after send.
+- Note: authenticated e2e tests skip unless `E2E_OWNER_EMAIL`/`E2E_OWNER_PASSWORD`
+  are exported in the shell (kept out of `.env.local` on purpose).
+
 ## 2026-10-15 — Manage nav opens a real workspace
 - The Agent / Manage switch now routes. Manage goes to `/manage` (amber accent);
   Agent returns to the chat workspace. The chat history rail hides while Manage

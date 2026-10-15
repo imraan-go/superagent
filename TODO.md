@@ -23,7 +23,7 @@
 - [x] Splash/boot animation after login (skippable, ≤1.6 s, once per session)
 - [x] Dockerfile (standalone, non-root) + `/api/health` for the compose healthcheck
 
-## ➤ Phase 1 — Shell & chat core
+## ✅ Phase 1 — Shell & chat core (done 2026-10-15)
 - [x] App grid: topbar (Agent/Manage switch, connection dot, theme), left sidebar
       (history grouped by time, pinned, search, settings at bottom), right rail
       tabbed Mission | Library | Computer — landing has the same three columns
@@ -38,10 +38,11 @@
 - [x] ModelAdapter + mock (no key) + Anthropic + OpenAI/OpenRouter adapters
 - [x] Agent loop v1 per docs/skills/skill-agent-loop.md (tools, steps persisted,
       step chips UI, cancel, Last-Event-ID resume, ADR-06 default allowlist)
-- [ ] Usage metering + right-sidebar live token/cost ticker (skill-token-metering)
-      — per-run readouts exist; the daily SSE ticker is still open
+- [x] Usage metering + right-sidebar live token/cost ticker (skill-token-metering)
+      — `/api/usage/live` SSE (today + this chat), pushed on every usage row,
+      midnight rollover; "Spend today" panel tops the Mission tab
 
-## Phase 2 — HITL: approvals, takeover, computer panel
+## ➤ Phase 2 — HITL: approvals, takeover, computer panel
 - [ ] Approval checkpoints + approvals card + `confirm` proxy
       (`POST /approvals/{id}/approve|reject?token=`, ADR-02) (skill-approvals-hitl)
 - [ ] Computer panel: VNC iframe watch/take-control/expand (skill-vnc-embed)

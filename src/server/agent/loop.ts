@@ -14,6 +14,7 @@ import { logger } from "@/server/lib/logger";
 import { activityLabel } from "@/lib/activity";
 import type { MessagePart } from "@/lib/messages";
 import { filterTools } from "./allowlist";
+import { notifyUsage } from "@/server/usage/live";
 import { requiresApproval } from "./policy";
 import { emit, finishRun, startRun } from "./registry";
 import { buildContext, toAdapterParts } from "./context";
@@ -424,6 +425,7 @@ async function recordUsage(args: {
     costUsd: costToNumeric(args.costUsd),
     purpose: "chat",
   });
+  notifyUsage(args.chatId);
 }
 
 function truncate(text: string, limit: number): string {

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Desktop, Monitor } from "@phosphor-icons/react/dist/ssr";
 import { Button, Dot, Panel, Readout, SegmentedSwitch } from "@/components/ui";
 import { formatCost } from "@/lib/format";
+import { useUsageTicker } from "@/hooks/use-usage-ticker";
 import type { RunState } from "@/hooks/use-run-stream";
 import styles from "./mission-rail.module.css";
 
@@ -29,7 +30,7 @@ interface Capabilities {
   pendingHumanRequests?: number;
 }
 
-export function MissionRail({ run }: { run: RunState }) {
+export function MissionRail({ run, chatId }: { run: RunState; chatId?: string | null }) {
   const [tab, setTab] = useState<Tab>("mission");
 
   const { data: capabilities } = useQuery<Capabilities>({
@@ -69,7 +70,7 @@ export function MissionRail({ run }: { run: RunState }) {
       />
 
       <div className={styles.body}>
-        {tab === "mission" && <MissionTab run={run} capabilities={capabilities} />}
+        {tab === "mission" && <MissionTab run={run} capabilities={capabilities} chatId={chatId} />}
         {tab === "library" && <LibraryTab />}
         {tab === "computer" && <ComputerTab capabilities={capabilities} />}
       </div>
@@ -80,12 +81,32 @@ export function MissionRail({ run }: { run: RunState }) {
 function MissionTab({
   run,
   capabilities,
+  chatId,
 }: {
   run: RunState;
   capabilities?: Capabilities;
+  chatId?: string | null;
 }) {
+  const { summary, live } = useUsageTicker(chatId);
+  const today = summary?.today;
   return (
     <>
+      <Panel
+        title="Spend today"
+        badge={<Dot status={live ? "live" : "idle"} size="sm" pulse={live && run.phase !== "idle"} />}
+      >
+        <div className={styles.readouts}>
+          <Readout label="cost" prefix="$" value={today?.costUsd ?? 0} precision={4} size="md" tone="signal" />
+          <Readout label="tokens in" value={today?.tokensIn ?? 0} size="sm" />
+          <Readout label="tokens out" value={today?.tokensOut ?? 0} size="sm" />
+        </div>
+        <p className={styles.cost}>
+          {summary?.chat
+            ? `${formatCost(summary.chat.costUsd)} this chat · ${today?.calls ?? 0} model calls today`
+            : `${today?.calls ?? 0} model calls today`}
+        </p>
+      </Panel>
+
       <Panel title="Usage" badge={<Dot status={run.usage ? "ok" : "idle"} size="sm" />}>
         <div className={styles.readouts}>
           <Readout label="tokens in" value={run.usage?.tokensIn ?? 0} size="sm" />

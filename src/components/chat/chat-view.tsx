@@ -112,7 +112,7 @@ export function ChatView({ chatId }: { chatId: string }) {
       </main>
 
       <aside className={styles.rail} aria-label="Mission panel">
-        <MissionRail run={state} />
+        <MissionRail run={state} chatId={chatId} />
       </aside>
     </>
   );
