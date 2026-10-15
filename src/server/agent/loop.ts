@@ -540,7 +540,7 @@ async function observeTool(args: {
       // Namespaced composio__/mcp__/pipedream__ tools run server-side here;
       // everything else is an LHOS tool.
       const result = isExternalToolName(call.name)
-        ? await executeExternalTool(call.name, call.args).then((r) => ({
+        ? await executeExternalTool(call.name, call.args, { signal }).then((r) => ({
             ok: r.ok,
             ms: r.ms,
             result: [{ type: "text" as const, text: r.text }],

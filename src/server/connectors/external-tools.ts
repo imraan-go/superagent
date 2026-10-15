@@ -36,11 +36,43 @@ interface Cache {
   at: number;
 }
 
-const g = globalThis as unknown as { __fdExtTools?: Cache };
+/**
+ * One live MCP client per server, so its session is reused across calls
+ * (one round trip per tool call instead of initialize + notify + call).
+ * Keyed by server id; `key` fingerprints the credentials so a changed URL,
+ * token or header gets a fresh client. Credentials and the public-URL check
+ * are resolved when a client is created, i.e. at most once per cache build.
+ */
+interface PooledMcp {
+  key: string;
+  client: McpClient;
+}
 
+const g = globalThis as unknown as { __fdExtTools?: Cache; __fdMcpPool?: Map<string, PooledMcp> };
+
+function mcpPool(): Map<string, PooledMcp> {
+  return (g.__fdMcpPool ??= new Map());
+}
 
 export function invalidateExternalTools(): void {
   g.__fdExtTools = undefined;
+  // Dropped, not closed: a run may still be mid-call on one of these sessions.
+  g.__fdMcpPool = undefined;
+}
+
+/** The pooled client for a server, (re)created when its credentials change. */
+async function mcpClientFor(serverId: string): Promise<McpClient | null> {
+  const cred = await mcpCredentials(serverId);
+  if (!cred) {
+    mcpPool().delete(serverId);
+    return null;
+  }
+  const key = JSON.stringify([cred.url, cred.bearer, cred.headers]);
+  const pooled = mcpPool().get(serverId);
+  if (pooled?.key === key) return pooled.client;
+  const client = new McpClient(cred.url, cred.bearer, fetch, 30_000, cred.headers);
+  mcpPool().set(serverId, { key, client });
+  return client;
 }
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
@@ -104,23 +136,32 @@ async function build(): Promise<Cache> {
 
   sources.push(
     (async () => {
-      for (const server of (await listMcpServers()).filter((s) => s.enabled)) {
-        const cred = await mcpCredentials(server.id);
-        if (!cred) continue;
-        try {
-          const client = new McpClient(cred.url, cred.bearer, fetch, 30_000, cred.headers);
-          for (const t of await withTimeout(client.listTools(), PER_SOURCE_TIMEOUT_MS)) {
-            add(
-              {
-                name: namespacedTool("mcp", server.name, t.name),
-                description: `[MCP · ${server.name}] ${sanitizeToolDescription(t.description ?? t.name)}`,
-                inputSchema: (sanitizeSchema(t.inputSchema) as AdapterTool["inputSchema"] | undefined) ?? { type: "object", properties: {} },
-              },
-              { kind: "mcp", serverId: server.id, tool: t.name, readOnly: t.annotations?.readOnlyHint === true },
-            );
+      const servers = (await listMcpServers()).filter((s) => s.enabled);
+      // Fetched concurrently so one slow server cannot starve the rest of the
+      // source budget; added in list order so name collisions stay deterministic.
+      const listed = await Promise.all(
+        servers.map(async (server) => {
+          try {
+            const client = await mcpClientFor(server.id);
+            if (!client) return [];
+            // The race also bounds the handshake, which runs on the client's own timeout.
+            return await withTimeout(client.listTools({ signal: AbortSignal.timeout(PER_SOURCE_TIMEOUT_MS) }), PER_SOURCE_TIMEOUT_MS);
+          } catch (err) {
+            logger.warn("connectors", { msg: "mcp tools unavailable", server: server.name, detail: String(err) });
+            return [];
           }
-        } catch (err) {
-          logger.warn("connectors", { msg: "mcp tools unavailable", server: server.name, detail: String(err) });
+        }),
+      );
+      for (const [i, server] of servers.entries()) {
+        for (const t of listed[i]!) {
+          add(
+            {
+              name: namespacedTool("mcp", server.name, t.name),
+              description: `[MCP · ${server.name}] ${sanitizeToolDescription(t.description ?? t.name)}`,
+              inputSchema: (sanitizeSchema(t.inputSchema) as AdapterTool["inputSchema"] | undefined) ?? { type: "object", properties: {} },
+            },
+            { kind: "mcp", serverId: server.id, tool: t.name, readOnly: t.annotations?.readOnlyHint === true },
+          );
         }
       }
     })(),
@@ -166,6 +207,7 @@ export { externalApproval, PIPEDREAM_EMIT } from "./external-approval";
 export async function executeExternalTool(
   name: string,
   args: Record<string, unknown>,
+  opts: { signal?: AbortSignal } = {},
 ): Promise<{ ok: boolean; text: string; ms: number }> {
   const started = Date.now();
   if (!g.__fdExtTools?.routes.has(name)) await listExternalTools({ force: true });
@@ -186,9 +228,10 @@ export async function executeExternalTool(
       };
     }
     case "mcp": {
-      const cred = await mcpCredentials(route.serverId);
-      if (!cred) throw new AppError("not_found", "That MCP server was removed.");
-      const res = await new McpClient(cred.url, cred.bearer, fetch, 120_000, cred.headers).callTool(route.tool, args);
+      // The pool is filled by the cache build and emptied on any connector change.
+      const client = mcpPool().get(route.serverId)?.client ?? (await mcpClientFor(route.serverId));
+      if (!client) throw new AppError("not_found", "That MCP server was removed.");
+      const res = await client.callTool(route.tool, args, { signal: opts.signal, timeoutMs: 120_000 });
       return { ...res, ms: Date.now() - started };
     }
     case "pipedream": {
@@ -199,7 +242,7 @@ export async function executeExternalTool(
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(args.event ?? args),
-        signal: AbortSignal.timeout(30_000),
+        signal: opts.signal ? AbortSignal.any([opts.signal, AbortSignal.timeout(30_000)]) : AbortSignal.timeout(30_000),
         redirect: "error",
       });
       const body = (await res.text()).slice(0, 2000);
