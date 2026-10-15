@@ -18,6 +18,8 @@ const FORBIDDEN_REASONS: Readonly<Record<string, string>> = {
   connector_save: "connectors are created by the owner in Settings.",
   schedule_create: "schedules are created by the owner in Settings.",
   schedule_delete: "schedules are managed by the owner in Settings.",
+  snapshot_prune: "pruning chained snapshot layers broke the desktop (2026-10 incident). Use Manage → Snapshots cleanup.",
+  maintenance_run_now: "host maintenance is owner-only. Run it from Manage.",
   schedule_enable: "schedules are managed by the owner in Settings.",
   workflow_save: "workflows are created by the owner in Settings.",
 };
