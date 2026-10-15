@@ -3,6 +3,27 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — Settings -> Agent: tool allowlist explained
+- Why the list looked broken: the built-in default named tools that do not exist
+  on the agent computer (browser_open, browser_navigate, file_read, shell_exec,
+  ...), so only ~14 of its 26 names ever reached the model, and saved lists
+  carried the same dead names. Default rewritten with real LHOS names (~50 tools,
+  ADR-06), guarded by a test that every default name is in the live catalog.
+- Locked tools (guard deny-list: trigger_url, secret_*, connector_save,
+  schedule_create/delete/enable, workflow_save) are no longer offered to the
+  model even if listed in the allowlist (their schemas cost tokens for calls the
+  guard refuses). New pure lockedToolReason() in guard.ts, shared with the UI.
+- UI (tool-allowlist.tsx): grouped by the real categories from
+  docs/MCP_REFERENCE.md (src/lib/tool-categories.ts, unknown -> Other); rows show
+  a one-line description and Default / Needs approval / Locked badges (locked =
+  disabled checkbox, tooltip "Blocked for safety: <reason>"); per-category
+  Enable all / Disable all never touches locked tools; plain-English explainer;
+  estimated schema tokens per call (schemaChars added to /api/lhos/tools);
+  presets (Recommended, Everything allowed, Windows/RDP work, Browser only);
+  search filter. Checkboxes show what the server applies (locked and unknown
+  saved names are listed as ignored) and the section is re-read after each save.
+- Tests: tool-categories.test.ts with a snapshot of the 100 live tool names.
+
 ## 2026-10-15 — Wave 2: ops + loose ends
 - LHOS approve/reject: `decideApproval` timeout 15 s -> 45 s; on a timeout it
   re-reads `/api/approvals` and reports success if the record is gone
