@@ -42,3 +42,11 @@ export function filterTools<T extends { name: string }>(
   const allowed = new Set(allowlist);
   return tools.filter((t) => allowed.has(t.name));
 }
+
+/**
+ * Effective allowlist from Settings → Agent. Absent means "never customised"
+ * and yields the ADR-06 default; an explicit list (even empty) is honoured.
+ */
+export function resolveAllowlist(setting: readonly string[] | undefined): readonly string[] {
+  return setting ?? DEFAULT_TOOL_ALLOWLIST;
+}

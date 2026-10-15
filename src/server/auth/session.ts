@@ -3,6 +3,7 @@ import { getIronSession } from "iron-session";
 import type { SessionOptions } from "iron-session";
 import { cookies } from "next/headers";
 import { env } from "@/server/env";
+import { getSessionEpoch } from "@/server/settings/store";
 
 /**
  * Owner session (rule 30-security): HttpOnly, Secure, SameSite=Lax,
@@ -43,6 +44,10 @@ export async function getOwner(): Promise<SessionData | null> {
   const session = await getSession();
   // Fields are optional on a fresh cookie; a present userId means signed in.
   if (!session.userId || !session.email) return null;
+  // "Sign out everywhere" (Settings → Danger zone) bumps this epoch; every
+  // session minted before it is dead. Cached in-process for 5 s.
+  const epoch = await getSessionEpoch().catch(() => 0);
+  if ((session.loggedInAt ?? 0) < epoch) return null;
   return {
     userId: session.userId,
     email: session.email,

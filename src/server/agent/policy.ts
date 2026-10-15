@@ -47,13 +47,9 @@ export function requiresApproval(
   }
 
   for (const source of policy.extraPatterns ?? []) {
-    let pattern: RegExp;
-    try {
-      pattern = new RegExp(source, "i");
-    } catch {
-      // A malformed pattern from Settings must not disable checkpointing.
-      continue;
-    }
+    const pattern = compilePattern(source);
+    // A malformed pattern from Settings must not disable checkpointing.
+    if (!pattern) continue;
     if (pattern.test(toolName)) {
       if (policy.allowlist?.includes(toolName)) continue;
       return { required: true, reason: `matches your rule /${source}/` };
@@ -61,6 +57,22 @@ export function requiresApproval(
   }
 
   return { required: false, reason: null };
+}
+
+/**
+ * Settings patterns are either a bare verb (`send`, `archive`) — matched as a
+ * whole `_`-separated word so `post` does not catch `postgres_query` — or a
+ * regular expression source for anything finer.
+ */
+export function compilePattern(source: string): RegExp | null {
+  const trimmed = source.trim();
+  if (!trimmed) return null;
+  if (/^[A-Za-z0-9]+$/.test(trimmed)) return new RegExp(`(^|_)${trimmed}(_|$)`, "i");
+  try {
+    return new RegExp(trimmed, "i");
+  } catch {
+    return null;
+  }
 }
 
 function describe(pattern: RegExp, toolName: string): string {

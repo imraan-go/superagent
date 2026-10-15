@@ -13,9 +13,10 @@ import { AppError, toAppError } from "@/server/lib/errors";
 import { logger } from "@/server/lib/logger";
 import { activityLabel } from "@/lib/activity";
 import type { MessagePart } from "@/lib/messages";
-import { filterTools } from "./allowlist";
+import { filterTools, resolveAllowlist } from "./allowlist";
 import { notifyUsage } from "@/server/usage/live";
 import { requiresApproval } from "./policy";
+import { getSection } from "@/server/settings/store";
 import { emit, finishRun, startRun } from "./registry";
 import { buildContext, toAdapterParts } from "./context";
 
@@ -27,6 +28,7 @@ import { buildContext, toAdapterParts } from "./context";
  * `runId` immediately and the client attaches to `/api/runs/{id}/events`, so
  * closing the tab never kills a run.
  */
+/** Fallbacks only — the live values come from Settings → Agent each run. */
 const MAX_STEPS = 40;
 const MAX_COST_USD = 2;
 const MAX_TOKENS = 4_096;
@@ -76,11 +78,25 @@ async function execute(input: ExecuteInput): Promise<void> {
     const { adapter, model } = await getAdapter(modelId);
     emit(runId, { type: "run_started", runId, chatId, model: model.label });
 
-    const tools = model.tools ? await loadTools() : [];
-    const context = await buildContext({ chatId, userId, model });
+    // Settings are read once per run: a change applies to the next run, never
+    // half-way through one.
+    const [agentSettings, approvalSettings] = await Promise.all([
+      getSection("agent"),
+      getSection("approvals"),
+    ]);
+    const maxSteps = agentSettings.maxSteps;
+    const maxCostUsd = agentSettings.maxCostUsdPerRun;
+
+    const tools = model.tools ? await loadTools(resolveAllowlist(agentSettings.toolAllowlist)) : [];
+    const context = await buildContext({
+      chatId,
+      userId,
+      model,
+      systemPrompt: agentSettings.systemPrompt,
+    });
     const messages: AdapterMessage[] = context.messages;
 
-    for (let turn = 0; turn < MAX_STEPS; turn += 1) {
+    for (let turn = 0; turn < maxSteps; turn += 1) {
       if (signal.aborted) return void (await endRun(runId, chatId, "cancelled"));
 
       let text = "";
@@ -178,17 +194,19 @@ async function execute(input: ExecuteInput): Promise<void> {
         return void (await endRun(runId, chatId, "done"));
       }
 
-      if (cost > MAX_COST_USD) {
+      if (cost > maxCostUsd) {
         throw new AppError(
           "budget_exceeded",
-          `This run reached its $${MAX_COST_USD.toFixed(2)} cap. Raise it in Settings → Agent to continue.`,
+          `This run reached its $${maxCostUsd.toFixed(2)} cap. Raise it in Settings → Agent to continue.`,
         );
       }
 
       const resultParts: MessagePart[] = [];
 
       for (const call of toolCalls) {
-        const gate = requiresApproval(call.name);
+        const gate = requiresApproval(call.name, {
+          extraPatterns: approvalSettings.checkpointPatterns,
+        });
         if (gate.required) {
           await checkpoint({ runId, chatId, stepIdx, call, reason: gate.reason });
           return;
@@ -210,7 +228,7 @@ async function execute(input: ExecuteInput): Promise<void> {
 
     throw new AppError(
       "internal",
-      `This run hit the ${MAX_STEPS}-step limit without finishing.`,
+      `This run hit the ${maxSteps}-step limit without finishing.`,
     );
   } catch (err) {
     if (signal.aborted) return void (await endRun(runId, chatId, "cancelled"));
@@ -398,9 +416,9 @@ async function endRun(
   logger.info("agent", { runId, chatId, status });
 }
 
-async function loadTools(): Promise<AdapterTool[]> {
+async function loadTools(allowlist: readonly string[]): Promise<AdapterTool[]> {
   const catalog = await getToolCatalog();
-  return filterTools(catalog).map((t) => ({
+  return filterTools(catalog, allowlist).map((t) => ({
     name: t.name,
     description: t.description,
     inputSchema: t.input_schema,

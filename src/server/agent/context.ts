@@ -42,14 +42,25 @@ export async function buildContext(args: {
   chatId: string;
   userId: string;
   model: ModelEntry;
+  /** Settings → Agent. Layered on top of, never replacing, the base prompt. */
+  systemPrompt?: string;
 }): Promise<AgentContext> {
   const [facts, turns] = await Promise.all([
     capabilityFacts(),
     recentTurns(args.chatId),
   ]);
 
+  // The base rules (approval pauses, verify-after-act) are safety-relevant, so
+  // the owner's prompt is appended rather than substituted.
+  const owner = args.systemPrompt?.trim();
+  const sections = [
+    BASE_PROMPT,
+    owner ? `## Owner instructions\n${owner}` : null,
+    facts ? `## The agent computer right now\n${facts}` : null,
+  ].filter((s): s is string => Boolean(s));
+
   return {
-    system: facts ? `${BASE_PROMPT}\n\n## The agent computer right now\n${facts}` : BASE_PROMPT,
+    system: sections.join("\n\n"),
     messages: turns,
   };
 }

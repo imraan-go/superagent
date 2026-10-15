@@ -168,3 +168,24 @@
     --dur-panel: 0ms;
   }
 }
+
+/* Settings → Appearance overrides (set on <html> by AppearanceSync). */
+:root[data-motion="reduce"] {
+  --dur-micro: 0ms;
+  --dur-std: 0ms;
+  --dur-panel: 0ms;
+}
+
+:root[data-density="compact"] {
+  --sp-3: 10px;
+  --sp-4: 12px;
+  --sp-5: 16px;
+  --sp-6: 18px;
+}
+
+/* "Reduced motion: off" keeps motion even when the OS asks for less. */
+:root[data-motion="full"] {
+  --dur-micro: 120ms;
+  --dur-std: 200ms;
+  --dur-panel: 280ms;
+}

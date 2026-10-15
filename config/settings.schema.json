@@ -71,7 +71,35 @@
       "type": "object",
       "properties": {
         "dailyBudgetUsd": { "type": "number", "minimum": 0, "default": 10 },
-        "warnAtPct": { "type": "integer", "minimum": 1, "maximum": 100, "default": 80 }
+        "warnAtPct": { "type": "integer", "minimum": 1, "maximum": 100, "default": 80 },
+        "archivedAt": { "type": "string", "format": "date-time",
+          "description": "Danger zone archive mark (mark only); the Usage view starts here." }
+      }
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "retentionDays": { "type": "integer", "minimum": 0, "maximum": 3650, "default": 0,
+          "description": "0 = keep forever" }
+      }
+    },
+    "models": {
+      "type": "object",
+      "description": "Owner overrides over config/models.json. Vendor keys live sealed in the secrets table, never here.",
+      "properties": {
+        "fallbackModel": { "type": "string" },
+        "overrides": {
+          "type": "object", "default": {},
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "enabled": { "type": "boolean" },
+              "price": { "type": "object", "required": ["in", "out"],
+                "properties": { "in": { "type": "number", "minimum": 0 },
+                  "out": { "type": "number", "minimum": 0 }, "cachedIn": { "type": "number", "minimum": 0 } } }
+            }
+          }
+        }
       }
     },
     "manage": {
