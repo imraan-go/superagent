@@ -29,10 +29,19 @@ export type RunEvent =
   | { type: "waiting"; reason: string; retryInMs: number }
   | {
       type: "approval_required";
+      /** Panel `approvals.id` — what the owner decides on. */
+      approvalId?: string;
       stepIdx: number;
       tool: string;
       reason: string;
       args: Record<string, unknown>;
+    }
+  /** The owner decided a checkpoint; the run is continuing. */
+  | {
+      type: "approval_decided";
+      approvalId: string;
+      tool: string;
+      decision: "approve" | "reject";
     }
   | { type: "usage"; tokensIn: number; tokensOut: number; cached: number; costUsd: number }
   /** A persisted turn — replaces any streamed text for that turn. */
@@ -48,4 +57,15 @@ export interface RunFrame {
 /** Terminal frames tell the client to stop listening. */
 export function isTerminal(event: RunEvent): boolean {
   return event.type === "done" || event.type === "error";
+}
+
+/**
+ * A run paused at a checkpoint ends its first segment with a terminal
+ * `done: paused_approval` frame, then continues under the same id once the
+ * owner decides. When replaying history, a terminal frame that has later
+ * frames after it is superseded — delivering it would make the client hang up
+ * mid-run.
+ */
+export function dropSupersededTerminals(frames: readonly RunFrame[]): RunFrame[] {
+  return frames.filter((f, i) => i === frames.length - 1 || !isTerminal(f.event));
 }

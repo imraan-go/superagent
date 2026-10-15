@@ -9,6 +9,7 @@ import { LibraryTab } from "./library-tab";
 import { formatCost } from "@/lib/format";
 import { useUsageTicker } from "@/hooks/use-usage-ticker";
 import type { RunState } from "@/hooks/use-run-stream";
+import { WaitingPanel } from "@/components/hitl/waiting-panel";
 import styles from "./mission-rail.module.css";
 
 /**
@@ -72,7 +73,7 @@ export function MissionRail({ run, chatId }: { run: RunState; chatId?: string | 
       />
 
       <div className={styles.body}>
-        {tab === "mission" && <MissionTab run={run} capabilities={capabilities} chatId={chatId} />}
+        {tab === "mission" && <MissionTab run={run} chatId={chatId} />}
         {tab === "library" && (
           <LibraryTab
             chatId={chatId}
@@ -96,17 +97,17 @@ export function MissionRail({ run, chatId }: { run: RunState; chatId?: string | 
 
 function MissionTab({
   run,
-  capabilities,
   chatId,
 }: {
   run: RunState;
-  capabilities?: Capabilities;
   chatId?: string | null;
 }) {
   const { summary, live } = useUsageTicker(chatId);
   const today = summary?.today;
   return (
     <>
+      {/* First: a decision the owner owes outranks every readout. */}
+      <WaitingPanel />
       <Panel
         title="Spend today"
         badge={<Dot status={live ? "live" : "idle"} size="sm" pulse={live && run.phase !== "idle"} />}
@@ -151,14 +152,6 @@ function MissionTab({
         )}
       </Panel>
 
-      {(capabilities?.pendingHumanRequests ?? 0) > 0 && (
-        <Panel title="Waiting on you" badge={<Dot status="warn" size="sm" pulse />}>
-          <p className={styles.muted}>
-            {capabilities?.pendingHumanRequests} request(s) pending on the agent
-            computer. The approvals view arrives in Phase 2.
-          </p>
-        </Panel>
-      )}
     </>
   );
 }

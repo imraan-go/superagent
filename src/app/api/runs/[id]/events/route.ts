@@ -6,7 +6,7 @@ import { isActive, replay, subscribe } from "@/server/agent/registry";
 import { AppError } from "@/server/lib/errors";
 import { errorResponse } from "@/server/lib/route";
 import { getOwner } from "@/server/auth/session";
-import { isTerminal } from "@/lib/run-events";
+import { dropSupersededTerminals, isTerminal } from "@/lib/run-events";
 import type { RunEvent, RunFrame } from "@/lib/run-events";
 
 export const runtime = "nodejs";
@@ -62,7 +62,7 @@ export async function GET(
     );
     const afterSeq = Number.isFinite(lastEventId) && lastEventId > 0 ? lastEventId : 0;
 
-    const missed = await replay(runId, afterSeq);
+    const missed = dropSupersededTerminals(await replay(runId, afterSeq));
     const live = isActive(runId);
 
     const encoder = new TextEncoder();

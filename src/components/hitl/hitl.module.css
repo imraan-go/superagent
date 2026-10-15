@@ -1,0 +1,148 @@
+.muted {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: var(--text-3);
+}
+
+.list {
+  display: grid;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--ink-2);
+}
+
+.item[data-kind="confirm"] {
+  border-color: var(--amber-dim);
+  background: var(--amber-wash);
+}
+
+.item[data-kind="takeover"] {
+  border-color: var(--signal-dim);
+  background: var(--signal-wash);
+}
+
+.item[aria-busy="true"] {
+  opacity: 0.7;
+}
+
+.itemHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.kindIcon {
+  display: inline-grid;
+  place-items: center;
+  color: var(--amber);
+}
+
+.item[data-kind="takeover"] .kindIcon,
+.item[data-kind="ask"] .kindIcon {
+  color: var(--signal);
+}
+
+.kind {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.age {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+
+.prompt {
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: var(--lh-base);
+  color: var(--text-1);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.answer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: var(--sp-2);
+}
+
+.input {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: var(--sp-2);
+  resize: vertical;
+  border: var(--border) solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--ink-1);
+  color: var(--text-1);
+  font: inherit;
+  font-size: var(--fs-small);
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 1px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  height: 28px;
+  padding: 0 var(--sp-2);
+  border: var(--border) solid var(--amber-dim);
+  border-radius: var(--radius-pill);
+  background: var(--amber-wash);
+  color: var(--amber);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background var(--dur-micro) var(--ease-out);
+}
+
+.badge:hover {
+  box-shadow: var(--halo-amber);
+}
+
+.badge:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.badgeCount {
+  font-weight: 600;
+}

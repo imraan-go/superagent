@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { appendMessage, getChat, updateChat } from "@/server/chat/repo";
-import { startAgentRun } from "@/server/agent/loop";
+import { expirePausedRuns, startAgentRun } from "@/server/agent/loop";
 import { findModel, resolveDefaultModelFromSettings } from "@/server/models";
 import { AppError } from "@/server/lib/errors";
 import { json, ownerRoute } from "@/server/lib/route";
@@ -54,6 +54,8 @@ export const POST = ownerRoute<Ctx>(async ({ request, owner, ctx }) => {
     (requested ? findModel(requested) : undefined) ?? (await resolveDefaultModelFromSettings());
 
   const attachments = await attachmentParts(body.data.fileIds ?? [], chatId);
+
+  await expirePausedRuns(chatId, owner.userId);
 
   const message = await appendMessage(chatId, owner.userId, {
     role: "user",

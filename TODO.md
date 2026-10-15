@@ -43,7 +43,7 @@
       midnight rollover; "Spend today" panel tops the Mission tab
 
 ## ➤ Phase 2 — HITL: approvals, takeover, computer panel
-- [ ] Approval checkpoints + approvals card + `confirm` proxy
+- [x] Approval checkpoints + approvals card + `confirm` proxy
       (`POST /approvals/{id}/approve|reject?token=`, ADR-02) (skill-approvals-hitl)
 - [x] Computer panel: VNC iframe watch/take-control/expand (skill-vnc-embed)
       (viewer sends X-Frame-Options: DENY: embed blocked until server allows it)
@@ -52,6 +52,11 @@
 - [ ] Notifications: toasts + Chrome notifications + sound pack (useSound)
 - [x] File/image upload (drag-drop + paste) → files table → vision models
       (pushing files to the agent computer via LHOS not done)
+- [ ] Computer panel: VNC iframe watch/take-control/expand (skill-vnc-embed)
+- [x] `ask_user` question card; `request_takeover` auto-expand flow — answered via
+      host bridge `manage.sh answer|done`, **not** the approvals route (ADR-02)
+- [x] Notifications: toasts + Chrome notifications + sound pack (useSound)
+- [ ] File/image upload (drag-drop + paste) → files table → vision models + LHOS
 
 ## Phase 3 — Settings suite
 - [x] Settings modal w/ left tabs; settings store (DB + schema validation)

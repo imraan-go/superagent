@@ -4,6 +4,12 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useRunStream } from "@/hooks/use-run-stream";
+import { useSound } from "@/hooks/use-sound";
+import { useDesktopNotify } from "@/hooks/use-desktop-notify";
+import { PENDING_KEY } from "@/hooks/use-pending";
+import { RUN_RESUMED_EVENT } from "@/lib/hitl";
+import type { RunResumedDetail } from "@/lib/hitl";
+import type { RunEvent } from "@/lib/run-events";
 import { useToast } from "@/components/ui";
 import { MissionRail } from "@/components/mission/mission-rail";
 import { PromptBar } from "./prompt-bar";
@@ -32,16 +38,63 @@ export function ChatView({ chatId }: { chatId: string }) {
     void queryClient.invalidateQueries({ queryKey: ["chats"] });
   }, [chatId, queryClient]);
 
-  const { state, messages: liveMessages, start, reset } = useRunStream(onSettled);
+  const sound = useSound();
+  const { notify } = useDesktopNotify();
+  const title = data?.chat.title;
+
+  const onEvent = useCallback(
+    (event: RunEvent) => {
+      switch (event.type) {
+        case "approval_required":
+          // The watcher announces it (toast, sound, notification) on its next
+          // poll; fetch now so that happens immediately.
+          void queryClient.invalidateQueries({ queryKey: PENDING_KEY });
+          break;
+        case "done":
+          if (event.status === "done") {
+            sound("done");
+            notify("runDone", "Run finished", title ?? "The agent finished.", `/chat/${chatId}`);
+          }
+          break;
+        case "error":
+          sound("error");
+          notify("runDone", "Run failed", event.message, `/chat/${chatId}`);
+          break;
+      }
+    },
+    [chatId, notify, queryClient, sound, title],
+  );
+
+  const { state, messages: liveMessages, start, resume, reset } = useRunStream(onSettled, onEvent);
+
+  // A checkpoint decided in the Mission panel resumes the run server-side;
+  // re-attach so the continuation streams into this transcript.
+  useEffect(() => {
+    const onResumed = (e: Event) => {
+      const detail = (e as CustomEvent<RunResumedDetail>).detail;
+      if (detail?.chatId !== chatId) return;
+      resume(detail.runId);
+      void queryClient.invalidateQueries({ queryKey: ["chats"] });
+    };
+    window.addEventListener(RUN_RESUMED_EVENT, onResumed);
+    return () => window.removeEventListener(RUN_RESUMED_EVENT, onResumed);
+  }, [chatId, queryClient, resume]);
 
   const send = useMutation({
     mutationFn: ({ text, model, fileIds }: { text: string; model: string; fileIds: string[] }) =>
       api.sendMessage(chatId, text, model, fileIds),
+    // Played inside the click's task, which also unlocks WebAudio for the
+    // later cues (done, approval) that fire without a gesture.
+    onMutate: () => sound("send"),
     onSuccess: ({ runId }) => {
       start(runId);
       void queryClient.invalidateQueries({ queryKey: ["chat", chatId] });
+      void queryClient.invalidateQueries({ queryKey: PENDING_KEY });
     },
-    onError: (err: Error) => toast.push({ title: "Could not send", message: err.message, tone: "error" }),
+    onError: (err: Error) => {
+      sound("error");
+      toast.push({ title: "Could not send", message: err.message, tone: "error" });
+    },
   });
 
   const stop = useMutation({
@@ -97,8 +150,7 @@ export function ChatView({ chatId }: { chatId: string }) {
                 Nothing has run yet.
               </p>
               <p className={styles.approvalNote}>
-                Approving from the panel arrives in Phase 2. Until then, decide it on
-                the LHOS approvals page.
+                Approve or reject it under &ldquo;Waiting on you&rdquo; in the Mission panel.
               </p>
             </div>
           )}
