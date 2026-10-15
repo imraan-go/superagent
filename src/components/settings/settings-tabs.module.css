@@ -316,3 +316,96 @@
   gap: var(--sp-1);
   align-items: center;
 }
+
+/* ---------------------------------------------------- tool allowlist -- */
+
+.allowIntro {
+  color: var(--text-2);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+}
+
+.allowIntro p {
+  margin: 0 0 var(--sp-2);
+}
+
+.allowIntro ul {
+  margin: 0;
+  padding-left: var(--sp-4);
+  list-style: disc;
+}
+
+.allowGroupActions {
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.allowStats {
+  margin-top: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--text-1);
+}
+
+.allowToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0;
+}
+
+.toolGroupName {
+  font-weight: 600;
+}
+
+.allowRows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--sp-2) var(--sp-4);
+  margin-top: var(--sp-2);
+}
+
+.allowRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  font-size: var(--fs-small);
+}
+
+.allowRow input {
+  accent-color: var(--signal);
+  margin-top: 3px;
+}
+
+.allowBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.allowLocked {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.badge {
+  padding: 0 var(--sp-1);
+  border: var(--border) solid var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.badgeWarn {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.badgeLock {
+  border-color: var(--danger);
+  color: var(--danger);
+}

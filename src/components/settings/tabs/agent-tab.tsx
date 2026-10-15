@@ -1,20 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, SegmentedSwitch, SettingRow, SettingSection, SkeletonText } from "@/components/ui";
+import { Button, SegmentedSwitch, SettingRow, SettingSection } from "@/components/ui";
 import { settingsFetch, useSettingsSection } from "@/hooks/use-settings";
-// Pure module (no server-only guard): the default list is shared with the loop.
-import { DEFAULT_TOOL_ALLOWLIST } from "@/server/agent/allowlist";
 import { InlineError, NumberField, Select } from "../controls";
 import styles from "../settings-tabs.module.css";
+import { ToolAllowlistSection } from "./tool-allowlist";
 import type { ModelsView } from "./models-tab";
 import { MODELS_VIEW_KEY } from "./models-tab";
-
-interface ToolSummary {
-  name: string;
-  description: string;
-}
 
 export function AgentTab() {
   const agent = useSettingsSection("agent");
@@ -112,6 +106,7 @@ export function AgentTab() {
       <ToolAllowlistSection
         value={v.toolAllowlist}
         onSave={(toolAllowlist) => agent.save({ toolAllowlist })}
+        onSaved={() => agent.refetch()}
       />
       <InlineError error={agent.error} />
     </div>
@@ -169,98 +164,6 @@ function SystemPromptSection({
             Save prompt
           </Button>
         </div>
-      </div>
-    </SettingSection>
-  );
-}
-
-/** Groups by the tool-name prefix (`browser_click` → browser). */
-function groupTools(tools: readonly ToolSummary[]): Array<[string, ToolSummary[]]> {
-  const groups = new Map<string, ToolSummary[]>();
-  for (const t of tools) {
-    const category = t.name.includes("_") ? t.name.slice(0, t.name.indexOf("_")) : "other";
-    groups.set(category, [...(groups.get(category) ?? []), t]);
-  }
-  return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
-}
-
-function ToolAllowlistSection({
-  value,
-  onSave,
-}: {
-  value: string[] | undefined;
-  onSave: (next: string[] | null) => Promise<unknown>;
-}) {
-  const catalog = useQuery({
-    queryKey: ["lhos", "tools"],
-    queryFn: () => settingsFetch<{ tools: ToolSummary[] }>("/api/lhos/tools"),
-    staleTime: 5 * 60_000,
-  });
-  const effective = useMemo(() => new Set(value ?? DEFAULT_TOOL_ALLOWLIST), [value]);
-  const groups = useMemo(() => groupTools(catalog.data?.tools ?? []), [catalog.data]);
-
-  const set = (names: string[], on: boolean) => {
-    const next = new Set(effective);
-    for (const n of names) {
-      if (on) next.add(n);
-      else next.delete(n);
-    }
-    void onSave([...next].sort());
-  };
-
-  return (
-    <SettingSection title="Tool allowlist">
-      <div style={{ padding: "var(--sp-4)" }}>
-        <div className={styles.row} style={{ justifyContent: "space-between" }}>
-          <p className={styles.muted} style={{ margin: 0 }}>
-            Tools the model can see. Fewer tools means cheaper, more focused runs.{" "}
-            {value ? `${effective.size} selected.` : "Using the built-in default set."}
-          </p>
-          {value && (
-            <Button size="sm" variant="ghost" onClick={() => void onSave(null)}>
-              Reset to default
-            </Button>
-          )}
-        </div>
-        {catalog.isPending && <SkeletonText lines={3} />}
-        {catalog.error && <InlineError error={catalog.error} />}
-        {groups.map(([category, tools]) => {
-          const on = tools.filter((t) => effective.has(t.name)).length;
-          return (
-            <details key={category} className={styles.toolGroup}>
-              <summary>
-                <span className={styles.mono}>{category}</span>
-                <span className={styles.row}>
-                  <span className={styles.muted}>
-                    {on}/{tools.length}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      set(tools.map((t) => t.name), on < tools.length);
-                    }}
-                  >
-                    {on < tools.length ? "All" : "None"}
-                  </Button>
-                </span>
-              </summary>
-              <div className={styles.toolList}>
-                {tools.map((t) => (
-                  <label key={t.name} className={styles.toolItem} title={t.description}>
-                    <input
-                      type="checkbox"
-                      checked={effective.has(t.name)}
-                      onChange={(e) => set([t.name], e.target.checked)}
-                    />
-                    <span className={styles.toolName}>{t.name}</span>
-                  </label>
-                ))}
-              </div>
-            </details>
-          );
-        })}
       </div>
     </SettingSection>
   );

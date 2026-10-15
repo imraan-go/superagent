@@ -16,7 +16,7 @@ import type { MessagePart } from "@/lib/messages";
 import { filterTools, resolveAllowlist } from "./allowlist";
 import { notifyUsage } from "@/server/usage/live";
 import { requiresApproval } from "./policy";
-import { blockedToolReason, redactSecrets } from "./guard";
+import { blockedToolReason, lockedToolReason, redactSecrets } from "./guard";
 import { getSection } from "@/server/settings/store";
 import { emit, finishRun, startRun } from "./registry";
 import { buildContext, pruneOldImages, toAdapterParts } from "./context";
@@ -609,7 +609,10 @@ async function endRun(
 
 async function loadTools(allowlist: readonly string[]): Promise<AdapterTool[]> {
   const catalog = await getToolCatalog();
-  const lhosTools = filterTools(catalog, allowlist).map((t) => ({
+  // Locked tools are never offered: their schemas would cost tokens for calls the guard refuses.
+  const lhosTools = filterTools(catalog, allowlist)
+    .filter((t) => lockedToolReason(t.name) === null)
+    .map((t) => ({
     name: t.name,
     description: t.description,
     inputSchema: t.input_schema,
