@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 /**
  * Coarse gate: anything that is not the login page or an auth/health endpoint
- * requires a session cookie. Middleware only checks for the cookie's
+ * requires a session cookie. Proxy only checks for the cookie's
  * *presence* — it runs on the edge-style runtime where `iron-session` cannot
  * decrypt — so every route handler and server component still verifies the
  * session properly via `getOwner()`. This is a redirect convenience, not the
@@ -22,7 +22,7 @@ const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/health", "/api/webhooks
 const CSRF_EXEMPT_PREFIXES = ["/api/webhooks/", "/api/triggers/"];
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (MUTATING.has(request.method) && !isCsrfExempt(pathname) && !isSameSite(request)) {

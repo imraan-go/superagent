@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 /**
  * Answers an `ask` request through the host bridge (ADR-02) — the LHOS
  * approvals route rejects anything that is not a `confirm`. Owner session
- * only, same-origin (middleware); the bridge call is audited.
+ * only, same-origin (proxy); the bridge call is audited.
  */
 const bodySchema = z.object({
   text: z.string().trim().min(1, "Type an answer first.").max(4_000),

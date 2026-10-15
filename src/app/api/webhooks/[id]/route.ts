@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
  * HMAC-SHA256 over `${timestamp}.${rawBody}` with the hook's sealed secret,
  * a ±5-minute timestamp window, a replay memory, per-hook and per-IP rate
  * limits and a body-size cap. Excluded from the session gate and CSRF guard in
- * src/middleware.ts. Every failure returns the same opaque 401/404 shape.
+ * src/proxy.ts. Every failure returns the same opaque 401/404 shape.
  */
 const MAX_BODY_BYTES = 256 * 1024;
 const g = globalThis as unknown as {
