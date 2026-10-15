@@ -43,7 +43,7 @@ export function groupChats(chats: ChatSummary[], now: Date = new Date()): ChatGr
   if (buckets.yesterday.length) {
     groups.push({ key: "yesterday", label: "Yesterday", chats: buckets.yesterday });
   }
-  if (buckets.week.length) groups.push({ key: "week", label: "This week", chats: buckets.week });
+  if (buckets.week.length) groups.push({ key: "week", label: "Previous 7 days", chats: buckets.week });
   if (buckets.older.length) groups.push({ key: "older", label: "Older", chats: buckets.older });
   return groups;
 }

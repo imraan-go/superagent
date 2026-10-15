@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Dot, Panel, Readout, SegmentedSwitch } from "@/components/ui";
+import { CategoryTile, CountUp, Dot, Panel, Readout, SegmentedSwitch } from "@/components/ui";
+import type { TileCategory } from "@/components/ui";
+import { toolCategory } from "@/components/chat/parts/tool-meta";
 import { formatCost } from "@/lib/format";
 import { useUsageTicker } from "@/hooks/use-usage-ticker";
 import type { UsageTotals } from "@/hooks/use-usage-ticker";
@@ -147,7 +149,7 @@ export function MissionTab({
                 value={shown.costUsd}
                 precision={4}
                 size="md"
-                tone="signal"
+                tone="ok"
                 estimate={estimate}
               />
               <span className={styles.calls}>
@@ -184,14 +186,17 @@ export function MissionTab({
       </Panel>
 
       <ul className={styles.stats} aria-label="Stats">
-        <Stat label="avg tool" value={stats?.avgToolMs != null ? `${stats.avgToolMs}ms` : "–"} />
+        <Stat cat="agent" label="avg tool" num={stats?.avgToolMs ?? null} unit="ms" />
         <Stat
+          cat="money"
           label="success"
-          value={successPct === null ? "–" : `${successPct}%`}
+          num={successPct}
+          unit="%"
           tone={successPct !== null && successPct < 90 ? "warn" : undefined}
         />
-        <Stat label="steps run" value={String(run.steps.length)} />
+        <Stat cat="think" label="steps run" num={run.steps.length} />
         <Stat
+          cat="screen"
           label="computer"
           value={
             !capabilities
@@ -207,11 +212,12 @@ export function MissionTab({
           tone={capabilities?.reachable && capabilities.desktopUp ? "ok" : "warn"}
         />
         <Stat
+          cat="rdp"
           label="rdp"
           value={capabilities?.rdpConnected ? "connected" : "off"}
           tone={capabilities?.rdpConnected ? "ok" : undefined}
         />
-        <Stat label="pace" value={capabilities?.pace ?? "–"} />
+        <Stat cat="schedule" label="pace" value={capabilities?.pace ?? "–"} />
       </ul>
 
       <WaitingPanel />
@@ -227,16 +233,34 @@ function Figure({ label, value, estimate }: { label: string; value: number; esti
       <dt>{label}</dt>
       <dd title={value.toLocaleString()}>
         {estimate && <span aria-label="approximately">~</span>}
-        {compactNumber(value)}
+        <CountUp value={value} format={(n) => compactNumber(Math.round(n))} />
       </dd>
     </div>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: "ok" | "warn" }) {
+function Stat({
+  cat,
+  label,
+  value,
+  num,
+  unit = "",
+  tone,
+}: {
+  cat: TileCategory;
+  label: string;
+  value?: string;
+  /** Numeric stats count up; null renders a dash. */
+  num?: number | null;
+  unit?: string;
+  tone?: "ok" | "warn";
+}) {
   return (
     <li className={styles.stat} data-tone={tone}>
-      <span className={styles.statValue}>{value}</span>
+      <CategoryTile cat={cat} size="xs" className={styles.statIcon} />
+      <span className={styles.statValue}>
+        {num === undefined ? value : num === null ? "–" : <><CountUp value={num} />{unit}</>}
+      </span>
       <span className={styles.statLabel}>{label}</span>
     </li>
   );
@@ -339,16 +363,25 @@ function ActivityLog({ run, chatId }: { run: RunState; chatId?: string | null })
             if (e.currentTarget.scrollTop > 24 && follow) setFollow(false);
           }}
         >
-          {entries.map((e) => (
-            <li key={e.key} className={styles.entry} data-ok={e.ok === null ? "pending" : String(e.ok)}>
+          {entries.map((e, i) => (
+            <li
+              key={e.key}
+              className={`${styles.entry} rise-in`}
+              data-ok={e.ok === null ? "pending" : String(e.ok)}
+              style={{ "--i": i } as React.CSSProperties}
+            >
               <time className={styles.ts} dateTime={new Date(e.ts).toISOString()}>
                 {clockTime(e.ts)}
               </time>
-              <Dot
-                status={e.ok === null ? "pending" : e.ok ? "ok" : "error"}
-                size="sm"
-                pulse={e.ok === null}
-              />
+              <span className={styles.entryIcon}>
+                <CategoryTile cat={toolCategory(e.tool)} size="xs" active={e.ok === null} />
+                <Dot
+                  status={e.ok === null ? "pending" : e.ok ? "ok" : "error"}
+                  size="sm"
+                  pulse={e.ok === null}
+                  className={styles.entryDot}
+                />
+              </span>
               <span className={styles.src} data-src={e.source}>
                 {e.source === "chat" ? "chat" : "pc"}
               </span>

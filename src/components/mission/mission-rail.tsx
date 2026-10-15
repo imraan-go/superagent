@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Desktop } from "@phosphor-icons/react/dist/ssr";
 import dynamic from "next/dynamic";
-import { Dot, SegmentedSwitch, Skeleton } from "@/components/ui";
+import { CategoryTile, Dot, SegmentedSwitch, Skeleton } from "@/components/ui";
 import type { RunState } from "@/hooks/use-run-stream";
 import { MissionTab } from "./mission-tab";
-import type { RailCapabilities } from "./mission-tab";
+import { useCapabilities } from "@/hooks/use-capabilities";
 import styles from "./mission-rail.module.css";
 
 /**
@@ -42,50 +40,24 @@ const TABS = [
   { value: "computer" as const, label: "Computer" },
 ];
 
-interface Capabilities extends RailCapabilities {
-  sandboxId?: string | null;
-  pendingHumanRequests?: number;
-}
-
 export function MissionRail({ run, chatId }: { run: RunState; chatId?: string | null }) {
   const [tab, setTab] = useState<Tab>("mission");
 
-  const { data: capabilities } = useQuery<Capabilities>({
-    queryKey: ["lhos", "capabilities"],
-    queryFn: async () => {
-      const res = await fetch("/api/lhos/capabilities", { cache: "no-store" });
-      if (!res.ok) throw new Error("capabilities");
-      return res.json() as Promise<Capabilities>;
-    },
-    refetchInterval: 20_000,
-  });
-
-  const up = capabilities?.reachable === true && capabilities.desktopUp === true;
-  const state = !capabilities
-    ? "checking"
-    : !capabilities.reachable
-      ? capabilities.waking
-        ? "waking"
-        : "offline"
-      : up
-        ? "awake"
-        : "asleep";
+  const { capabilities, state, dot } = useCapabilities();
 
   return (
     <div className={styles.root}>
       <header className={styles.identity}>
-        <span className={styles.avatar} aria-hidden>
-          <Desktop size={18} weight="duotone" />
-        </span>
+        <CategoryTile cat="screen" size="lg" active={state === "waking"} />
         <div className={styles.idText}>
           <h2 className={styles.name}>Agent computer</h2>
           <p className={styles.sub} title={capabilities?.sandboxId ?? undefined}>
             {capabilities?.sandboxId ? capabilities.sandboxId.slice(0, 12) : "sandbox"}
           </p>
         </div>
-        <span className={styles.state}>
+        <span className={styles.state} data-state={state}>
           <Dot
-            status={up ? "live" : capabilities?.reachable ? "warn" : capabilities ? "error" : "idle"}
+            status={dot}
             size="sm"
           />
           {state}
@@ -95,6 +67,7 @@ export function MissionRail({ run, chatId }: { run: RunState; chatId?: string | 
       <SegmentedSwitch<Tab>
         label="Mission panel section"
         size="sm"
+        variant="underline"
         value={tab}
         onChange={setTab}
         options={TABS}

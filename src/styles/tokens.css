@@ -1,5 +1,5 @@
 /* ============================================================================
-   Flight Deck — design tokens (spec: docs/DESIGN_SYSTEM.md)
+   LHOS — design tokens (spec: docs/DESIGN_SYSTEM.md)
    Components reference these variables ONLY. Never a raw hex in a component.
    ========================================================================= */
 
@@ -48,6 +48,28 @@
   /* Skeleton shimmer */
   --skeleton-base: #171b22;
   --skeleton-sheen: #222835;
+
+  /* ---- Meaning palette (DESIGN_SYSTEM §Colour) — one hue per MEANING ---- */
+  --hue-teal: #2de2c5; /* agent activity */
+  --hue-violet: #b69cff; /* model / AI thinking, memory */
+  --hue-amber: #ffb224; /* approvals, attention */
+  --hue-sky: #5cc8ff; /* browser / web */
+  --hue-magenta: #f47fd8; /* connectors */
+  --hue-fuchsia: #d59bff; /* MCP servers */
+  --hue-lime: #b4ec51; /* success, money, tokens */
+  --hue-coral: #ff7b6b; /* errors */
+  --hue-indigo: #8f9cff; /* Windows PC / RDP */
+  --hue-peach: #ffb38a; /* files */
+  --hue-gold: #ffd66b; /* schedules */
+
+  /* Aurora mesh behind the shell — kept faint so text contrast is untouched. */
+  --aurora-1: rgb(45 226 197 / 0.07);
+  --aurora-2: rgb(150 120 255 / 0.07);
+  --aurora-3: rgb(92 200 255 / 0.05);
+  --glass: rgb(17 20 25 / 0.72);
+  --glass-strong: rgb(17 20 25 / 0.86);
+  --glass-line: rgb(255 255 255 / 0.07);
+  --glass-hi: rgb(255 255 255 / 0.04);
 }
 
 [data-theme="light"] {
@@ -89,6 +111,26 @@
 
   --skeleton-base: #e6ebf0;
   --skeleton-sheen: #f2f5f8;
+
+  --hue-teal: #087564;
+  --hue-violet: #6a3fd0;
+  --hue-amber: #8a5600;
+  --hue-sky: #0a659f;
+  --hue-magenta: #a3277c;
+  --hue-fuchsia: #8a2fb8;
+  --hue-lime: #3f6a00;
+  --hue-coral: #b5361f;
+  --hue-indigo: #3c49c0;
+  --hue-peach: #9a4510;
+  --hue-gold: #7a5800;
+
+  --aurora-1: rgb(8 117 100 / 0.07);
+  --aurora-2: rgb(106 63 208 / 0.06);
+  --aurora-3: rgb(10 101 159 / 0.05);
+  --glass: rgb(255 255 255 / 0.74);
+  --glass-strong: rgb(255 255 255 / 0.9);
+  --glass-line: rgb(16 21 28 / 0.08);
+  --glass-hi: rgb(255 255 255 / 0.6);
 }
 
 :root {
@@ -105,6 +147,7 @@
   --sidebar-l: 288px;
   --sidebar-l-rail: 56px;
   --sidebar-r: 360px;
+  --sidebar-r-dock: 56px;
   --chat-max: 760px;
 
   /* ---- Spacing scale (4px base) ------------------------------------ */
@@ -140,6 +183,11 @@
   --dur-std: 200ms;
   --dur-panel: 280ms;
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* Spring approximations as CSS linear() — no JS, compositor-only. */
+  --ease-spring: linear(0, 0.013 0.6%, 0.05 1.2%, 0.2 2.6%, 0.43 4.3%, 0.7 6.4%, 0.92 8.6%, 1.04 10.3%, 1.1 12%, 1.12 13.5%, 1.11 15.4%, 1.07 18%, 1.01 22.5%, 0.99 26.4%, 0.985 30%, 0.995 38%, 1.002 50%, 1);
+  --ease-snappy: cubic-bezier(0.2, 0.9, 0.25, 1.15);
+  --dur-spring: 420ms;
+  --stagger: 28ms;
 
   /* ---- Elevation: border + glow, never heavy shadow ----------------- */
   --elev-1: 0 1px 2px rgb(0 0 0 / 0.18);
@@ -152,6 +200,47 @@
   --z-toast: 60;
 }
 
+/* ---- Semantic colour roles (map MEANING → hue) ------------------------ */
+:root {
+  --c-agent: var(--hue-teal);
+  --c-think: var(--hue-violet);
+  --c-approval: var(--hue-amber);
+  --c-web: var(--hue-sky);
+  --c-connect: var(--hue-magenta);
+  --c-money: var(--hue-lime);
+  --c-error: var(--hue-coral);
+
+  /* Tool categories (src/components/chat/parts/tool-meta.ts ToolCategory). */
+  --cat-screen: var(--hue-teal);
+  --cat-browser: var(--hue-sky);
+  --cat-rdp: var(--hue-indigo);
+  --cat-shell: var(--hue-lime);
+  --cat-files: var(--hue-peach);
+  --cat-connector: var(--hue-magenta);
+  --cat-mcp: var(--hue-fuchsia);
+  --cat-memory: var(--hue-violet);
+  --cat-schedule: var(--hue-gold);
+  --cat-human: var(--hue-amber);
+  --cat-other: var(--text-2);
+}
+
+/* `data-cat` on any element exposes its category hue as --cat. */
+[data-cat="screen"] { --cat: var(--cat-screen); }
+[data-cat="browser"] { --cat: var(--cat-browser); }
+[data-cat="rdp"] { --cat: var(--cat-rdp); }
+[data-cat="shell"] { --cat: var(--cat-shell); }
+[data-cat="files"] { --cat: var(--cat-files); }
+[data-cat="connector"] { --cat: var(--cat-connector); }
+[data-cat="mcp"] { --cat: var(--cat-mcp); }
+[data-cat="memory"] { --cat: var(--cat-memory); }
+[data-cat="schedule"] { --cat: var(--cat-schedule); }
+[data-cat="human"] { --cat: var(--cat-human); }
+[data-cat="other"] { --cat: var(--cat-other); }
+[data-cat="think"] { --cat: var(--c-think); }
+[data-cat="agent"] { --cat: var(--c-agent); }
+[data-cat="money"] { --cat: var(--c-money); }
+[data-cat="error"] { --cat: var(--c-error); }
+
 /* Manage mode recolors the primary accent to amber (docs/MANAGE_TAB.md). */
 [data-mode="manage"] {
   --signal: var(--amber);
@@ -163,6 +252,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   :root {
+    --dur-spring: 0ms;
+    --stagger: 0ms;
     --dur-micro: 0ms;
     --dur-std: 0ms;
     --dur-panel: 0ms;
@@ -171,6 +262,8 @@
 
 /* Settings → Appearance overrides (set on <html> by AppearanceSync). */
 :root[data-motion="reduce"] {
+  --dur-spring: 0ms;
+  --stagger: 0ms;
   --dur-micro: 0ms;
   --dur-std: 0ms;
   --dur-panel: 0ms;
@@ -185,6 +278,8 @@
 
 /* "Reduced motion: off" keeps motion even when the OS asks for less. */
 :root[data-motion="full"] {
+  --dur-spring: 420ms;
+  --stagger: 28ms;
   --dur-micro: 120ms;
   --dur-std: 200ms;
   --dur-panel: 280ms;

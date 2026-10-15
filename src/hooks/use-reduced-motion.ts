@@ -3,22 +3,28 @@
 import { useSyncExternalStore } from "react";
 
 /**
- * Tracks `prefers-reduced-motion`. Tokens already zero out CSS durations, but
- * JS-driven motion (count-ups, the LiveGlyph orbit, the splash sequence) has to
- * opt out explicitly.
- *
- * `matchMedia` is an external store, so it is read through
- * `useSyncExternalStore` — no effect, and no hydration mismatch.
+ * Tracks reduced motion: the OS `prefers-reduced-motion` query, overridden by
+ * Settings › Appearance (`data-motion="reduce" | "full"` on <html>). Tokens
+ * already zero out CSS durations, but JS-driven motion (count-ups, Motion
+ * springs, the splash sequence) has to opt out explicitly.
  */
 const QUERY = "(prefers-reduced-motion: reduce)";
 
 function subscribe(onChange: () => void): () => void {
   const mq = window.matchMedia(QUERY);
   mq.addEventListener("change", onChange);
-  return () => mq.removeEventListener("change", onChange);
+  const mo = new MutationObserver(onChange);
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-motion"] });
+  return () => {
+    mq.removeEventListener("change", onChange);
+    mo.disconnect();
+  };
 }
 
 function getSnapshot(): boolean {
+  const forced = document.documentElement.dataset.motion;
+  if (forced === "reduce") return true;
+  if (forced === "full") return false;
   return window.matchMedia(QUERY).matches;
 }
 

@@ -7,7 +7,11 @@
   position: relative;
   flex-shrink: 0;
   color: var(--text-3);
-  transition: color var(--dur-std) var(--ease-out);
+  transition: color var(--dur-panel) var(--ease-out), filter var(--dur-panel) var(--ease-out);
+}
+
+.arc {
+  transition: stroke var(--dur-panel) var(--ease-out);
 }
 
 .svg {
@@ -52,8 +56,13 @@
 /* ---- thinking: fast spin + halo --------------------------------------- */
 
 .thinking {
-  color: var(--signal);
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--signal) 50%, transparent));
+  color: var(--c-think);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--c-think) 55%, transparent));
+}
+
+/* Two-tone orbit while thinking: the inner arc carries the agent hue. */
+.thinking .a3 {
+  stroke: var(--c-agent);
 }
 
 .thinking .a1 {
@@ -75,7 +84,12 @@
 /* ---- tool: stepped rotation, a tool call is executing ------------------ */
 
 .tool {
-  color: var(--signal);
+  color: var(--c-agent);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c-agent) 45%, transparent));
+}
+
+.tool .a2 {
+  stroke: var(--c-web);
 }
 
 .tool .a1 {
@@ -93,8 +107,8 @@
 /* ---- approval: amber double pulse, waiting on the owner ---------------- */
 
 .approval {
-  color: var(--amber);
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--amber) 50%, transparent));
+  color: var(--c-approval);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--c-approval) 50%, transparent));
 }
 
 .approval .a1,
@@ -110,7 +124,7 @@
 /* ---- done: settles green ----------------------------------------------- */
 
 .done {
-  color: var(--ok);
+  color: var(--c-money);
 }
 
 .done .a1,
@@ -126,7 +140,7 @@
 /* ---- error ------------------------------------------------------------- */
 
 .error {
-  color: var(--danger);
+  color: var(--c-error);
 }
 
 .error .a1,
@@ -189,8 +203,13 @@
 
 /* Reduced motion: every state becomes a static, still-distinguishable glyph. */
 @media (prefers-reduced-motion: reduce) {
-  .arc,
-  .core {
+  :root:not([data-motion="full"]) .arc,
+  :root:not([data-motion="full"]) .core {
     animation: none !important;
   }
+}
+
+:root[data-motion="reduce"] .arc,
+:root[data-motion="reduce"] .core {
+  animation: none !important;
 }

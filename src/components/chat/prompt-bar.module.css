@@ -12,9 +12,13 @@
   flex-direction: column;
   gap: var(--sp-1);
   padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-2);
-  border: var(--border) solid var(--line);
+  border: var(--border) solid var(--glass-line);
   border-radius: var(--radius-panel);
-  background: var(--ink-2);
+  background:
+    linear-gradient(180deg, var(--glass-hi), transparent 50%),
+    color-mix(in srgb, var(--ink-2) 86%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--elev-2);
   transition:
     border-color var(--dur-micro) ease,
     box-shadow var(--dur-std) ease;
@@ -219,12 +223,19 @@
 }
 
 /* Busy: a slow signal sweep along the composer's top edge. */
+/* Running: a two-tone progress sweep rides the composer's top edge. */
+.barBusy {
+  border-color: color-mix(in srgb, var(--c-think) 45%, var(--line));
+  box-shadow: 0 0 28px color-mix(in srgb, var(--c-think) 14%, transparent);
+}
+
 .barBusy::before {
   content: "";
   position: absolute;
   inset: -1px var(--sp-4) auto;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--signal), transparent);
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--c-think), var(--c-agent), transparent);
   background-size: 40% 100%;
   background-repeat: no-repeat;
   animation: sweep 1.6s linear infinite;
@@ -274,16 +285,21 @@
     background var(--dur-micro) ease;
 }
 
-.cap:hover { color: var(--text-1); border-color: var(--line-strong); }
+.cap {
+  transition: transform var(--dur-spring) var(--ease-spring), border-color var(--dur-std) var(--ease-out), color var(--dur-std) var(--ease-out);
+}
+.cap svg { color: var(--cat, currentColor); }
+.cap:hover { color: var(--text-1); border-color: color-mix(in srgb, var(--cat, var(--line-strong)) 55%, var(--line)); transform: translateY(-1px); }
+.cap:active { transform: scale(0.95); }
 .cap:focus-visible { outline: 2px solid var(--signal); outline-offset: 1px; }
 
 .capOn {
-  border-color: color-mix(in oklab, var(--signal) 55%, var(--line));
-  background: var(--signal-wash);
-  color: var(--signal);
+  border-color: color-mix(in oklab, var(--cat, var(--signal)) 60%, var(--line));
+  background: color-mix(in srgb, var(--cat, var(--signal)) 14%, transparent);
+  color: var(--cat, var(--signal));
 }
 
-.capOn:hover { color: var(--signal); border-color: var(--signal); }
+.capOn:hover { color: var(--cat, var(--signal)); border-color: var(--cat, var(--signal)); }
 
 .right {
   margin-left: auto;

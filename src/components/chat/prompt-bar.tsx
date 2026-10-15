@@ -86,6 +86,16 @@ interface Attachment {
   error?: string;
 }
 
+/** Composer chips share the tool-category hues (DESIGN_SYSTEM §Colour). */
+const CAP_CATEGORY: Record<CapabilityId, string> = {
+  computer: "screen",
+  browser: "browser",
+  rdp: "rdp",
+  connectors: "connector",
+  mcp: "mcp",
+  memory: "memory",
+};
+
 export function PromptBar({ onSend, onStop, busy, disabled, chatId, chatModel }: PromptBarProps) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -457,6 +467,7 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId, chatModel }:
                   key={c.id}
                   type="button"
                   className={cn(styles.cap, on && styles.capOn)}
+                  data-cat={CAP_CATEGORY[c.id]}
                   aria-pressed={on}
                   title={c.hint}
                   onClick={() => toggleCap(c.id)}

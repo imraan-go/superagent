@@ -1,5 +1,5 @@
-/* The topbar Agent ⇄ Manage control: a sliding "hangar door" thumb that takes
-   the accent of the mode it is on (docs/DESIGN_SYSTEM.md §Layout). */
+/* Segmented control with a measured, sliding thumb. `pill` is the topbar
+   Agent ⇄ Manage "hangar door"; `underline` is a tab strip whose bar slides. */
 
 .root {
   display: inline-grid;
@@ -7,8 +7,8 @@
   grid-auto-columns: 1fr;
   position: relative;
   padding: 3px;
-  background: var(--ink-2);
-  border: var(--border) solid var(--line);
+  background: color-mix(in srgb, var(--ink-2) 80%, transparent);
+  border: var(--border) solid var(--glass-line);
   border-radius: var(--radius-pill);
   isolation: isolate;
 }
@@ -17,13 +17,15 @@
   position: absolute;
   top: 3px;
   bottom: 3px;
+  left: 0;
   border-radius: var(--radius-pill);
-  background: var(--signal-wash-strong);
-  border: var(--border) solid var(--signal-dim);
+  background:
+    linear-gradient(120deg, var(--signal-wash-strong), color-mix(in srgb, var(--c-think) 14%, transparent));
+  border: var(--border) solid color-mix(in srgb, var(--signal) 55%, transparent);
   box-shadow: var(--halo);
   z-index: -1;
   transition:
-    transform var(--dur-panel) var(--ease-out),
+    transform var(--dur-spring) var(--ease-spring),
     width var(--dur-panel) var(--ease-out),
     background-color var(--dur-std) var(--ease-out),
     border-color var(--dur-std) var(--ease-out);
@@ -46,11 +48,15 @@
   letter-spacing: 0.02em;
   cursor: pointer;
   white-space: nowrap;
-  transition: color var(--dur-std) var(--ease-out);
+  transition: color var(--dur-std) var(--ease-out), transform var(--dur-spring) var(--ease-spring);
 }
 
 .option:hover:not(:disabled) {
   color: var(--text-1);
+}
+
+.option:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .option[aria-selected="true"] {
@@ -66,4 +72,33 @@
   height: 24px;
   padding: 0 var(--sp-3);
   font-size: var(--fs-tiny);
+}
+
+/* ---- underline variant -------------------------------------------------- */
+.underline {
+  padding: 0;
+  background: none;
+  border: 0;
+  border-bottom: var(--border) solid var(--line);
+  border-radius: 0;
+}
+
+.underline .thumb {
+  top: auto;
+  bottom: -1px;
+  height: 2px;
+  border: 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--signal), var(--c-think));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--signal) 60%, transparent);
+}
+
+.underline .option {
+  height: 34px;
+  border-radius: 0;
+  font-size: var(--fs-small);
+}
+
+.underline .option[aria-selected="true"] {
+  color: var(--text-1);
 }

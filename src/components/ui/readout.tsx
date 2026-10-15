@@ -120,3 +120,30 @@ export function Readout({
     </div>
   );
 }
+
+/**
+ * Bare animated number for meters that are not a full Readout (stat tiles,
+ * dock mini readouts). Same linear count-up, same reduced-motion opt-out.
+ */
+export function CountUp({
+  value,
+  precision = 0,
+  format,
+}: {
+  value: number;
+  precision?: number;
+  format?: (n: number) => string;
+}) {
+  const reduced = useReducedMotion();
+  const shown = useCountUp(value, !reduced);
+  return (
+    <>
+      {format
+        ? format(shown)
+        : shown.toLocaleString("en-US", {
+            minimumFractionDigits: precision,
+            maximumFractionDigits: precision,
+          })}
+    </>
+  );
+}

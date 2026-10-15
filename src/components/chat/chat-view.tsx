@@ -230,7 +230,7 @@ export function ChatView({ chatId }: { chatId: string }) {
         />
       </main>
 
-      <RailAside drawer={drawer}>
+      <RailAside drawer={drawer} phase={state.phase}>
         <MissionRail run={state} chatId={chatId} />
       </RailAside>
     </>

@@ -1,34 +1,169 @@
+/* Left rail — fixed, full height. Only .list scrolls (DESIGN_SYSTEM §Layout). */
 .root {
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   height: 100%;
   min-height: 0;
 }
 
-.header {
+/* ---- head: brand, New chat, search ------------------------------------- */
+.head {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-3) var(--sp-2);
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  min-height: 40px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+  color: var(--text-1);
+  text-decoration: none;
+  border-radius: var(--radius-control);
+}
+
+/* The mark: the LiveGlyph inside a gradient-ringed tile. */
+.mark {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background:
+    radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--c-agent) 28%, transparent), transparent 60%),
+    radial-gradient(circle at 75% 80%, color-mix(in srgb, var(--c-think) 30%, transparent), transparent 60%),
+    var(--ink-2);
+  border: var(--border) solid var(--glass-line);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--c-agent) 18%, transparent);
+  transition: transform var(--dur-spring) var(--ease-spring);
+}
+
+.brand:hover .mark {
+  transform: rotate(-8deg) scale(1.06);
+}
+
+.brand .markGlyph {
+  color: var(--c-agent);
+}
+
+.wordmark {
+  display: grid;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  line-height: 1;
+  background: linear-gradient(95deg, var(--text-1) 35%, var(--c-agent) 75%, var(--c-think));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.wordSub {
+  margin-top: 5px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  -webkit-text-fill-color: var(--text-3);
+}
+
+.collapseBtn {
+  flex: none;
+}
+
+/* Prominent primary action: teal → violet gradient with a spring press. */
+.newChat {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: var(--sp-3);
-  border-bottom: var(--border) solid var(--line);
+  height: 40px;
+  padding: 0 var(--sp-3);
+  border: var(--border) solid color-mix(in srgb, var(--c-agent) 50%, transparent);
+  border-radius: var(--radius-control);
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--c-agent) 24%, transparent), color-mix(in srgb, var(--c-think) 18%, transparent));
+  color: var(--text-1);
+  font-family: var(--font-display);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 0 0 0 transparent;
+  transition:
+    transform var(--dur-spring) var(--ease-spring),
+    box-shadow var(--dur-std) var(--ease-out),
+    border-color var(--dur-std) var(--ease-out);
+}
+
+.newChat svg {
+  color: var(--c-agent);
+}
+
+.newChat:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--c-agent);
+  box-shadow: 0 6px 22px color-mix(in srgb, var(--c-agent) 22%, transparent);
+}
+
+.newChat:active:not(:disabled) {
+  transform: scale(0.98);
+  transition-duration: var(--dur-micro);
+}
+
+.newChat:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.kbd {
+  margin-left: auto;
+  padding: 1px 6px;
+  border: var(--border) solid var(--line);
+  border-radius: 6px;
+  background: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+}
+
+.newIcon {
+  justify-self: center;
+  color: var(--c-agent);
+  border-color: color-mix(in srgb, var(--c-agent) 45%, transparent);
+  background: color-mix(in srgb, var(--c-agent) 14%, transparent);
 }
 
 .search {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  flex: 1;
   min-width: 0;
+  height: 34px;
   padding: 0 var(--sp-3);
-  height: 32px;
   border: var(--border) solid var(--line);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-control);
   color: var(--text-3);
   background: var(--ink-1);
+  transition: border-color var(--dur-std) var(--ease-out), box-shadow var(--dur-std) var(--ease-out);
 }
 
 .search:focus-within {
-  border-color: var(--signal);
+  border-color: var(--c-agent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-agent) 14%, transparent);
   color: var(--text-2);
 }
 
@@ -46,15 +181,17 @@
   color: var(--text-3);
 }
 
-/* Hide the WebKit clear affordance; it fights the pill's padding. */
 .search input::-webkit-search-cancel-button {
   display: none;
 }
 
+/* ---- list: the only scroller ------------------------------------------- */
 .list {
   overflow-y: auto;
-  padding: var(--sp-2) var(--sp-2) var(--sp-5);
+  overscroll-behavior: contain;
+  padding: 0 var(--sp-2) var(--sp-4);
   min-height: 0;
+  scrollbar-gutter: stable;
 }
 
 .loading,
@@ -65,53 +202,101 @@
 }
 
 .section + .section {
-  margin-top: var(--sp-4);
+  margin-top: var(--sp-2);
 }
 
+/* Sticky group header with a frosted backing so rows slide under it. */
 .sectionLabel {
-  padding: 0 var(--sp-3) var(--sp-2);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-2) var(--sp-3) 6px;
+  background: color-mix(in srgb, var(--ink-1) 88%, transparent);
+  backdrop-filter: blur(8px);
   font-family: var(--font-display);
   font-size: var(--fs-micro);
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-3);
+}
+
+.sectionCount {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text-3);
+  opacity: 0.8;
 }
 
 .row {
   position: relative;
   display: flex;
   align-items: center;
+  border: var(--border) solid transparent;
   border-radius: var(--radius-control);
+  transition:
+    background-color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out),
+    transform var(--dur-spring) var(--ease-spring);
 }
 
 .row:hover {
   background: var(--ink-2);
+  transform: translateX(2px);
 }
 
 .rowActive {
-  background: var(--ink-2);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--c-agent) 12%, transparent), transparent 80%),
+    var(--ink-2);
+  border-color: color-mix(in srgb, var(--c-agent) 24%, transparent);
 }
 
-/* Active marker: a signal bar on the inner edge, not a filled block. */
 .rowActive::before {
   content: "";
   position: absolute;
-  inset-block: 6px;
-  left: 0;
-  width: 2px;
-  border-radius: 2px;
-  background: var(--signal);
+  inset-block: 8px;
+  left: -1px;
+  width: 3px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--c-agent), var(--c-think));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c-agent) 60%, transparent);
 }
 
 .rowLink {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
   flex: 1;
   min-width: 0;
-  padding: var(--sp-2) var(--sp-3);
+  padding: 7px var(--sp-2);
   color: inherit;
   text-decoration: none;
+  border-radius: var(--radius-control);
+}
+
+.tileWrap {
+  position: relative;
+  flex: none;
+  display: inline-grid;
+}
+
+.tileDot {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  box-shadow: 0 0 0 2px var(--ink-1);
+}
+
+.rowText {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
 }
 
 .rowTitle {
@@ -138,41 +323,197 @@
   text-overflow: ellipsis;
 }
 
-.rowStatus {
-  color: var(--text-2);
-}
+.row[data-status="live"] .rowStatus { color: var(--c-agent); }
+.row[data-status="warn"] .rowStatus { color: var(--c-approval); }
+.row[data-status="error"] .rowStatus { color: var(--c-error); }
 
 .rowTime {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
-/* Row actions stay hidden until the row is hovered or focused, so the list
-   reads as titles rather than a wall of buttons. */
+.pinMark {
+  flex: none;
+  color: var(--c-approval);
+}
+
+/* Hover actions float over the row's right edge on a fade. */
 .rowActions {
+  position: absolute;
+  right: 4px;
   display: flex;
   gap: 2px;
-  padding-right: var(--sp-2);
+  padding-left: var(--sp-5);
+  background: linear-gradient(90deg, transparent, var(--ink-2) 30%);
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
   opacity: 0;
-  transition: opacity var(--dur-micro) ease;
+  transform: translateX(4px);
+  pointer-events: none;
+  transition:
+    opacity var(--dur-micro) var(--ease-out),
+    transform var(--dur-std) var(--ease-spring);
 }
 
 .row:hover .rowActions,
 .row:focus-within .rowActions {
   opacity: 1;
+  transform: none;
+  pointer-events: auto;
 }
 
 @media (hover: none) {
   .rowActions {
+    position: static;
     opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    background: none;
+    padding-left: 0;
   }
 }
 
-.footer {
-  padding: var(--sp-2);
-  border-top: var(--border) solid var(--line);
+.renameBox {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex: 1;
+  padding: 6px var(--sp-2);
 }
 
-.settings {
+.renameInput {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 var(--sp-2);
+  border: var(--border) solid var(--c-agent);
+  border-radius: 7px;
+  background: var(--ink-0);
+  color: var(--text-1);
+  font-size: var(--fs-small);
+  outline: none;
+}
+
+/* ---- collapsed icon rail ----------------------------------------------- */
+.root[data-collapsed] .head {
+  justify-items: center;
+  padding-inline: var(--sp-2);
+}
+
+.root[data-collapsed] .brandRow {
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.root[data-collapsed] .list {
+  padding-inline: 0;
+  scrollbar-width: none;
+}
+
+.mini {
+  display: grid;
+  justify-items: center;
+  gap: var(--sp-1);
+  margin: 0;
+  padding: var(--sp-2) 0;
+  list-style: none;
+}
+
+.miniLink {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: var(--border) solid transparent;
+  border-radius: var(--radius-control);
+  transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-spring) var(--ease-spring);
+}
+
+.miniLink:hover {
+  background: var(--ink-2);
+  transform: scale(1.08);
+}
+
+.miniActive {
+  background: var(--ink-2);
+  border-color: color-mix(in srgb, var(--c-agent) 40%, transparent);
+}
+
+.miniDot {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  box-shadow: 0 0 0 2px var(--ink-1);
+}
+
+/* ---- dock: computer, settings, owner (fixed) ---------------------------- */
+.dock {
+  display: grid;
+  gap: var(--sp-1);
+  padding: var(--sp-2);
+  border-top: var(--border) solid var(--glass-line);
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--ink-0) 50%, transparent));
+}
+
+.root[data-collapsed] .dock {
+  justify-items: center;
+}
+
+.computer {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2);
+  border: var(--border) solid var(--glass-line);
+  border-radius: var(--radius-control);
+  background: var(--glass);
+  margin-bottom: var(--sp-1);
+}
+
+.computerText {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.computerName {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.computerSub {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.computerState {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-2);
+}
+
+.computer[data-state="awake"] .computerState { color: var(--c-money); }
+.computer[data-state="waking"] .computerState,
+.computer[data-state="asleep"] .computerState { color: var(--c-approval); }
+.computer[data-state="offline"] .computerState { color: var(--c-error); }
+
+.computerMini {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+}
+
+.dockBtn {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
@@ -186,9 +527,60 @@
   font-size: var(--fs-small);
   text-align: left;
   cursor: pointer;
+  transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
 }
 
-.settings:hover {
+.dockBtn:hover {
   background: var(--ink-2);
   color: var(--text-1);
+}
+
+.dockBtn:hover svg {
+  transform: rotate(60deg);
+}
+
+.dockBtn svg {
+  transition: transform var(--dur-spring) var(--ease-spring);
+}
+
+.owner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-1) var(--sp-1) var(--sp-2);
+}
+
+.avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--c-agent), var(--c-think));
+  color: var(--on-signal);
+  font-family: var(--font-display);
+  font-size: var(--fs-tiny);
+  font-weight: 700;
+}
+
+.ownerText {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.ownerName {
+  font-size: var(--fs-tiny);
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.ownerMail {
+  overflow: hidden;
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }

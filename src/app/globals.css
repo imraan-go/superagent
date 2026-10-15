@@ -160,3 +160,71 @@
     text-wrap: balance;
   }
 }
+
+/* ---- Motion system (DESIGN_SYSTEM §Motion) --------------------------------
+   Shared, compositor-only (transform/opacity) entrances. Lists set `--i` on
+   each child for a stagger; the delay is capped so long lists stay snappy. */
+@layer utilities {
+  .rise-in {
+    animation: fd-rise var(--dur-spring) var(--ease-spring) both;
+    animation-delay: calc(min(var(--i, 0), 12) * var(--stagger));
+  }
+
+  .pop-in {
+    animation: fd-pop var(--dur-spring) var(--ease-spring) both;
+  }
+
+  /* Spring lift on hover, settle on press. */
+  .lift {
+    transition:
+      transform var(--dur-spring) var(--ease-spring),
+      border-color var(--dur-std) var(--ease-out),
+      background-color var(--dur-std) var(--ease-out),
+      box-shadow var(--dur-std) var(--ease-out);
+  }
+
+  .lift:hover {
+    transform: translateY(-2px);
+  }
+
+  .lift:active {
+    transform: translateY(0) scale(0.985);
+    transition-duration: var(--dur-micro);
+  }
+}
+
+@keyframes fd-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes fd-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+/* One guard for every animation and transition in the app: the OS setting
+   (unless the owner forced motion on) and Settings › Reduce motion. */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) *,
+  :root:not([data-motion="full"]) *::before,
+  :root:not([data-motion="full"]) *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0ms !important;
+  }
+}
+
+:root[data-motion="reduce"] *,
+:root[data-motion="reduce"] *::before,
+:root[data-motion="reduce"] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  animation-delay: 0ms !important;
+  transition-duration: 0ms !important;
+}
