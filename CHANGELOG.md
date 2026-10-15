@@ -3,6 +3,24 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — HITL: approvals, questions, takeover, notifications + sound
+- Panel checkpoints now pause with saved resume state (on the `approval` run
+  step) and **resume** after an owner decision: approve runs the call then
+  re-gates the rest of the turn; reject tells the model and skips the rest.
+  SSE seq continues across segments; superseded `paused_approval` terminals
+  are dropped on replay. A new user turn expires a pending checkpoint.
+- `GET /api/approvals` merges panel checkpoints, LHOS records and bridge
+  `/hitl`; mirrors LHOS ids and reconciles vanished ones
+  (`decided_via` lhos-page / desktop). `POST /api/approvals/{uuid|8hex}`
+  decides either kind; new `POST /api/hitl/{id}/answer|done` (bridge) refuse
+  `confirm` records (409). All owner-session + same-origin; audited.
+- Policy: writing `http_request` (POST/PUT/PATCH/DELETE) checkpoints.
+- Mission tab "Waiting on you" panel (hold-to-approve, reject, inline answer,
+  Open computer → `lhos:open-computer` event, Done); topbar badge; app-wide
+  watcher → toast + sound + Chrome notification (lazy permission).
+- `useSound()` WebAudio cues (send/done/approval/error/takeover), prefs from
+  `/api/settings/{sound,notifications}` with schema defaults.
+
 ## 2026-10-15 — Live spend ticker; Phase 1 complete
 - `/api/usage/live` (SSE, owner session): pushes today's totals — and one
   chat's when `?chatId=` — on connect, after every `usage_events` insert

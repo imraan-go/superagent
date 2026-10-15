@@ -19,6 +19,8 @@ beforeAll(async () => {
   process.env.LHOS_VNC_URL ??= "https://vnc.example.test/";
   process.env.E2B_API_URL ??= "http://e2b.example.test:3000";
   process.env.E2B_API_KEY ??= "test-e2b-key";
+  process.env.BRIDGE_URL ??= "http://127.0.0.1:9999";
+  process.env.BRIDGE_TOKEN ??= "test-bridge-token";
 
   const mod = await import("@/server/lib/crypto");
   ({ seal, unseal, last4, timingSafeEqualStr } = mod);

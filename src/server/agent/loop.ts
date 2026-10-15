@@ -1,7 +1,7 @@
 import "server-only";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, max, sum } from "drizzle-orm";
 import { db } from "@/server/db";
-import { approvals, runSteps, runs, usageEvents } from "@/server/db/schema";
+import { approvals, chats, runEvents, runSteps, runs, usageEvents } from "@/server/db/schema";
 import { getToolCatalog } from "@/server/lhos/catalog";
 import { lhos, resultImages, resultText } from "@/server/lhos/client";
 import { classifyFailure, backoffMs, MAX_WAKING_RETRIES } from "@/server/lhos/retryable";
@@ -17,6 +17,15 @@ import { filterTools } from "./allowlist";
 import { notifyUsage } from "@/server/usage/live";
 import { requiresApproval } from "./policy";
 import { emit, finishRun, startRun } from "./registry";
+import {
+  EXPIRED_TEXT,
+  REJECTED_TEXT,
+  SKIPPED_TEXT,
+  checkpointStateSchema,
+  planResume,
+  syntheticResult,
+} from "./checkpoint";
+import type { CheckpointState, Decision, PlannedCall, ToolCall } from "./checkpoint";
 import { buildContext, toAdapterParts } from "./context";
 
 /**
@@ -66,11 +75,20 @@ interface ExecuteInput extends StartRunInput {
   signal: AbortSignal;
 }
 
-async function execute(input: ExecuteInput): Promise<void> {
+/** Present when `execute` continues a run paused at a checkpoint. */
+interface ResumeInput {
+  approvalId: string;
+  decision: Decision;
+  state: CheckpointState;
+  stepIdx: number;
+  costSoFar: number;
+}
+
+async function execute(input: ExecuteInput, resume?: ResumeInput): Promise<void> {
   const { runId, chatId, userId, modelId, signal } = input;
-  let stepIdx = 0;
+  let stepIdx = resume?.stepIdx ?? 0;
   let total: TokenUsage = ZERO_USAGE;
-  let cost = 0;
+  let cost = resume?.costSoFar ?? 0;
 
   try {
     const { adapter, model } = await getAdapter(modelId);
@@ -79,6 +97,40 @@ async function execute(input: ExecuteInput): Promise<void> {
     const tools = model.tools ? await loadTools() : [];
     const context = await buildContext({ chatId, userId, model });
     const messages: AdapterMessage[] = context.messages;
+
+    if (resume) {
+      const pending = resume.state.calls[resume.state.pendingIndex];
+      emit(runId, {
+        type: "approval_decided",
+        approvalId: resume.approvalId,
+        tool: pending?.name ?? "",
+        decision: resume.decision,
+      });
+
+      // Finish the paused turn first: the model must see a result for every
+      // tool it asked for, in the order it asked, before it speaks again.
+      const outcome = await runCalls({
+        runId,
+        chatId,
+        signal,
+        stepIdx,
+        calls: resume.state.calls,
+        offset: resume.state.pendingIndex,
+        completed: resume.state.completed as MessagePart[],
+        plan: planResume(resume.state, resume.decision),
+      });
+      stepIdx = outcome.stepIdx;
+      if (outcome.paused) return;
+
+      const saved = await appendMessage(chatId, userId, {
+        role: "tool",
+        content: outcome.parts,
+        runId,
+      });
+      emit(runId, { type: "message", message: saved });
+      // buildContext already holds the assistant turn; append its results.
+      messages.push({ role: "user", content: toAdapterParts(outcome.parts) });
+    }
 
     for (let turn = 0; turn < MAX_STEPS; turn += 1) {
       if (signal.aborted) return void (await endRun(runId, chatId, "cancelled"));
@@ -185,19 +237,19 @@ async function execute(input: ExecuteInput): Promise<void> {
         );
       }
 
-      const resultParts: MessagePart[] = [];
-
-      for (const call of toolCalls) {
-        const gate = requiresApproval(call.name);
-        if (gate.required) {
-          await checkpoint({ runId, chatId, stepIdx, call, reason: gate.reason });
-          return;
-        }
-
-        const step = await observeTool({ runId, stepIdx, call, signal });
-        stepIdx += 1;
-        resultParts.push(step);
-      }
+      const outcome = await runCalls({
+        runId,
+        chatId,
+        signal,
+        stepIdx,
+        calls: toolCalls,
+        offset: 0,
+        completed: [],
+        plan: toolCalls.map((call) => ({ call, action: "gate" as const })),
+      });
+      stepIdx = outcome.stepIdx;
+      if (outcome.paused) return;
+      const resultParts = outcome.parts;
 
       const saved = await appendMessage(chatId, userId, {
         role: "tool",
@@ -228,6 +280,58 @@ async function execute(input: ExecuteInput): Promise<void> {
   }
 }
 
+/**
+ * Executes a turn's tool calls in order. A `gate` call that the policy flags
+ * pauses the whole run *before* it executes; the results gathered so far are
+ * saved with the checkpoint so resuming continues exactly here.
+ */
+async function runCalls(args: {
+  runId: string;
+  chatId: string;
+  signal: AbortSignal;
+  stepIdx: number;
+  /** Every call of the assistant turn (stored in the checkpoint). */
+  calls: ToolCall[];
+  /** Index in `calls` of `plan[0]`. */
+  offset: number;
+  completed: MessagePart[];
+  plan: PlannedCall[];
+}): Promise<{ paused: boolean; parts: MessagePart[]; stepIdx: number }> {
+  const { runId, chatId, signal, calls, offset, plan } = args;
+  const parts = [...args.completed];
+  let idx = args.stepIdx;
+
+  for (const [i, { call, action }] of plan.entries()) {
+    if (action === "reject" || action === "skip") {
+      parts.push(syntheticResult(call, action === "reject" ? REJECTED_TEXT : SKIPPED_TEXT));
+      continue;
+    }
+
+    if (action === "gate") {
+      const gate = requiresApproval(call.name, {}, call.args);
+      if (gate.required) {
+        await checkpoint({
+          runId,
+          chatId,
+          stepIdx: idx,
+          call,
+          reason: gate.reason,
+          state: { v: 1, calls, pendingIndex: offset + i, completed: parts },
+        });
+        return { paused: true, parts, stepIdx: idx + 1 };
+      }
+    }
+
+    parts.push(await observeTool({ runId, stepIdx: idx, call, signal }));
+    idx += 1;
+  }
+
+  return { paused: false, parts, stepIdx: idx };
+}
+
+/** HITL tools block inside LHOS until the owner answers on the desktop or panel. */
+const QUESTION_TOOLS = new Set(["ask_user", "request_takeover"]);
+
 /** Runs one tool, persisting the step and streaming both of its events. */
 async function observeTool(args: {
   runId: string;
@@ -251,9 +355,21 @@ async function observeTool(args: {
     step: { idx: stepIdx, type: "tool", toolName: call.name, label, ok: null, ms: null },
   });
 
+  const asksOwner = QUESTION_TOOLS.has(call.name);
+  if (asksOwner) {
+    await db.update(runs).set({ status: "paused_question" }).where(eq(runs.id, runId));
+  }
+
   for (let attempt = 0; ; attempt += 1) {
     try {
-      const result = await lhos.callTool(call.name, call.args, { signal });
+      const result = await lhos.callTool(call.name, call.args, { signal }).finally(async () => {
+        if (asksOwner) {
+          await db
+            .update(runs)
+            .set({ status: "running" })
+            .where(and(eq(runs.id, runId), eq(runs.status, "paused_question")));
+        }
+      });
       const text = truncate(resultText(result.result), RESULT_LIMIT);
       const images = resultImages(result.result);
 
@@ -345,10 +461,11 @@ async function checkpoint(args: {
   runId: string;
   chatId: string;
   stepIdx: number;
-  call: { id: string; name: string; args: Record<string, unknown> };
+  call: ToolCall;
   reason: string | null;
+  state: CheckpointState;
 }): Promise<void> {
-  const { runId, chatId, stepIdx, call, reason } = args;
+  const { runId, chatId, stepIdx, call, reason, state } = args;
 
   await db.insert(runSteps).values({
     runId,
@@ -356,14 +473,20 @@ async function checkpoint(args: {
     type: "approval",
     toolName: call.name,
     args: call.args,
+    // The resume state lives with the step it belongs to (no schema change).
+    result: state as unknown as Record<string, unknown>,
   });
 
-  await db.insert(approvals).values({
-    runId,
-    kind: "confirm",
-    prompt: `Run \`${call.name}\`? ${reason ?? ""}`.trim(),
-    status: "pending",
-  });
+  const [approval] = await db
+    .insert(approvals)
+    .values({
+      runId,
+      stepIdx,
+      kind: "confirm",
+      prompt: `Run \`${call.name}\`? ${reason ?? ""}`.trim(),
+      status: "pending",
+    })
+    .returning({ id: approvals.id });
 
   await db
     .update(runs)
@@ -372,6 +495,7 @@ async function checkpoint(args: {
 
   emit(runId, {
     type: "approval_required",
+    approvalId: approval?.id,
     stepIdx,
     tool: call.name,
     reason: reason ?? "This action needs your approval.",
@@ -445,3 +569,155 @@ function sleep(ms: number, signal: AbortSignal): Promise<void> {
 }
 
 export { MAX_COST_USD, MAX_STEPS };
+
+/* ---------------------------------------------------------------- resume -- */
+
+/**
+ * Applies the owner's decision to a panel checkpoint and resumes its run.
+ *
+ * Only reachable from the owner-session route `POST /api/approvals/{id}`. The
+ * loop above never calls this: a run can pause itself but never decide its
+ * own checkpoint (rule 00-project; tests/unit/checkpoint.test.ts).
+ *
+ * The claim is a single conditional UPDATE, so a double click or two tabs can
+ * never resume the same run twice.
+ */
+export async function decideCheckpoint(args: {
+  approvalId: string;
+  decision: Decision;
+  userId: string;
+}): Promise<{ runId: string; chatId: string }> {
+  const { approvalId, decision, userId } = args;
+
+  const [row] = await db
+    .select({
+      runId: approvals.runId,
+      stepIdx: approvals.stepIdx,
+      status: approvals.status,
+      chatId: runs.chatId,
+      runStatus: runs.status,
+      model: runs.model,
+      owner: chats.userId,
+    })
+    .from(approvals)
+    .innerJoin(runs, eq(runs.id, approvals.runId))
+    .innerJoin(chats, eq(chats.id, runs.chatId))
+    .where(and(eq(approvals.id, approvalId), isNull(approvals.lhosApprovalId)))
+    .limit(1);
+
+  if (!row?.runId || row.owner !== userId || row.stepIdx === null) {
+    throw new AppError("not_found", "That approval does not exist.");
+  }
+  if (row.status !== "pending" || row.runStatus !== "paused_approval") {
+    throw new AppError("conflict", "That approval was already decided.");
+  }
+
+  const [step] = await db
+    .select({ result: runSteps.result })
+    .from(runSteps)
+    .where(and(eq(runSteps.runId, row.runId), eq(runSteps.idx, row.stepIdx)))
+    .limit(1);
+  const state = checkpointStateSchema.safeParse(step?.result);
+  if (!state.success) {
+    throw new AppError("internal", "This checkpoint cannot be resumed (its saved state is missing).");
+  }
+
+  const claimed = await db
+    .update(approvals)
+    .set({
+      status: decision === "approve" ? "approved" : "rejected",
+      answer: decision === "approve" ? "approved" : "rejected",
+      decidedAt: new Date(),
+      decidedVia: "panel",
+    })
+    .where(and(eq(approvals.id, approvalId), eq(approvals.status, "pending")))
+    .returning({ id: approvals.id });
+  if (claimed.length === 0) throw new AppError("conflict", "That approval was already decided.");
+
+  await db
+    .update(runSteps)
+    .set({ ok: decision === "approve" })
+    .where(and(eq(runSteps.runId, row.runId), eq(runSteps.idx, row.stepIdx)));
+
+  const [seqRow] = await db
+    .select({ seq: max(runEvents.seq) })
+    .from(runEvents)
+    .where(eq(runEvents.runId, row.runId));
+  const [idxRow] = await db
+    .select({ idx: max(runSteps.idx) })
+    .from(runSteps)
+    .where(eq(runSteps.runId, row.runId));
+  const [costRow] = await db
+    .select({ cost: sum(usageEvents.costUsd) })
+    .from(usageEvents)
+    .where(eq(usageEvents.runId, row.runId));
+
+  await db.update(runs).set({ status: "running" }).where(eq(runs.id, row.runId));
+
+  const runId = row.runId;
+  const controller = startRun(runId, seqRow?.seq ?? 0);
+
+  void execute(
+    { chatId: row.chatId, userId, modelId: row.model, runId, signal: controller.signal },
+    {
+      approvalId,
+      decision,
+      state: state.data,
+      stepIdx: (idxRow?.idx ?? row.stepIdx) + 1,
+      costSoFar: Number(costRow?.cost ?? 0),
+    },
+  ).catch((err: unknown) => {
+    logger.error("agent", { runId, msg: "resume crashed", detail: String(err) });
+  });
+
+  logger.info("agent", { runId, msg: "checkpoint decided", decision });
+  return { runId, chatId: row.chatId };
+}
+
+/**
+ * Closes runs in this chat that are still paused at a checkpoint. Called by
+ * the send route *before* the new user turn is stored: a new turn supersedes
+ * a pending decision (approving later would act on a conversation that has
+ * moved on), and the synthetic results must precede the new message. Their pending
+ * tool calls get "not executed" results so the transcript stays well-formed
+ * (every tool_use answered) for the next turn's context.
+ */
+export async function expirePausedRuns(chatId: string, userId: string): Promise<void> {
+  const paused = await db
+    .select({ runId: runs.id })
+    .from(runs)
+    .where(and(eq(runs.chatId, chatId), eq(runs.status, "paused_approval")));
+
+  for (const { runId } of paused) {
+    const pendingRows = await db
+      .update(approvals)
+      .set({ status: "expired", decidedAt: new Date() })
+      .where(and(eq(approvals.runId, runId), eq(approvals.status, "pending")))
+      .returning({ stepIdx: approvals.stepIdx });
+
+    await db
+      .update(runs)
+      .set({ status: "cancelled", endedAt: new Date() })
+      .where(eq(runs.id, runId));
+
+    const stepIdx = pendingRows[0]?.stepIdx;
+    if (stepIdx === null || stepIdx === undefined) continue;
+
+    const [step] = await db
+      .select({ result: runSteps.result })
+      .from(runSteps)
+      .where(and(eq(runSteps.runId, runId), eq(runSteps.idx, stepIdx)))
+      .limit(1);
+    const state = checkpointStateSchema.safeParse(step?.result);
+    if (!state.success) continue;
+
+    const parts: MessagePart[] = [
+      ...(state.data.completed as MessagePart[]),
+      ...state.data.calls
+        .slice(state.data.pendingIndex)
+        .map((call) => syntheticResult(call, EXPIRED_TEXT)),
+    ];
+    await appendMessage(chatId, userId, { role: "tool", content: parts, runId });
+    logger.info("agent", { runId, chatId, msg: "expired paused run" });
+  }
+}

@@ -1,34 +1,29 @@
-import { lhos } from "@/server/lhos/client";
+import { pendingSnapshot } from "@/server/hitl/pending";
 import { json, ownerRoute } from "@/server/lib/route";
 import { toAppError } from "@/server/lib/errors";
+import type { PendingResponse } from "@/lib/hitl";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Pending human-in-the-loop items, split by how each can be answered (ADR-02):
+ * Everything waiting on the owner, across all three sources (ADR-02):
+ * panel checkpoints, LHOS `confirm` records, and `ask`/`takeover` requests.
  *
- *  - `confirm`  → POST /api/approvals/{id} (proxied with APPROVE_TOKEN)
- *  - `ask` / `takeover` → answered on the desktop or via the Manage host
- *    bridge; the panel surfaces them but cannot decide them here.
+ * How each item is answered follows from `source` + `kind`:
+ *  - panel / confirm → POST /api/approvals/{uuid}   (resumes the paused run)
+ *  - lhos  / confirm → POST /api/approvals/{8-hex}  (APPROVE_TOKEN proxy)
+ *  - lhos  / ask      → POST /api/hitl/{id}/answer  (host bridge)
+ *  - lhos  / takeover → POST /api/hitl/{id}/done    (host bridge)
  *
- * `decidable` is computed server-side so the UI never has to encode that rule.
+ * Reading also reconciles: records LHOS no longer lists were decided
+ * elsewhere and are closed with `decided_via` = 'lhos-page' / 'desktop'.
  */
 export const GET = ownerRoute(async () => {
   try {
-    const pending = await lhos.getPendingApprovals();
-
-    return json({
-      reachable: true,
-      count: pending.length,
-      items: pending.map((item) => ({
-        id: item.id,
-        kind: item.kind,
-        prompt: item.prompt,
-        createdAt: new Date(item.created * 1000).toISOString(),
-        decidable: item.kind === "confirm",
-      })),
-    });
+    const snap = await pendingSnapshot();
+    const body: PendingResponse = { ...snap, count: snap.items.length };
+    return json(body);
   } catch (err) {
     const appErr = toAppError(err);
     // Polled every 5 s while a run is active — a blip must not spam errors.
@@ -36,6 +31,7 @@ export const GET = ownerRoute(async () => {
       reachable: false,
       count: 0,
       items: [],
+      running: 0,
       code: appErr.code,
       message: appErr.message,
     });

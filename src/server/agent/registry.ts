@@ -33,12 +33,19 @@ interface ActiveRun {
 const store = globalThis as unknown as { __fdRuns?: Map<string, ActiveRun> };
 const runs: Map<string, ActiveRun> = (store.__fdRuns ??= new Map());
 
-export function startRun(runId: string): AbortController {
+/**
+ * Registers a run. `initialSeq` is non-zero when a paused run resumes: its
+ * sequence continues where the paused segment stopped, so subscribers that
+ * reconnect with `Last-Event-ID` see the resumed frames and nothing twice.
+ */
+export function startRun(runId: string, initialSeq = 0): AbortController {
   const controller = new AbortController();
+  const previous = runs.get(runId);
+  if (previous?.flushTimer) clearTimeout(previous.flushTimer);
   runs.set(runId, {
     runId,
     controller,
-    seq: 0,
+    seq: Math.max(initialSeq, previous?.seq ?? 0),
     buffer: [],
     subscribers: new Set(),
     pending: [],

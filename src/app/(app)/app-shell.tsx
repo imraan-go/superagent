@@ -8,6 +8,7 @@ import { ConnectionDot } from "@/components/status/connection-dot";
 import { ChatSidebar } from "@/components/chat/chat-sidebar";
 import { SettingsModal } from "@/components/settings/settings-modal";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { HitlWatcher, PendingBadge } from "@/components/hitl/hitl-watcher";
 import { ModeSwitch } from "./mode-switch";
 import { SignOutButton } from "./sign-out-button";
 import { cn } from "@/lib/cn";
@@ -41,6 +42,7 @@ export function AppShell({
         <ModeSwitch />
 
         <div className={styles.topbarRight}>
+          <PendingBadge />
           <ConnectionDot />
           <ThemeToggle />
           <SignOutButton email={email} />
@@ -59,6 +61,7 @@ export function AppShell({
         {children}
       </div>
 
+      <HitlWatcher />
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );

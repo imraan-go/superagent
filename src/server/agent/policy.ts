@@ -39,7 +39,11 @@ export interface ApprovalDecision {
 export function requiresApproval(
   toolName: string,
   policy: ApprovalPolicy = {},
+  args?: Record<string, unknown>,
 ): ApprovalDecision {
+  const byArgs = argumentGate(toolName, args);
+  if (byArgs) return { required: true, reason: byArgs };
+
   for (const pattern of DEFAULT_PATTERNS) {
     if (pattern.test(toolName)) {
       return { required: true, reason: describe(pattern, toolName) };
@@ -61,6 +65,22 @@ export function requiresApproval(
   }
 
   return { required: false, reason: null };
+}
+
+/**
+ * Tools whose name is neutral but whose *arguments* make them outbound and
+ * irreversible: a raw HTTP request that writes (POST to an API can send, pay or
+ * delete as surely as `send_email` can).
+ */
+const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+function argumentGate(toolName: string, args?: Record<string, unknown>): string | null {
+  if (!args) return null;
+  if (toolName === "http_request") {
+    const method = typeof args.method === "string" ? args.method.toUpperCase() : "GET";
+    if (WRITE_METHODS.has(method)) return `an outbound ${method} request is irreversible`;
+  }
+  return null;
 }
 
 function describe(pattern: RegExp, toolName: string): string {
