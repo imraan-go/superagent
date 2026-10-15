@@ -1,5 +1,7 @@
 "use client";
 
+import { fetchCapabilities } from "@/components/status/connection-dot";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ClipboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -42,11 +44,7 @@ interface LhosSnapshot {
   pace?: string | null;
 }
 
-async function fetchLhos(): Promise<LhosSnapshot> {
-  const res = await fetch("/api/lhos/capabilities", { cache: "no-store" });
-  if (!res.ok) throw new Error(`capabilities: ${res.status}`);
-  return (await res.json()) as LhosSnapshot;
-}
+const fetchLhos = fetchCapabilities as () => Promise<LhosSnapshot>;
 
 /**
  * The pill prompt bar: `+` menu on the left, model picker and send on the

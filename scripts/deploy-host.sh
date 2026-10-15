@@ -26,8 +26,8 @@ mkdir -p "$BASE/releases" /var/lib/tj-lhos-panel/uploads
 chown -R panel:panel /var/lib/tj-lhos-panel
 
 echo "== sync source"
-rsync -a --delete --exclude node_modules --exclude .next --exclude .git --exclude .claude --exclude uploads \
-  --exclude test-results --exclude playwright-report "$REPO/" "$BASE/build/"
+rsync -a --delete --exclude node_modules --exclude .next --exclude .git --exclude .claude --exclude /uploads \
+  --exclude /test-results --exclude /playwright-report "$REPO/" "$BASE/build/"
 cd "$BASE/build"
 echo "== install deps (npm ci)"
 npm ci --no-audit --no-fund --loglevel=error

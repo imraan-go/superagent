@@ -14,12 +14,37 @@ export interface CapabilitiesSnapshot {
   pace?: string | null;
   pendingHumanRequests?: number;
   message?: string;
+  /** Raw LHOS capabilities document (passed through by the API route). */
+  capabilities?: Record<string, unknown>;
+  /** Last poll failed or timed out, but LHOS answered recently: it is busy running tools. */
+  busy?: boolean;
 }
 
-async function fetchCapabilities(): Promise<CapabilitiesSnapshot> {
-  const res = await fetch("/api/lhos/capabilities", { cache: "no-store" });
-  if (!res.ok) throw new Error(`capabilities: ${res.status}`);
-  return (await res.json()) as CapabilitiesSnapshot;
+/**
+ * LHOS answers status slowly while it is executing tools (long browser waits,
+ * shell commands). One slow/failed poll right after a good one means "busy",
+ * not "offline": only report offline after BUSY_GRACE_MS without a success.
+ */
+const BUSY_GRACE_MS = 120_000;
+let lastGood: { at: number; snap: CapabilitiesSnapshot } | null = null;
+
+export async function fetchCapabilities(): Promise<CapabilitiesSnapshot> {
+  let snap: CapabilitiesSnapshot | null = null;
+  try {
+    const res = await fetch("/api/lhos/capabilities", { cache: "no-store" });
+    if (res.ok) snap = (await res.json()) as CapabilitiesSnapshot;
+  } catch {
+    // network blip — handled below
+  }
+  if (snap?.reachable) {
+    lastGood = { at: Date.now(), snap };
+    return snap;
+  }
+  if (!snap?.waking && lastGood && Date.now() - lastGood.at < BUSY_GRACE_MS) {
+    return { ...lastGood.snap, busy: true };
+  }
+  if (!snap) throw new Error("capabilities unreachable");
+  return snap;
 }
 
 /**
@@ -57,6 +82,15 @@ function describe(
 
   if (isError || !data) {
     return { status: "error", text: "Offline", title: "The panel could not reach LHOS.", pulse: false };
+  }
+
+  if (data.busy) {
+    return {
+      status: "live",
+      text: "Busy",
+      title: "The agent computer is working; status refreshes when it is free.",
+      pulse: true,
+    };
   }
 
   if (!data.reachable) {

@@ -1,5 +1,7 @@
 "use client";
 
+import { fetchCapabilities } from "@/components/status/connection-dot";
+
 import { useQuery } from "@tanstack/react-query";
 import type { RailCapabilities } from "@/components/mission/mission-tab";
 
@@ -17,11 +19,8 @@ export type ComputerState = "checking" | "waking" | "offline" | "awake" | "aslee
 export function useCapabilities() {
   const query = useQuery<Capabilities>({
     queryKey: ["lhos", "capabilities"],
-    queryFn: async () => {
-      const res = await fetch("/api/lhos/capabilities", { cache: "no-store" });
-      if (!res.ok) throw new Error("capabilities");
-      return res.json() as Promise<Capabilities>;
-    },
+    // Shared fetcher: tolerates a busy LHOS (see connection-dot.tsx).
+    queryFn: () => fetchCapabilities() as Promise<Capabilities>,
     refetchInterval: 20_000,
   });
   const c = query.data;

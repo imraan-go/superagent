@@ -1,5 +1,7 @@
 "use client";
 
+import { fetchCapabilities } from "@/components/status/connection-dot";
+
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChartLineUp } from "@phosphor-icons/react/dist/ssr";
@@ -87,11 +89,7 @@ interface LhosSnapshot {
   };
 }
 
-async function fetchLhos(): Promise<LhosSnapshot> {
-  const res = await fetch("/api/lhos/capabilities", { cache: "no-store" });
-  if (!res.ok) throw new Error(`capabilities: ${res.status}`);
-  return (await res.json()) as LhosSnapshot;
-}
+const fetchLhos = fetchCapabilities as () => Promise<LhosSnapshot>;
 
 async function fetchMcp(): Promise<{ servers: unknown[] }> {
   const res = await fetch("/api/connectors/mcp", { cache: "no-store" });
