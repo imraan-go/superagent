@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isTerminal } from "@/lib/run-events";
+import { isTerminal, serialiseFrame } from "@/lib/run-events";
 import type { RunEvent } from "@/lib/run-events";
 
 describe("isTerminal", () => {
@@ -31,5 +31,13 @@ describe("isTerminal", () => {
     for (const event of progress) {
       expect(isTerminal(event), event.type).toBe(false);
     }
+  });
+});
+
+describe("serialiseFrame", () => {
+  it("emits an unnamed SSE event so EventSource.onmessage receives it", () => {
+    const wire = serialiseFrame({ seq: 7, event: { type: "token", text: "hi" } });
+    expect(wire).toBe('id: 7\ndata: {"type":"token","text":"hi"}\n\n');
+    expect(wire).not.toMatch(/^event:/m);
   });
 });
