@@ -42,3 +42,16 @@ export function focusWaitingCard(): boolean {
   el.focus();
   return true;
 }
+
+/** Connect Apps modal (Composio catalog). Anything can open it, optionally at one app or the Manage view. */
+export const OPEN_APPS_EVENT = "fd:open-apps";
+
+export interface OpenAppsDetail {
+  /** Composio toolkit slug to open straight to its detail view. */
+  app?: string;
+  view?: "browse" | "manage";
+}
+
+export function openApps(detail: OpenAppsDetail = {}): void {
+  window.dispatchEvent(new CustomEvent<OpenAppsDetail>(OPEN_APPS_EVENT, { detail }));
+}

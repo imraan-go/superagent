@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChartLineUp } from "@phosphor-icons/react/dist/ssr";
 import { api } from "@/lib/api";
+import { openApps } from "@/lib/app-events";
+import { useConnectedApps } from "@/components/apps/use-composio";
 import { cn } from "@/lib/cn";
 import { CategoryTile, Dot, LiveGlyph, useToast } from "@/components/ui";
 import type { DotStatus, TileCategory } from "@/components/ui";
@@ -147,6 +149,8 @@ export function NewChatLanding() {
     : ["idle", lhos?.reachable ? "standby" : "—"];
   const connectors = lhos?.capabilities?.api?.connectors?.length;
   const mcpCount = mcp?.servers.length;
+  const { count, loading: appsLoading } = useConnectedApps();
+  const appCount = appsLoading ? null : count;
 
   return (
     <>
@@ -183,6 +187,15 @@ export function NewChatLanding() {
               <div className={styles.stat} data-cat="connector">
                 <dt>Connectors</dt>
                 <dd>{connectors ?? "—"}</dd>
+              </div>
+              <div className={styles.stat} data-cat="connector">
+                <dt>Apps</dt>
+                <dd>
+                  <button type="button" className={styles.statBtn} onClick={() => openApps()} aria-label={`${appCount} connected apps. Connect apps`}>
+                    {appCount ?? "—"}
+                    <span className={styles.statAction}>{appCount === 0 ? "connect" : "manage"}</span>
+                  </button>
+                </dd>
               </div>
               <div className={styles.stat} data-cat="mcp">
                 <dt>MCP servers</dt>

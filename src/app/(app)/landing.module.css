@@ -282,3 +282,19 @@
   .suggestions li { animation: none; }
   .suggestion { transition: none; }
 }
+
+/* Apps stat: the count doubles as the entry to Connect Apps. */
+.statBtn {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.statBtn:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: var(--radius-chip); }
+.statAction { font-size: var(--fs-micro); color: var(--text-3); text-decoration: underline; text-underline-offset: 3px; }
+.statBtn:hover .statAction { color: var(--signal); }

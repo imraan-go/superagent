@@ -13,6 +13,7 @@ import {
   PencilSimple,
   Plus,
   Robot,
+  SquaresFour,
   Sun,
 } from "@phosphor-icons/react/dist/ssr";
 import { Modal } from "@/components/ui";
@@ -21,7 +22,7 @@ import { MANAGE_SECTION_LIST } from "@/components/manage/manage-view";
 import { useNewChat } from "@/hooks/use-new-chat";
 import { useTheme } from "@/hooks/use-theme";
 import { api } from "@/lib/api";
-import { focusPrompt, openSettings, requestManageSection } from "@/lib/app-events";
+import { focusPrompt, openApps, openSettings, requestManageSection } from "@/lib/app-events";
 import { cn } from "@/lib/cn";
 import { fuzzyScore } from "@/lib/hotkeys";
 import { OPEN_COMPUTER_EVENT } from "@/lib/hitl";
@@ -100,6 +101,8 @@ export function CommandPalette({
         icon: Monitor,
         run: go(() => window.dispatchEvent(new CustomEvent(OPEN_COMPUTER_EVENT))),
       },
+      { id: "connect-apps", group: "Actions", label: "Connect apps", icon: SquaresFour, run: go(() => openApps()) },
+      { id: "manage-apps", group: "Actions", label: "Manage connected apps", icon: SquaresFour, run: go(() => openApps({ view: "manage" })) },
       { id: "shortcuts", group: "Actions", label: "Keyboard shortcuts", hint: "?", icon: Keyboard, run: go(onShowShortcuts) },
       { id: "go-agent", group: "Navigate", label: "Switch to Agent", hint: "g a", icon: Robot, run: go(() => router.push("/")) },
       { id: "go-manage", group: "Navigate", label: "Switch to Manage", hint: "g m", icon: Gauge, run: go(() => router.push("/manage")) },

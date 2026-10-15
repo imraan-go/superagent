@@ -203,7 +203,7 @@ export function buildDetail(
   enabled: ReadonlySet<string>,
   customized: boolean,
 ): ToolkitDetail {
-  const tools = rows.map((r) => ({ ...r, needsApproval: !r.readOnly, enabled: enabled.has(r.slug) }));
+  const tools = rows.map((r) => ({ ...r, needsApproval: !r.readOnly, enabled: enabled.has(r.slug) })).sort((a, b) => Number(b.readOnly) - Number(a.readOnly));
   return {
     toolkit,
     tools,

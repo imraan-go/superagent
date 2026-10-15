@@ -70,6 +70,7 @@
   --glass-strong: rgb(17 20 25 / 0.86);
   --glass-line: rgb(255 255 255 / 0.07);
   --glass-hi: rgb(255 255 255 / 0.04);
+  --logo-bg: #ffffff; /* tile behind third-party app logos, both themes */
 }
 
 [data-theme="light"] {

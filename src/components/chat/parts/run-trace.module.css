@@ -366,3 +366,16 @@
   background: var(--ink-2);
   text-align: center;
 }
+
+/* Composio steps show the app's logo; it opens that app in Connect apps. */
+.appLogoBtn {
+  display: grid;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  cursor: pointer;
+  transition: transform var(--dur-micro) var(--ease-out);
+}
+.appLogoBtn:hover { transform: scale(1.06); }
+.appLogoBtn:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }

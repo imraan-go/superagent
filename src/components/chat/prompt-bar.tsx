@@ -17,12 +17,16 @@ import {
   Paperclip,
   Plus,
   Sparkle,
+  SquaresFour,
   Square,
   X,
 } from "@phosphor-icons/react/dist/ssr";
 import { api } from "@/lib/api";
 import { pickModel } from "@/lib/model-pick";
 import { Button, IconButton } from "@/components/ui";
+import { useConnectedApps } from "@/components/apps/use-composio";
+import { openApps } from "@/lib/app-events";
+import { titleCase } from "@/lib/apps";
 import { cn } from "@/lib/cn";
 import {
   ACCEPT_ATTRIBUTE,
@@ -107,6 +111,7 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId, chatModel }:
   const menuRef = useRef<HTMLDivElement>(null);
   const [caps, setCaps] = useState<CapabilityId[]>([]);
   const [slashIdx, setSlashIdx] = useState(0);
+  const { slugs: appSlugs } = useConnectedApps();
   const slash = matchSlash(text);
   const slashOpen = slash.length > 0;
   const slashSel = slashOpen ? slashIdx % slash.length : 0;
@@ -450,6 +455,16 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId, chatModel }:
                 >
                   <CalendarPlus size={14} /> Schedule this
                 </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    openApps();
+                  }}
+                >
+                  <SquaresFour size={14} /> Connect apps
+                </button>
                 <button type="button" role="menuitem" disabled>
                   <Sparkle size={14} /> Save as skill
                 </button>
@@ -469,7 +484,13 @@ export function PromptBar({ onSend, onStop, busy, disabled, chatId, chatModel }:
                   className={cn(styles.cap, on && styles.capOn)}
                   data-cat={CAP_CATEGORY[c.id]}
                   aria-pressed={on}
-                  title={c.hint}
+                  title={
+                    c.id === "connectors"
+                      ? appSlugs.length
+                        ? `${c.hint}. Connected apps: ${appSlugs.map(titleCase).join(", ")}`
+                        : `${c.hint}. No apps connected yet (+ menu > Connect apps)`
+                      : c.hint
+                  }
                   onClick={() => toggleCap(c.id)}
                 >
                   <Icon size={13} weight={on ? "fill" : "regular"} aria-hidden />

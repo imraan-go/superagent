@@ -584,3 +584,9 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/* Connect apps dock entry: label left, logo stack + count right. */
+.dockLabel { flex: 1; }
+.appsTail { display: inline-flex; align-items: center; gap: var(--sp-2); }
+.appsCount { font-family: var(--font-mono); font-size: var(--fs-micro); font-variant-numeric: tabular-nums; color: var(--text-3); }
+.dockBtn[data-apps-btn]:hover svg:first-child { transform: none; }
