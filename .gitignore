@@ -17,3 +17,4 @@ next-env.d.ts
 AGENTS.md
 dupcheck.mjs
 shot.mjs
+.claude/
