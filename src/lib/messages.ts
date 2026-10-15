@@ -1,0 +1,98 @@
+import { z } from "zod";
+
+/**
+ * The on-the-wire shape of a message turn. Isomorphic on purpose: the chat
+ * column renders these parts and the model adapters translate them, so one
+ * definition keeps the database, the API and the UI from drifting.
+ *
+ * `messages.content` is an array of parts, so a single row holds a complete
+ * multimodal turn (ARCHITECTURE.md §Database).
+ */
+
+export const textPartSchema = z.object({
+  type: z.literal("text"),
+  text: z.string(),
+});
+
+/**
+ * Images are referenced by `fileId`, never inlined as base64 (ADR-07). Chat
+ * state and SSE frames stay small, and the bytes are served once through the
+ * authenticated files route.
+ */
+export const imagePartSchema = z.object({
+  type: z.literal("image"),
+  fileId: z.uuid(),
+  mime: z.string(),
+  alt: z.string().optional(),
+});
+
+export const toolUsePartSchema = z.object({
+  type: z.literal("tool_use"),
+  id: z.string(),
+  name: z.string(),
+  args: z.record(z.string(), z.unknown()),
+});
+
+export const toolResultPartSchema = z.object({
+  type: z.literal("tool_result"),
+  toolUseId: z.string(),
+  name: z.string(),
+  ok: z.boolean(),
+  ms: z.number().optional(),
+  /** Trimmed for display; the untruncated payload lives in `run_steps`. */
+  text: z.string(),
+  images: z.array(z.uuid()).default([]),
+});
+
+export const messagePartSchema = z.discriminatedUnion("type", [
+  textPartSchema,
+  imagePartSchema,
+  toolUsePartSchema,
+  toolResultPartSchema,
+]);
+
+export const messageContentSchema = z.array(messagePartSchema);
+
+export type TextPart = z.infer<typeof textPartSchema>;
+export type ImagePart = z.infer<typeof imagePartSchema>;
+export type ToolUsePart = z.infer<typeof toolUsePartSchema>;
+export type ToolResultPart = z.infer<typeof toolResultPartSchema>;
+export type MessagePart = z.infer<typeof messagePartSchema>;
+
+export const messageRoleSchema = z.enum(["user", "assistant", "system", "tool"]);
+export type MessageRole = z.infer<typeof messageRoleSchema>;
+
+export interface ChatMessage {
+  id: string;
+  role: MessageRole;
+  content: MessagePart[];
+  model: string | null;
+  runId: string | null;
+  createdAt: string;
+}
+
+/** Plain text of a turn — used for titles, memory extraction and search. */
+export function partsToText(parts: MessagePart[]): string {
+  return parts
+    .filter((p): p is TextPart => p.type === "text")
+    .map((p) => p.text)
+    .join("\n")
+    .trim();
+}
+
+export const MAX_TITLE_LENGTH = 60;
+
+/**
+ * Immediate fallback title from the first user turn, so the sidebar never shows
+ * "New chat" while a model-written title is still pending. Collapses whitespace
+ * and cuts on a word boundary.
+ */
+export function deriveTitle(text: string): string {
+  const flat = text.replace(/\s+/g, " ").trim();
+  if (!flat) return "New chat";
+  if (flat.length <= MAX_TITLE_LENGTH) return flat;
+
+  const cut = flat.slice(0, MAX_TITLE_LENGTH);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > 24 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
+}

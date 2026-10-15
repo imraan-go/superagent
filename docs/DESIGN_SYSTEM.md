@@ -29,6 +29,8 @@ signal darkened `#0FA88F`). Components use tokens ONLY.
 ## Layout
 - App grid: `64px topbar / [288px left | 1fr chat | 360px right]`; sidebars collapse
   (left → icon rail 56px, right → floating status pill). Chat column max 760px.
+  The right rail is **tabbed** (`Mission | Library | Computer`) — see §Reference
+  reading; 360px cannot hold those three stacked.
 - Radii: panels 14px, controls 10px, pills 999. Borders 1px `--line`; elevation via
   border+subtle glow, not heavy shadows.
 - Topbar center: **Agent / Manage** segmented switch — sliding "hangar door" thumb
@@ -44,8 +46,12 @@ signal darkened `#0FA88F`). Components use tokens ONLY.
   run is active (the whole frame feels "alive", Grok-like but ours).
 - **Readout**: mono value + tiny label, used for tokens in/out, cost today, latency,
   CPU/RAM in Manage. Count-up animation on change (280ms, no easing bounce).
+- **Activity line**: the live summary in the transcript — LiveGlyph at 16px plus a
+  present-participle verb derived from the running tool ("Clicking around",
+  "Reading the screen"). One line, always the last thing before the prompt bar.
 - **Step chips** in chat: tool icon + name + ms + status dot; expand to args/result;
-  screenshots as thumbnails → lightbox.
+  screenshots as thumbnails → lightbox. **Collapsed behind the activity line by
+  default** — the line is the summary, the chips are the audit trail.
 - **Computer panel**: right-sidebar card with live VNC thumbnail (iframe, pointer-
   events none in Watch), status dot, buttons `Watch` / `Take control` (amber,
   requires hold-to-confirm 600ms) / `Expand`. Expanded = full-height sheet over chat.
@@ -72,3 +78,41 @@ Click focuses tab + deep-links to the item.
 WCAG AA contrast on both themes; full keyboard map (`?` opens shortcut sheet:
 ⌘K command palette, ⌘J new chat, ⌘/ focus prompt, A approve, Esc close); focus
 rings always visible; SR announcements for run state changes.
+
+## Reference reading — Grok Bot (`docs/reference/grok-0*.png`, owner-supplied 2026-10-15)
+
+Not a style to copy; a set of structural answers worth adopting. Flight Deck keeps
+its own cockpit identity (dark ink, mono readouts, Agent/Manage, edge-light).
+
+**Adopt:**
+- **Right rail is tabbed, not stacked.** Grok: `Details | Library | Computer`.
+  Ours: **`Mission | Library | Computer`** — Mission = run state, steps, usage
+  readouts; Library = files and artifacts this chat produced; Computer = the VNC
+  card. One rail, three tabs, identity block above them. Replaces the earlier
+  "stack every panel vertically" sketch, which would have overflowed at 360px.
+- **Sidebar rows carry a live status line.** Title on top, current activity
+  underneath ("Semrush is running on rdp2", "Sent 1 PDF"). The owner can see what
+  every chat is doing without opening it. Requires the chat-list endpoint to
+  return each chat's latest run status — designed in from the start.
+- **The transcript's activity indicator is understated.** A small glyph plus a
+  present-participle verb ("Clicking around") on one line, not a stack of chips.
+  Step chips stay, but collapsed by default: the live line is the summary, chips
+  are the audit trail. LiveGlyph at 16px is exactly this.
+- **Prompt bar is a pill with a `+` menu** (Attach files · Teach a task). Ours:
+  Attach files · Save as skill · Schedule. Model picker and pace move to the
+  bar's right edge rather than a separate toolbar row.
+- **Settings use a `SettingRow` primitive**: label, muted description beneath,
+  control right-aligned, grouped into section cards under a left tab list. Every
+  Phase 3 tab is then just rows — no bespoke layout per tab.
+- **A sleeping computer is a first-class state**, with its own card and a single
+  `Wake` button. Matches LHOS `desktop_*` sleep/wake exactly.
+- **Connect-apps surface**: searchable grid of connector cards with category
+  chips, a connected count, and explicit `Add` / `Connect` / `Added ✓` states.
+  Phase 4 connectors follow this rather than a plain list.
+
+**Reject:**
+- Right-aligned filled user bubbles. Flight Deck keeps both roles left-aligned on
+  the 760px column with a role gutter — long technical turns read better, and the
+  transcript stays scannable.
+- Per-bot avatars and labels. Single-owner, single agent; the identity block
+  shows the *computer*, not a persona.
