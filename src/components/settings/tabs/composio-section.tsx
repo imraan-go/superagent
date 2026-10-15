@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { openApps } from "@/lib/app-events";
 import { Button, HoldToConfirm, SettingRow, SettingSection, useToast } from "@/components/ui";
 import { api, copy } from "./shared";
 import styles from "./automation.module.css";
@@ -140,6 +141,16 @@ export function ComposioSection() {
           </SettingRow>
           {data.error && <div className={styles.error}>{data.error}</div>}
           {note && <div className={styles.empty} role="status">{note}</div>}
+          <SettingRow label="Connect apps" description="Browse all Composio apps with logos and details, connect, and choose each app's tools.">
+            <div className={styles.actions}>
+              <Button size="sm" variant="primary" onClick={() => openApps()}>
+                Open Connect apps
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => openApps({ view: "manage" })}>
+                Manage
+              </Button>
+            </div>
+          </SettingRow>
 
           <div className={styles.list}>
             {data.accounts.length === 0 && <div className={styles.empty}>No connected apps yet. Pick one below.</div>}

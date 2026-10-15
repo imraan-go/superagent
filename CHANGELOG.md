@@ -3,6 +3,15 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — Connect Apps (Composio catalog as "Apps")
+- New Connect Apps modal: recommended + per-category sections, full-catalog search and
+  virtualised "Browse all" (1609 toolkits = Composio total_items, verified live), app
+  detail (tools read/write + approval badges + enable toggles, triggers, information,
+  `?app=<slug>` deep link), Manage view, inline Composio key form, connect/disconnect.
+- Entry points: sidebar dock (logo stack + count), composer + menu, palette, landing
+  Apps stat, Settings -> Connectors; trace cards for composio tools show the app logo.
+- API: catalog facets/sections/slugs, `/toolkit` detail, `/installed`; modal centring fix.
+
 ## 2026-10-15 — LHOS rename + vivid "alive instrument" redesign
 - Renamed the platform to **LHOS** everywhere user-visible (topbar/sidebar wordmark,
   titles/metadata, login, splash, agent prompt, OpenRouter x-title, e2e selectors).

@@ -4,6 +4,9 @@ import { Fragment, useState } from "react";
 import type { ReactNode } from "react";
 import { CaretRight, ChatCenteredDots, Monitor, ShieldWarning } from "@phosphor-icons/react/dist/ssr";
 import { CategoryTile, Dot, LiveGlyph } from "@/components/ui";
+import { AppLogo } from "@/components/apps/app-logo";
+import { openApps } from "@/lib/app-events";
+import { composioToolkitOf, titleCase } from "@/lib/apps";
 import type { LiveGlyphState } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { TraceItem } from "./exchanges";
@@ -145,6 +148,7 @@ function Step({
   const hasArgs = item.args && Object.keys(item.args).length > 0;
   const expandable = Boolean(hasArgs || item.detail?.trim());
   const status = item.ok === null ? "pending" : item.ok ? "ok" : "error";
+  const app = composioToolkitOf(item.toolName);
 
   return (
     <li
@@ -153,8 +157,14 @@ function Step({
       data-status={status}
       style={{ "--i": index } as React.CSSProperties}
     >
-      <span className={styles.rail} aria-hidden>
-        <CategoryTile cat={status === "error" ? "error" : cat} size="sm" active={item.ok === null} />
+      <span className={styles.rail} aria-hidden={app ? undefined : true}>
+        {app ? (
+          <button type="button" className={styles.appLogoBtn} onClick={() => openApps({ app })} aria-label={`Open ${titleCase(app)} in Connect apps`} title={`Open ${titleCase(app)}`}>
+            <AppLogo slug={app} name={titleCase(app)} size={28} />
+          </button>
+        ) : (
+          <CategoryTile cat={status === "error" ? "error" : cat} size="sm" active={item.ok === null} />
+        )}
       </span>
       <div className={styles.card}>
         <button

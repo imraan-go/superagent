@@ -12,6 +12,7 @@ import {
   Plus,
   PushPin,
   SignOut,
+  SquaresFour,
   Trash,
 } from "@phosphor-icons/react/dist/ssr";
 import { useRouter } from "next/navigation";
@@ -21,6 +22,9 @@ import { groupChats } from "@/lib/chat-groups";
 import { CategoryTile, Dot, IconButton, LiveGlyph, SkeletonText } from "@/components/ui";
 import type { TileCategory } from "@/components/ui";
 import { useCapabilities } from "@/hooks/use-capabilities";
+import { LogoStack } from "@/components/apps/app-logo";
+import { useConnectedApps } from "@/components/apps/use-composio";
+import { openApps } from "@/lib/app-events";
 import { cn } from "@/lib/cn";
 import styles from "./chat-sidebar.module.css";
 
@@ -183,6 +187,7 @@ export function ChatSidebar({
 
       <div className={styles.dock}>
         <ComputerCard collapsed={collapsed} />
+        <ConnectAppsButton collapsed={collapsed} />
         {collapsed ? (
           <IconButton label="Settings" icon={<Gear size={18} weight="duotone" />} onClick={onOpenSettings} />
         ) : (
@@ -236,6 +241,26 @@ function ComputerCard({ collapsed }: { collapsed: boolean }) {
         {state}
       </span>
     </div>
+  );
+}
+
+/** Dock entry for the Connect Apps modal, with a mini stack of connected-app logos. */
+function ConnectAppsButton({ collapsed }: { collapsed: boolean }) {
+  const { slugs, count } = useConnectedApps();
+  if (collapsed) {
+    return <IconButton label={count ? `Connect apps (${count} connected)` : "Connect apps"} icon={<SquaresFour size={18} weight="duotone" />} onClick={() => openApps()} />;
+  }
+  return (
+    <button type="button" className={styles.dockBtn} onClick={() => openApps()} data-apps-btn>
+      <SquaresFour size={16} weight="duotone" aria-hidden />
+      <span className={styles.dockLabel}>Connect apps</span>
+      {count > 0 && (
+        <span className={styles.appsTail}>
+          <LogoStack slugs={slugs} max={3} size={18} />
+          <span className={styles.appsCount}>{count}</span>
+        </span>
+      )}
+    </button>
   );
 }
 

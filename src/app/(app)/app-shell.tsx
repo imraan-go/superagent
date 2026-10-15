@@ -10,14 +10,16 @@ import { ChatSidebar } from "@/components/chat/chat-sidebar";
 import { SettingsModal } from "@/components/settings/settings-modal";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { HitlWatcher, PendingBadge } from "@/components/hitl/hitl-watcher";
+import { AppsModal } from "@/components/apps/apps-modal";
+import type { AppsRequest } from "@/components/apps/apps-modal";
 import { CommandPalette } from "@/components/command/command-palette";
 import { ShortcutSheet } from "@/components/command/shortcut-sheet";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { WIDE_QUERY, useMedia } from "@/hooks/use-media";
 import { PREF_LEFT_COLLAPSED, usePref } from "@/lib/ui-prefs";
 import { useNewChat } from "@/hooks/use-new-chat";
-import { OPEN_SETTINGS_EVENT, focusPrompt, focusWaitingCard } from "@/lib/app-events";
-import type { OpenSettingsDetail } from "@/lib/app-events";
+import { OPEN_APPS_EVENT, OPEN_SETTINGS_EVENT, focusPrompt, focusWaitingCard } from "@/lib/app-events";
+import type { OpenAppsDetail, OpenSettingsDetail } from "@/lib/app-events";
 import { ModeSwitch } from "./mode-switch";
 import { SignOutButton } from "./sign-out-button";
 import { cn } from "@/lib/cn";
@@ -46,6 +48,8 @@ export function AppShell({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<string | undefined>();
+  const [appsOpen, setAppsOpen] = useState(false);
+  const [appsRequest, setAppsRequest] = useState<AppsRequest | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [leftPref, setLeftCollapsed] = usePref(PREF_LEFT_COLLAPSED);
@@ -61,6 +65,21 @@ export function AppShell({
     };
     window.addEventListener(OPEN_SETTINGS_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_SETTINGS_EVENT, onOpen);
+  }, []);
+
+  // Connect Apps: sidebar, composer, palette, trace cards and the landing strip all open it
+  // through the event bus; `?app=<slug>` on any URL deep-links straight to an app's detail.
+  useEffect(() => {
+    const request = (d: OpenAppsDetail) => {
+      setHistoryOpen(false);
+      setAppsRequest({ app: d.app, view: d.view, nonce: Date.now() });
+      setAppsOpen(true);
+    };
+    const onOpen = (e: Event) => request((e as CustomEvent<OpenAppsDetail>).detail ?? {});
+    window.addEventListener(OPEN_APPS_EVENT, onOpen);
+    const app = new URLSearchParams(window.location.search).get("app");
+    if (app && /^[a-z0-9_-]{1,64}$/i.test(app)) request({ app });
+    return () => window.removeEventListener(OPEN_APPS_EVENT, onOpen);
   }, []);
 
   // Bare-key shortcuts stand down while any dialog owns the screen. Esc is
@@ -169,6 +188,7 @@ export function AppShell({
         onClose={() => setSettingsOpen(false)}
         requestedTab={settingsTab}
       />
+      <AppsModal open={appsOpen} onClose={() => setAppsOpen(false)} request={appsRequest} />
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}

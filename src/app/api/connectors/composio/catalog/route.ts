@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ComposioClient } from "@/server/connectors/composio-client";
-import { queryCatalog } from "@/server/connectors/composio-catalog";
+import { buildSections, queryCatalog } from "@/server/connectors/composio-catalog";
 import { getCatalog } from "@/server/connectors/composio-tools";
 import { getComposioKey } from "@/server/connectors/store";
 import { parseQuery } from "@/server/lib/body";
@@ -16,14 +16,21 @@ const querySchema = z.object({
   offset: z.coerce.number().int().min(0).max(100_000).default(0),
   limit: z.coerce.number().int().min(1).max(100).default(48),
   refresh: z.enum(["1"]).optional(),
+  /** `sections` = the browse view: recommended + the top few of every category. */
+  view: z.enum(["sections"]).optional(),
+  /** Comma-separated slugs (Manage view). */
+  slugs: z.string().trim().max(2000).optional(),
 });
 
-/** The full Composio toolkit catalog (cached 1 h server-side), searched + paged here. */
+/** The full Composio toolkit catalog (cached 1 h server-side), searched, faceted and paged here. */
 export const GET = ownerRoute(async ({ request }) => {
   const key = await getComposioKey();
   if (!key) throw new AppError("bad_request", "Add your Composio API key first.");
   const q = parseQuery(request.url, querySchema);
   const all = await getCatalog(new ComposioClient(key.key), q.refresh === "1");
-  const { items, total } = queryCatalog(all.toolkits, { search: q.q, category: q.category, offset: q.offset, limit: q.limit });
-  return json({ items, total, offset: q.offset, categories: all.categories, catalogSize: all.toolkits.length });
+  const meta = { facets: all.facets, categories: all.categories, catalogSize: all.toolkits.length, upstreamTotal: all.upstreamTotal };
+  if (q.view === "sections") return json({ ...buildSections(all.toolkits), ...meta });
+  const slugs = q.slugs ? q.slugs.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 100) : undefined;
+  const { items, total } = queryCatalog(all.toolkits, { search: q.q, category: q.category, slugs, offset: q.offset, limit: q.limit });
+  return json({ items, total, offset: q.offset, ...meta });
 });
