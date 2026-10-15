@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowDown } from "@phosphor-icons/react/dist/ssr";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useRunStream } from "@/hooks/use-run-stream";
@@ -15,6 +16,7 @@ import { useToast } from "@/components/ui";
 import { RailAside, RailToggle, useRailDrawer } from "@/components/mission/rail-drawer";
 import { MissionRail } from "@/components/mission/mission-rail";
 import { PromptBar } from "./prompt-bar";
+import type { CapabilityId } from "./parts/composer";
 import { Transcript } from "./transcript";
 import styles from "./chat-view.module.css";
 
@@ -83,8 +85,17 @@ export function ChatView({ chatId }: { chatId: string }) {
   }, [chatId, queryClient, resume]);
 
   const send = useMutation({
-    mutationFn: ({ text, model, fileIds }: { text: string; model: string; fileIds: string[] }) =>
-      api.sendMessage(chatId, text, model, fileIds),
+    mutationFn: ({
+      text,
+      model,
+      fileIds,
+      capabilities,
+    }: {
+      text: string;
+      model?: string;
+      fileIds: string[];
+      capabilities?: CapabilityId[];
+    }) => api.sendMessage(chatId, text, model, fileIds, capabilities),
     // Played inside the click's task, which also unlocks WebAudio for the
     // later cues (done, approval) that fire without a gesture.
     onMutate: () => sound("send"),
@@ -128,13 +139,44 @@ export function ChatView({ chatId }: { chatId: string }) {
 
   const busy = state.phase === "thinking" || state.phase === "tool" || state.phase === "waiting";
 
-  // Follow the stream, but only while the owner is already near the bottom.
-  useEffect(() => {
+  // Follow the stream only while the owner is pinned near the bottom; once
+  // they scroll up, offer a "jump to latest" pill instead of yanking them.
+  const [pinned, setPinned] = useState(true);
+  const onScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 240;
-    if (nearBottom) el.scrollTo({ top: el.scrollHeight });
-  }, [messages.length, state.streamingText, state.steps.length]);
+    setPinned(el.scrollHeight - el.scrollTop - el.clientHeight < 160);
+  }, []);
+  const jumpToLatest = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollTo({ top: el.scrollHeight, behavior: reduce ? "auto" : "smooth" });
+  }, []);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !pinned) return;
+    el.scrollTo({ top: el.scrollHeight });
+  }, [pinned, messages.length, state.streamingText, state.steps]);
+
+  // Late growth (markdown chunk, highlighted code, thumbnails) keeps a pinned
+  // view at the bottom too.
+  useEffect(() => {
+    const el = scrollRef.current;
+    const content = el?.firstElementChild;
+    if (!el || !content || !pinned || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => el.scrollTo({ top: el.scrollHeight }));
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, [pinned, isPending]);
+
+  const lastUserText = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const m = messages[i];
+      if (m?.role === "user") return m;
+    }
+    return null;
+  }, [messages]);
 
   return (
     <>
@@ -143,7 +185,7 @@ export function ChatView({ chatId }: { chatId: string }) {
           {announcement}
         </p>
         <RailToggle drawer={drawer} />
-        <div className={styles.scroll} ref={scrollRef}>
+        <div className={styles.scroll} ref={scrollRef} onScroll={onScroll}>
           {isPending ? (
             <p className={styles.loading}>Loading chat…</p>
           ) : (
@@ -154,20 +196,26 @@ export function ChatView({ chatId }: { chatId: string }) {
               activity={state.activity}
               phase={state.phase}
               error={state.error}
+              runId={state.runId}
+              usage={state.usage}
+              approval={state.approval}
+              onRetry={
+                busy || send.isPending
+                  ? undefined
+                  : (text) => send.mutate({ text, fileIds: [] })
+              }
+              onContinue={
+                busy || send.isPending || !lastUserText
+                  ? undefined
+                  : () => send.mutate({ text: "Continue from where you left off.", fileIds: [] })
+              }
             />
           )}
-
-          {state.approval && (
-            <div className={styles.approval} role="alert">
-              <strong>Approval needed</strong>
-              <p>
-                The agent wants to run <code>{state.approval.tool}</code> — {state.approval.reason}.
-                Nothing has run yet.
-              </p>
-              <p className={styles.approvalNote}>
-                Approve or reject it under &ldquo;Waiting on you&rdquo; in the Mission panel.
-              </p>
-            </div>
+          {!pinned && (
+            <button type="button" className={styles.jump} onClick={jumpToLatest}>
+              <ArrowDown size={13} weight="bold" aria-hidden />
+              Jump to latest
+            </button>
           )}
         </div>
 
@@ -175,7 +223,9 @@ export function ChatView({ chatId }: { chatId: string }) {
           busy={busy}
           onStop={() => stop.mutate()}
           chatId={chatId}
-          onSend={(text, model, fileIds) => send.mutate({ text, model, fileIds })}
+          onSend={(text, model, fileIds, capabilities) =>
+            send.mutate({ text, model, fileIds, capabilities })
+          }
         />
       </main>
 

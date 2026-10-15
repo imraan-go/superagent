@@ -38,7 +38,7 @@
   border: 0;
   background: none;
   color: var(--text-1);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-small);
   outline: none;
 }
 
@@ -61,7 +61,7 @@
 .empty {
   padding: var(--sp-4) var(--sp-3);
   color: var(--text-3);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-small);
 }
 
 .section + .section {
@@ -115,7 +115,7 @@
 }
 
 .rowTitle {
-  font-size: var(--fs-sm);
+  font-size: var(--fs-small);
   color: var(--text-1);
   white-space: nowrap;
   overflow: hidden;
@@ -183,7 +183,7 @@
   background: none;
   color: var(--text-2);
   font-family: inherit;
-  font-size: var(--fs-sm);
+  font-size: var(--fs-small);
   text-align: left;
   cursor: pointer;
 }

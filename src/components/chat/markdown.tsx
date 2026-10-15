@@ -3,7 +3,7 @@
 import { memo, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Check, Copy } from "@phosphor-icons/react/dist/ssr";
+import { Check, Copy, FileText, Image as ImageIcon } from "@phosphor-icons/react/dist/ssr";
 import { IconButton } from "@/components/ui";
 import styles from "./markdown.module.css";
 
@@ -18,11 +18,34 @@ export const Markdown = memo(function Markdown({ content }: { content: string })
         remarkPlugins={[remarkGfm]}
         components={{
           code: CodeBlock,
-          a: ({ children, href }) => (
-            <a href={href} target="_blank" rel="noreferrer noopener">
-              {children}
-            </a>
+          a: ({ children, href }) =>
+            href && isPanelFile(href) ? (
+              // A file or screenshot the run produced: cite it as a chip.
+              <a href={href} target="_blank" rel="noreferrer" className={styles.cite}>
+                {/\.(png|jpe?g|webp|gif)$/i.test(href) || /screenshot/i.test(String(children)) ? (
+                  <ImageIcon size={12} aria-hidden />
+                ) : (
+                  <FileText size={12} aria-hidden />
+                )}
+                {children}
+              </a>
+            ) : (
+              <a href={href} target="_blank" rel="noreferrer noopener">
+                {children}
+              </a>
+            ),
+          table: ({ children }) => (
+            <div className={styles.tableWrap}>
+              <table>{children}</table>
+            </div>
           ),
+          img: ({ src, alt }) =>
+            typeof src === "string" ? (
+              <a href={src} target="_blank" rel="noreferrer" className={styles.figure}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt={alt ?? ""} loading="lazy" />
+              </a>
+            ) : null,
         }}
       >
         {content}
@@ -30,6 +53,10 @@ export const Markdown = memo(function Markdown({ content }: { content: string })
     </div>
   );
 });
+
+function isPanelFile(href: string): boolean {
+  return href.startsWith("/api/uploads/") || href.startsWith("/api/files/");
+}
 
 interface CodeProps {
   className?: string;

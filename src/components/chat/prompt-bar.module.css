@@ -1,16 +1,19 @@
 .wrap {
+  position: relative;
   width: min(100%, var(--chat-max));
   margin: 0 auto;
-  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  padding: var(--sp-2) var(--sp-4) var(--sp-3);
 }
 
+/* Composer: the input on top, an instrument strip of controls below. */
 .bar {
+  position: relative;
   display: flex;
-  align-items: flex-end;
-  gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-3);
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-2);
   border: var(--border) solid var(--line);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-panel);
   background: var(--ink-2);
   transition:
     border-color var(--dur-micro) ease,
@@ -35,7 +38,7 @@
   position: absolute;
   bottom: calc(100% + var(--sp-2));
   left: 0;
-  z-index: var(--z-popover);
+  z-index: var(--z-overlay);
   min-width: 190px;
   padding: var(--sp-1);
   border: var(--border) solid var(--line);
@@ -54,7 +57,7 @@
   border-radius: 7px;
   background: none;
   color: var(--text-1);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-small);
   text-align: left;
   cursor: pointer;
 }
@@ -77,10 +80,11 @@
 }
 
 .input {
-  flex: 1;
+  flex: none;
+  width: 100%;
   min-width: 0;
   min-height: 32px;
-  padding: 6px 0;
+  padding: 6px var(--sp-2) 2px;
   border: 0;
   background: none;
   color: var(--text-1);
@@ -123,7 +127,7 @@
 
 @media (max-width: 640px) {
   .model {
-    max-width: 90px;
+    max-width: 96px;
   }
 }
 
@@ -212,4 +216,175 @@
   font-family: var(--font-display);
   font-size: var(--fs-lg);
   pointer-events: none;
+}
+
+/* Busy: a slow signal sweep along the composer's top edge. */
+.barBusy::before {
+  content: "";
+  position: absolute;
+  inset: -1px var(--sp-4) auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--signal), transparent);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  animation: sweep 1.6s linear infinite;
+}
+
+@keyframes sweep {
+  from { background-position: -40% 0; }
+  to { background-position: 140% 0; }
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.caps {
+  display: flex;
+  gap: var(--sp-1);
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(90deg, #000 85%, transparent);
+  padding-right: var(--sp-3);
+}
+
+.caps::-webkit-scrollbar { display: none; }
+
+.cap {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 var(--sp-2);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-3);
+  font: inherit;
+  font-size: var(--fs-tiny);
+  cursor: pointer;
+  transition:
+    color var(--dur-micro) ease,
+    border-color var(--dur-micro) ease,
+    background var(--dur-micro) ease;
+}
+
+.cap:hover { color: var(--text-1); border-color: var(--line-strong); }
+.cap:focus-visible { outline: 2px solid var(--signal); outline-offset: 1px; }
+
+.capOn {
+  border-color: color-mix(in oklab, var(--signal) 55%, var(--line));
+  background: var(--signal-wash);
+  color: var(--signal);
+}
+
+.capOn:hover { color: var(--signal); border-color: var(--signal); }
+
+.right {
+  margin-left: auto;
+}
+
+.pace {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.send {
+  transition: background var(--dur-micro) ease, color var(--dur-micro) ease, box-shadow var(--dur-std) ease;
+}
+
+.sendReady {
+  background: var(--signal) !important;
+  color: var(--on-signal) !important;
+  box-shadow: var(--halo);
+}
+
+.stop {
+  border-color: var(--line-strong);
+}
+
+.slash {
+  position: absolute;
+  bottom: calc(100% - var(--sp-1));
+  left: var(--sp-4);
+  z-index: var(--z-overlay);
+  width: min(340px, calc(100% - 2 * var(--sp-4)));
+  margin: 0;
+  padding: var(--sp-1);
+  list-style: none;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--ink-2);
+  box-shadow: var(--elev-2);
+}
+
+.slash button {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--fs-small);
+  text-align: left;
+  cursor: pointer;
+}
+
+.slash [aria-selected="true"] button,
+.slash button:hover {
+  background: var(--ink-3);
+  color: var(--text-1);
+}
+
+.slashCmd {
+  min-width: 82px;
+  font-family: var(--font-mono);
+  color: var(--signal);
+}
+
+.keys {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--sp-1) var(--sp-3);
+  margin: var(--sp-2) var(--sp-2) 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+}
+
+.keys kbd {
+  padding: 0 4px;
+  border: var(--border) solid var(--line);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.capNote { color: var(--signal); }
+
+@media (max-width: 640px) {
+  .wrap { padding-inline: var(--sp-3); }
+  .cap span { display: none; }
+  .cap { width: 28px; justify-content: center; padding: 0; }
+  .keys > span:first-child { display: none; }
+  .pace { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barBusy::before { animation: none; }
 }

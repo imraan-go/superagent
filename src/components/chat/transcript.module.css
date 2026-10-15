@@ -10,8 +10,9 @@
 /* Role gutter + measure. Both roles left-aligned: long technical turns read
    better on one column than in alternating bubbles. */
 .turn {
+  animation: rise var(--dur-panel) var(--ease-out) both;
   display: grid;
-  grid-template-columns: 28px 1fr;
+  grid-template-columns: 28px minmax(0, 1fr);
   gap: var(--sp-3);
   align-items: start;
 }
@@ -51,125 +52,6 @@
   overflow-wrap: anywhere;
 }
 
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  padding-left: calc(28px + var(--sp-3));
-}
-
-.chip {
-  border: var(--border) solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--ink-1);
-  overflow: hidden;
-  max-width: 100%;
-}
-
-.chipOpen {
-  border-radius: var(--radius-control);
-  flex-basis: 100%;
-}
-
-.chipHead {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  width: 100%;
-  padding: var(--sp-1) var(--sp-3);
-  border: 0;
-  background: none;
-  color: var(--text-2);
-  font-family: var(--font-mono);
-  font-size: var(--fs-micro);
-  cursor: pointer;
-}
-
-.chipHead:disabled {
-  cursor: default;
-}
-
-.chipHead:not(:disabled):hover {
-  color: var(--text-1);
-  background: var(--ink-2);
-}
-
-.chipName {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.chipMs {
-  color: var(--text-3);
-  font-variant-numeric: tabular-nums;
-}
-
-.chipCaret {
-  transition: transform var(--dur-micro) ease;
-}
-
-.chipOpen .chipCaret {
-  transform: rotate(90deg);
-}
-
-.chipDetail {
-  margin: 0;
-  padding: var(--sp-3);
-  border-top: var(--border) solid var(--line);
-  max-height: 320px;
-  overflow: auto;
-  font-family: var(--font-mono);
-  font-size: var(--fs-sm);
-  line-height: 1.55;
-  color: var(--text-2);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.activity {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  margin: 0;
-  padding-left: calc(28px + var(--sp-3) - 22px);
-  font-size: var(--fs-sm);
-  color: var(--text-2);
-}
-
-.activityLabel {
-  color: var(--text-2);
-}
-
-/* Three dots breathing in sequence — the only motion in a quiet transcript. */
-.activityDots {
-  display: inline-flex;
-  gap: 3px;
-}
-
-.activityDots i {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: var(--text-3);
-  animation: pulse 1.2s ease-in-out infinite;
-}
-
-.activityDots i:nth-child(2) { animation-delay: 0.15s; }
-.activityDots i:nth-child(3) { animation-delay: 0.3s; }
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.25; }
-  50% { opacity: 1; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .activityDots i {
-    animation: none;
-    opacity: 0.6;
-  }
-}
-
 .error {
   display: flex;
   align-items: center;
@@ -180,7 +62,7 @@
   border-radius: var(--radius-control);
   background: color-mix(in oklab, var(--danger) 8%, transparent);
   color: var(--text-1);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-small);
 }
 
 .attachments {
@@ -220,9 +102,104 @@
   color: var(--text-3);
 }
 
-.shot {
-  display: block;
-  height: 56px;
-  border: var(--border) solid var(--line);
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.assistant .body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.traceSlot { min-width: 0; }
+
+.answer { min-width: 0; }
+
+/* Streaming caret: a signal-coloured block after the last rendered block. */
+.streaming > * > :last-child::after {
+  content: "";
+  display: inline-block;
+  width: 0.5em;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--signal);
+  box-shadow: var(--halo);
+  animation: caret 1s steps(2, start) infinite;
+}
+
+@keyframes caret {
+  to { visibility: hidden; }
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2) var(--sp-4);
+  padding-top: var(--sp-2);
+  border-top: var(--border) dashed var(--line);
+}
+
+.readouts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+
+.readouts > span + span::before {
+  content: "·";
+  margin-right: var(--sp-3);
+  color: var(--line-strong);
+}
+
+.actions {
+  display: inline-flex;
+  gap: var(--sp-1);
+  opacity: 0.7;
+  transition: opacity var(--dur-micro) ease;
+}
+
+.turn:hover .actions,
+.actions:focus-within { opacity: 1; }
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 var(--sp-2);
+  border: var(--border) solid transparent;
   border-radius: var(--radius-chip);
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--fs-tiny);
+  cursor: pointer;
+}
+
+.action:hover { color: var(--text-1); border-color: var(--line); background: var(--ink-2); }
+.action:focus-visible { outline: 2px solid var(--signal); outline-offset: 1px; }
+
+@media (hover: none) {
+  .actions { opacity: 1; }
+}
+
+@media (max-width: 480px) {
+  .turn { grid-template-columns: minmax(0, 1fr); gap: var(--sp-1); }
+  .gutter { justify-content: flex-start; }
+  .root { padding-inline: var(--sp-3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turn { animation: none; }
+  .streaming > * > :last-child::after { animation: none; }
 }
