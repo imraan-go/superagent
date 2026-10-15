@@ -26,9 +26,11 @@ export function NewChatLanding() {
   const toast = useToast();
 
   const create = useMutation({
-    mutationFn: async (input?: { text?: string; model?: string }) => {
+    mutationFn: async (input?: { text?: string; model?: string; fileIds?: string[] }) => {
       const { chat } = await api.createChat();
-      if (input?.text) await api.sendMessage(chat.id, input.text, input.model);
+      if (input?.text || input?.fileIds?.length) {
+        await api.sendMessage(chat.id, input.text ?? "", input.model, input.fileIds);
+      }
       return chat.id;
     },
     onSuccess: async (chatId) => {
@@ -69,7 +71,7 @@ export function NewChatLanding() {
         <PromptBar
           busy={create.isPending}
           onStop={() => undefined}
-          onSend={(text, model) => create.mutate({ text, model })}
+          onSend={(text, model, fileIds) => create.mutate({ text, model, fileIds })}
         />
       </main>
 

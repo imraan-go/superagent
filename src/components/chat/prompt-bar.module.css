@@ -126,3 +126,90 @@
     max-width: 90px;
   }
 }
+
+/* ---- attachments ---- */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-2);
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  max-width: 100%;
+  padding: 3px 4px 3px var(--sp-2);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-chip);
+  background: var(--ink-2);
+  color: var(--text-2);
+  font-size: var(--fs-tiny);
+}
+
+.chipError {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.chipThumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.chipName {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-1);
+}
+
+.chipMeta {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+}
+
+.chipError .chipMeta {
+  color: inherit;
+}
+
+.chipRemove {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.chipRemove:hover,
+.chipRemove:focus-visible {
+  background: var(--ink-3);
+  color: var(--text-1);
+}
+
+.drop {
+  position: fixed;
+  inset: var(--sp-4);
+  z-index: var(--z-overlay);
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--signal);
+  border-radius: var(--radius-panel);
+  background: var(--signal-wash);
+  color: var(--signal);
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  pointer-events: none;
+}

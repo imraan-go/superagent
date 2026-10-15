@@ -1,0 +1,99 @@
+.muted {
+  margin: 0;
+  font-size: var(--fs-small);
+  line-height: 1.55;
+  color: var(--text-3);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  overflow: hidden;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--ink-0);
+  color: var(--text-2);
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color var(--dur-micro) ease;
+}
+
+.tile:hover,
+.tile:focus-visible {
+  border-color: var(--signal);
+}
+
+.thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.badge {
+  position: absolute;
+  left: var(--sp-1);
+  bottom: var(--sp-1);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.doc {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 2px;
+  height: 100%;
+  padding: var(--sp-2);
+  text-align: center;
+}
+
+.docName {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-micro);
+  color: var(--text-1);
+}
+
+.docMeta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-3);
+}
+
+.full {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  margin: 0 auto;
+  border-radius: var(--radius-control);
+}
+
+.download {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  color: var(--signal);
+  font-size: var(--fs-small);
+}

@@ -4,16 +4,25 @@ import { startAgentRun } from "@/server/agent/loop";
 import { findModel, resolveDefaultModel } from "@/server/models";
 import { AppError } from "@/server/lib/errors";
 import { json, ownerRoute } from "@/server/lib/route";
+import { attachmentParts } from "@/server/files/attachments";
+import { MAX_ATTACHMENTS } from "@/lib/uploads";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-const bodySchema = z.object({
-  text: z.string().trim().min(1, "Say something first.").max(32_000),
-  model: z.string().trim().min(1).optional(),
-});
+const bodySchema = z
+  .object({
+    text: z.string().trim().max(32_000).default(""),
+    model: z.string().trim().min(1).optional(),
+    /** Ids from POST /api/uploads; become image/file parts on the turn. */
+    fileIds: z.array(z.uuid()).max(MAX_ATTACHMENTS).optional(),
+  })
+  .refine((b) => b.text.length > 0 || (b.fileIds?.length ?? 0) > 0, {
+    message: "Say something first.",
+    path: ["text"],
+  });
 
 /**
  * Sends a turn and starts a run.
@@ -43,9 +52,14 @@ export const POST = ownerRoute<Ctx>(async ({ request, owner, ctx }) => {
   const requested = body.data.model ?? chat.model ?? undefined;
   const model = (requested ? findModel(requested) : undefined) ?? resolveDefaultModel();
 
+  const attachments = await attachmentParts(body.data.fileIds ?? [], chatId);
+
   const message = await appendMessage(chatId, owner.userId, {
     role: "user",
-    content: [{ type: "text", text: body.data.text }],
+    content: [
+      ...attachments,
+      ...(body.data.text ? [{ type: "text" as const, text: body.data.text }] : []),
+    ],
   });
 
   // Remember the choice so the next turn in this chat defaults to it.

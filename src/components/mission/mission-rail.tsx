@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Desktop, Monitor } from "@phosphor-icons/react/dist/ssr";
-import { Button, Dot, Panel, Readout, SegmentedSwitch } from "@/components/ui";
+import { Desktop } from "@phosphor-icons/react/dist/ssr";
+import { Dot, Panel, Readout, SegmentedSwitch } from "@/components/ui";
+import { ComputerTab } from "./computer-tab";
+import { LibraryTab } from "./library-tab";
 import { formatCost } from "@/lib/format";
 import { useUsageTicker } from "@/hooks/use-usage-ticker";
 import type { RunState } from "@/hooks/use-run-stream";
@@ -71,8 +73,22 @@ export function MissionRail({ run, chatId }: { run: RunState; chatId?: string | 
 
       <div className={styles.body}>
         {tab === "mission" && <MissionTab run={run} capabilities={capabilities} chatId={chatId} />}
-        {tab === "library" && <LibraryTab />}
-        {tab === "computer" && <ComputerTab capabilities={capabilities} />}
+        {tab === "library" && (
+          <LibraryTab
+            chatId={chatId}
+            running={run.phase === "thinking" || run.phase === "tool" || run.phase === "waiting"}
+          />
+        )}
+        {/* Always mounted: the live view keeps its connection while another tab shows. */}
+        <div hidden={tab !== "computer"} className={styles.computerHost}>
+          <ComputerTab
+            capabilities={capabilities}
+            active={tab === "computer"}
+            steps={run.steps}
+            runId={run.runId}
+            onRequestOpen={() => setTab("computer")}
+          />
+        </div>
       </div>
     </div>
   );
@@ -144,55 +160,5 @@ function MissionTab({
         </Panel>
       )}
     </>
-  );
-}
-
-function LibraryTab() {
-  return (
-    <Panel title="Library">
-      <p className={styles.muted}>
-        Files and artifacts this chat produces will collect here. Uploads and tool
-        screenshots land in Phase 2.
-      </p>
-    </Panel>
-  );
-}
-
-function ComputerTab({ capabilities }: { capabilities?: Capabilities }) {
-  const asleep = capabilities?.reachable && !capabilities.desktopUp;
-
-  return (
-    <Panel
-      title="Screen"
-      badge={
-        <Dot
-          status={
-            !capabilities?.reachable ? "error" : capabilities.desktopUp ? "live" : "warn"
-          }
-          size="sm"
-          pulse={capabilities?.desktopUp === true}
-        />
-      }
-    >
-      <div className={styles.screen} data-state={asleep ? "asleep" : capabilities?.desktopUp ? "live" : "offline"}>
-        <span className={styles.screenGlyph} aria-hidden>
-          <Monitor size={32} weight="duotone" />
-        </span>
-        <p className={styles.screenLabel}>
-          {!capabilities?.reachable
-            ? "Cannot reach the agent computer"
-            : asleep
-              ? "Computer is asleep"
-              : "Desktop is up"}
-        </p>
-        {asleep && (
-          <Button size="sm" variant="outline" disabled>
-            Wake
-          </Button>
-        )}
-      </div>
-      <p className={styles.screenCaption}>Agent computer&apos;s screen</p>
-      <p className={styles.muted}>The live view arrives with the VNC panel in Phase 2.</p>
-    </Panel>
   );
 }

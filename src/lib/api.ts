@@ -1,4 +1,5 @@
 import type { ChatMessage } from "./messages";
+import type { FileInfo } from "./uploads";
 
 /**
  * Typed client for the panel's own API.
@@ -26,7 +27,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
     headers: {
-      ...(init?.body ? { "content-type": "application/json" } : {}),
+      ...(typeof init?.body === "string" ? { "content-type": "application/json" } : {}),
       ...init?.headers,
     },
     cache: "no-store",
@@ -74,6 +75,15 @@ export interface ModelOption {
   ready: boolean;
 }
 
+export interface BridgeJobView {
+  id: string;
+  action: string;
+  started: number;
+  ended: number | null;
+  ok: boolean | null;
+  output: string;
+}
+
 export const api = {
   listChats: () => request<{ chats: ChatSummary[] }>("/api/chats"),
 
@@ -94,11 +104,44 @@ export const api = {
   deleteChat: (id: string) =>
     request<{ ok: true }>(`/api/chats/${id}`, { method: "DELETE" }),
 
-  sendMessage: (chatId: string, text: string, model?: string) =>
+  sendMessage: (chatId: string, text: string, model?: string, fileIds?: string[]) =>
     request<{ message: ChatMessage; runId: string; model: string }>(
       `/api/chats/${chatId}/messages`,
-      { method: "POST", body: JSON.stringify({ text, ...(model ? { model } : {}) }) },
+      {
+        method: "POST",
+        body: JSON.stringify({
+          text,
+          ...(model ? { model } : {}),
+          ...(fileIds && fileIds.length > 0 ? { fileIds } : {}),
+        }),
+      },
     ),
+
+  /** Multipart upload; the browser sets the boundary, so no content-type here. */
+  uploadFile: (file: File, chatId?: string | null) => {
+    const form = new FormData();
+    form.set("file", file);
+    if (chatId) form.set("chatId", chatId);
+    return request<{ file: FileInfo; deduped: boolean }>("/api/uploads", {
+      method: "POST",
+      body: form,
+    });
+  },
+
+  listChatFiles: (chatId: string) => request<{ files: FileInfo[] }>(`/api/chats/${chatId}/files`),
+
+  computerViewer: () =>
+    request<{ url: string; embeddable: boolean; reason: string | null }>("/api/computer/viewer"),
+
+  wakeComputer: () => request<{ job: BridgeJobView }>("/api/computer/wake", { method: "POST", body: JSON.stringify({}) }),
+
+  computerJob: (id: string) => request<{ job: BridgeJobView }>(`/api/computer/jobs/${encodeURIComponent(id)}`),
+
+  logTakeover: (phase: "start" | "end", seconds?: number) =>
+    request<{ ok: true }>("/api/computer/takeover", {
+      method: "POST",
+      body: JSON.stringify({ phase, ...(seconds !== undefined ? { seconds } : {}) }),
+    }),
 
   cancelRun: (runId: string) =>
     request<{ ok: true; cancelled: boolean }>(`/api/runs/${runId}/cancel`, {

@@ -17,7 +17,8 @@ import { filterTools } from "./allowlist";
 import { notifyUsage } from "@/server/usage/live";
 import { requiresApproval } from "./policy";
 import { emit, finishRun, startRun } from "./registry";
-import { buildContext, toAdapterParts } from "./context";
+import { buildContext, pruneOldImages, toAdapterParts } from "./context";
+import { saveToolImage } from "@/server/files/store";
 
 /**
  * Agent loop v1 (docs/skills/skill-agent-loop.md): plan → act → observe, with
@@ -101,6 +102,8 @@ async function execute(input: ExecuteInput): Promise<void> {
         flushedAt = Date.now();
       };
 
+      pruneOldImages(messages);
+
       for await (const event of adapter.stream({
         model: model.model,
         system: context.system,
@@ -171,7 +174,10 @@ async function execute(input: ExecuteInput): Promise<void> {
           runId,
         });
         emit(runId, { type: "message", message: saved });
-        messages.push({ role: "assistant", content: toAdapterParts(assistantParts) });
+        messages.push({
+          role: "assistant",
+          content: await toAdapterParts(assistantParts, { vision: model.vision }),
+        });
       }
 
       if (toolCalls.length === 0) {
@@ -194,7 +200,7 @@ async function execute(input: ExecuteInput): Promise<void> {
           return;
         }
 
-        const step = await observeTool({ runId, stepIdx, call, signal });
+        const step = await observeTool({ runId, chatId, stepIdx, call, signal });
         stepIdx += 1;
         resultParts.push(step);
       }
@@ -205,7 +211,10 @@ async function execute(input: ExecuteInput): Promise<void> {
         runId,
       });
       emit(runId, { type: "message", message: saved });
-      messages.push({ role: "user", content: toAdapterParts(resultParts) });
+      messages.push({
+        role: "user",
+        content: await toAdapterParts(resultParts, { vision: model.vision }),
+      });
     }
 
     throw new AppError(
@@ -231,11 +240,12 @@ async function execute(input: ExecuteInput): Promise<void> {
 /** Runs one tool, persisting the step and streaming both of its events. */
 async function observeTool(args: {
   runId: string;
+  chatId: string;
   stepIdx: number;
   call: { id: string; name: string; args: Record<string, unknown> };
   signal: AbortSignal;
 }): Promise<MessagePart> {
-  const { runId, stepIdx, call, signal } = args;
+  const { runId, chatId, stepIdx, call, signal } = args;
   const label = activityLabel(call.name);
 
   await db.insert(runSteps).values({
@@ -257,9 +267,22 @@ async function observeTool(args: {
       const text = truncate(resultText(result.result), RESULT_LIMIT);
       const images = resultImages(result.result);
 
+      // Screenshots are stored once (sha256-deduped) and referenced by id.
+      const imageIds: string[] = [];
+      for (const img of images) {
+        const saved = await saveToolImage({
+          mime: img.mime,
+          dataB64: img.data_b64,
+          toolName: call.name,
+          chatId,
+          runId,
+        });
+        if (saved) imageIds.push(saved.id);
+      }
+
       await db
         .update(runSteps)
-        .set({ result: { text }, ok: result.ok, ms: result.ms })
+        .set({ result: { text }, ok: result.ok, ms: result.ms, images: imageIds })
         .where(and(eq(runSteps.runId, runId), eq(runSteps.idx, stepIdx)));
 
       emit(runId, {
@@ -272,12 +295,13 @@ async function observeTool(args: {
           ok: result.ok,
           ms: result.ms,
           preview: text.slice(0, 280),
+          ...(imageIds.length > 0 ? { images: imageIds } : {}),
         },
       });
 
-      // Images are referenced by file id (ADR-07). The files write lands in
-      // Phase 2, so v1 tells the model a screenshot exists without inlining it.
-      const note = images.length > 0 ? `\n[${images.length} screenshot(s) captured]` : "";
+      // Images are referenced by file id (ADR-07); `toAdapterParts` inlines
+      // them for vision models, otherwise the model only sees this note.
+      const note = imageIds.length > 0 ? `\n[${imageIds.length} screenshot(s) captured]` : "";
 
       return {
         type: "tool_result",
@@ -286,7 +310,7 @@ async function observeTool(args: {
         ok: result.ok,
         ms: result.ms,
         text: (text || (result.ok ? "(no output)" : "(failed)")) + note,
-        images: [],
+        images: imageIds,
       } satisfies MessagePart;
     } catch (err) {
       const appErr = toAppError(err);

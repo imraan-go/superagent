@@ -182,3 +182,47 @@
   color: var(--text-1);
   font-size: var(--fs-sm);
 }
+
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-2);
+  padding: 0;
+  list-style: none;
+}
+
+.attachThumb {
+  display: block;
+  max-width: 220px;
+  max-height: 160px;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-control);
+  object-fit: cover;
+}
+
+.attachFile {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 4px var(--sp-3);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-chip);
+  background: var(--ink-2);
+  color: var(--text-1);
+  font-size: var(--fs-tiny);
+  text-decoration: none;
+}
+
+.attachMeta {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+}
+
+.shot {
+  display: block;
+  height: 56px;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-chip);
+}

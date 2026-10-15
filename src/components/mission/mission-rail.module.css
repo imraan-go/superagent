@@ -155,3 +155,14 @@
   font-size: var(--fs-micro);
   color: var(--text-3);
 }
+
+/* Wrapper for the always-mounted Computer tab; mirrors .body's rhythm. */
+.computerHost {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.computerHost[hidden] {
+  display: none;
+}

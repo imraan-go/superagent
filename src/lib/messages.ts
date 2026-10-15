@@ -26,6 +26,15 @@ export const imagePartSchema = z.object({
   alt: z.string().optional(),
 });
 
+/** A non-image attachment (pdf, docx, csv, …), referenced by `fileId`. */
+export const filePartSchema = z.object({
+  type: z.literal("file"),
+  fileId: z.uuid(),
+  name: z.string(),
+  mime: z.string(),
+  bytes: z.number().int().nonnegative(),
+});
+
 export const toolUsePartSchema = z.object({
   type: z.literal("tool_use"),
   id: z.string(),
@@ -47,6 +56,7 @@ export const toolResultPartSchema = z.object({
 export const messagePartSchema = z.discriminatedUnion("type", [
   textPartSchema,
   imagePartSchema,
+  filePartSchema,
   toolUsePartSchema,
   toolResultPartSchema,
 ]);
@@ -55,6 +65,7 @@ export const messageContentSchema = z.array(messagePartSchema);
 
 export type TextPart = z.infer<typeof textPartSchema>;
 export type ImagePart = z.infer<typeof imagePartSchema>;
+export type FilePart = z.infer<typeof filePartSchema>;
 export type ToolUsePart = z.infer<typeof toolUsePartSchema>;
 export type ToolResultPart = z.infer<typeof toolResultPartSchema>;
 export type MessagePart = z.infer<typeof messagePartSchema>;

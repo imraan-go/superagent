@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { CaretRight, Warning } from "@phosphor-icons/react/dist/ssr";
+import { Fragment, useState } from "react";
+import { CaretRight, FileText, Warning } from "@phosphor-icons/react/dist/ssr";
 import { Dot, LiveGlyph } from "@/components/ui";
 import type { ChatMessage, MessagePart } from "@/lib/messages";
 import type { RunStepView } from "@/lib/run-events";
 import { Markdown } from "./markdown";
 import { cn } from "@/lib/cn";
+import { formatBytes } from "@/lib/uploads";
 import styles from "./transcript.module.css";
 
 /**
@@ -74,7 +75,11 @@ function Turn({ message }: { message: ChatMessage }) {
     .join("\n\n");
 
   const isUser = message.role === "user";
-  if (!text) return null;
+  const attachments = message.content.filter(
+    (p): p is Extract<MessagePart, { type: "image" | "file" }> =>
+      p.type === "image" || p.type === "file",
+  );
+  if (!text && attachments.length === 0) return null;
 
   return (
     <article className={cn(styles.turn, isUser ? styles.user : styles.assistant)}>
@@ -82,9 +87,40 @@ function Turn({ message }: { message: ChatMessage }) {
         {isUser ? <span className={styles.youMark}>You</span> : <LiveGlyph state="done" size={16} label="" />}
       </span>
       <div className={styles.body}>
-        {isUser ? <p className={styles.userText}>{text}</p> : <Markdown content={text} />}
+        {attachments.length > 0 && <Attachments parts={attachments} />}
+        {text && (isUser ? <p className={styles.userText}>{text}</p> : <Markdown content={text} />)}
       </div>
     </article>
+  );
+}
+
+/** Files the owner attached to a turn: image thumbnails and file chips. */
+function Attachments({ parts }: { parts: Array<Extract<MessagePart, { type: "image" | "file" }>> }) {
+  return (
+    <ul className={styles.attachments} aria-label="Attachments">
+      {parts.map((part) =>
+        part.type === "image" ? (
+          <li key={part.fileId}>
+            <a href={`/api/uploads/${part.fileId}`} target="_blank" rel="noreferrer">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className={styles.attachThumb}
+                src={`/api/uploads/${part.fileId}`}
+                alt={part.alt ?? "Attached image"}
+                loading="lazy"
+              />
+            </a>
+          </li>
+        ) : (
+          <li key={part.fileId}>
+            <a className={styles.attachFile} href={`/api/uploads/${part.fileId}`} download={part.name}>
+              <FileText size={14} aria-hidden /> {part.name}
+              <span className={styles.attachMeta}>{formatBytes(part.bytes)}</span>
+            </a>
+          </li>
+        ),
+      )}
+    </ul>
   );
 }
 
@@ -98,13 +134,15 @@ function ToolTurn({ parts }: { parts: MessagePart[] }) {
   return (
     <div className={styles.chips}>
       {results.map((result) => (
-        <Chip
-          key={result.toolUseId}
-          label={result.name}
-          ok={result.ok}
-          ms={result.ms ?? null}
-          detail={result.text}
-        />
+        <Fragment key={result.toolUseId}>
+          <Chip label={result.name} ok={result.ok} ms={result.ms ?? null} detail={result.text} />
+          {result.images.map((id) => (
+            <a key={id} href={`/api/uploads/${id}`} target="_blank" rel="noreferrer">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className={styles.shot} src={`/api/uploads/${id}`} alt={`${result.name} screenshot`} loading="lazy" />
+            </a>
+          ))}
+        </Fragment>
       ))}
     </div>
   );
