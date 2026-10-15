@@ -3,6 +3,28 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — Phase 0 complete: scaffold, design system, database, owner auth
+- **App**: Next 16.4.1 (App Router, TS strict + `noUncheckedIndexedAccess`,
+  Tailwind v4 via PostCSS, standalone output), self-hosted Space Grotesk /
+  Instrument Sans / JetBrains Mono, security headers, non-root Dockerfile.
+- **Design system**: `src/styles/tokens.css` with both themes, Manage-mode amber
+  remap, reduced-motion overrides. Eleven primitives in `src/components/ui/*`
+  (Button, IconButton, Panel, Readout, Dot, LiveGlyph, HoldToConfirm, Skeleton,
+  SegmentedSwitch, Modal, Toast) — every variant/state verified in both themes on
+  the `/dev/primitives` proof sheet (dev-only, 404s in production).
+- **Database**: pgvector/pg16 on host port 5433, 17 tables migrated, HNSW index on
+  `memories.embedding`, `run_events` added for SSE resume.
+- **Auth**: owner-only login (argon2id via `@node-rs/argon2`, iron-session cookie
+  HttpOnly/SameSite=Lax/30-day), Postgres-backed 5-failures-per-15-minutes limiter
+  that survives restarts, host-compared same-site CSRF guard, `/api/health`.
+  Verified: bad password 401, 6th attempt 429 (correct password still blocked),
+  cross-origin POST 403, unauthenticated routes redirect/401.
+- **Tests**: Vitest (8 crypto tests — caught a real off-by-one that rejected an
+  empty sealed value) + Playwright (5 auth e2e). `lint`, `typecheck`, `build` clean.
+- Decisions recorded: Next 16 over the rule's Next 15; `cacheComponents` disabled
+  (the app is almost entirely dynamic); Tailwind via PostCSS rather than the
+  Turbopack CSS loader, which would also intercept `*.module.css`.
+
 ## 2026-10-15 — Live-system probe + production implementation plan
 - Probed the running LHOS/E2B host before writing any code: 100 tools,
   capabilities/events/report/approvals all 200, E2B health 200, VNC 302→sign-in,

@@ -91,9 +91,25 @@ Run `bash scripts/sync-env.sh` to populate `.env.local` with the live tokens
 - 2026-10-15 ADR-07 Tool images → files volume + `files` row + URL; never base64 in
   chat state or SSE; only the latest 2 screenshots stay in model context.
 - 2026-10-15 ADR-08 Pace mapping: fast = 4 s gap / 60 per hour, careful = 12 s / 20.
+- 2026-10-15 ADR-09 **Next.js 16.4.1**, not 15 (owner-approved). `cacheComponents`
+  (PPR) left OFF: the panel is almost entirely dynamic and session-gated, so it
+  would add `use cache` + Suspense ceremony for no gain. Tailwind v4 runs through
+  `@tailwindcss/postcss`, not the Turbopack CSS loader — that loader's `*.css`
+  glob also swallows `*.module.css`, and the primitives are CSS Modules.
+- 2026-10-15 ADR-10 Owner credential lives in the `users` table (set by
+  `npm run owner:set-password`, argon2id). `OWNER_PASSWORD_HASH` in env is unused.
+- 2026-10-15 ADR-11 CSRF compares the `Origin` **host** against
+  `x-forwarded-host`/`host`, never `nextUrl.origin` — Next normalises that to
+  localhost and Caddy terminates TLS, so a full-origin match breaks in both
+  dev and production.
 
 ## 5. State (update as you go)
-- Phase: **0 — scaffold not yet created.** Next action: TODO.md Phase 0.
+- Phase: **1 — shell & chat core.** Phase 0 is complete and verified (see
+  CHANGELOG 2026-10-15). Next action: TODO.md Phase 1, starting with the app grid
+  and the typed LHOS REST client.
+- Local dev works: `docker compose up -d db` → `npm run db:migrate` → `npm run dev`
+  on :3100. Owner account exists (`owner@h22t.com`); primitives proof sheet at
+  `/dev/primitives`.
 - Nothing deployed. Domain `panel.hostx.h22t.com` not yet in Caddyfile.
 - Backend verified live 2026-10-15: 100 tools, capabilities/events/report/approvals
   all 200, E2B health 200, VNC 302→sign-in. `.env.local` has LHOS + E2B tokens.

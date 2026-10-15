@@ -1,0 +1,96 @@
+.dialog {
+  padding: 0;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--ink-1);
+  color: var(--text-1);
+  box-shadow: var(--elev-2);
+  max-width: min(92vw, var(--modal-w, 560px));
+  width: 100%;
+  max-height: 86vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog::backdrop {
+  background: color-mix(in srgb, var(--ink-0) 72%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.dialog[open] {
+  animation: rise var(--dur-panel) var(--ease-out);
+}
+
+.dialog[open]::backdrop {
+  animation: fade var(--dur-std) var(--ease-out);
+}
+
+/* Settings modal: tall, with its own left tab rail. */
+.wide {
+  --modal-w: 880px;
+  height: 86vh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border-bottom: var(--border) solid var(--line);
+  flex-shrink: 0;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+
+.description {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+}
+
+.body {
+  padding: var(--sp-4);
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.bodyFlush {
+  padding: 0;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border-top: var(--border) solid var(--line);
+  flex-shrink: 0;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog[open],
+  .dialog[open]::backdrop {
+    animation: none;
+  }
+}

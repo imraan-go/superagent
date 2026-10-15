@@ -1,0 +1,108 @@
+/* Boot sequence after login: ink screen → LiveGlyph draws in → readouts
+   self-test → grid slides in. Total ≤1.6 s, skippable, once per session
+   (docs/DESIGN_SYSTEM.md §Motion). */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  background: var(--ink-0);
+  animation: fadeOut 240ms var(--ease-out) 1360ms forwards;
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-6);
+}
+
+.glyph {
+  animation: drawIn 520ms var(--ease-out) both;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  letter-spacing: -0.01em;
+  animation: rise 360ms var(--ease-out) 220ms both;
+}
+
+.readouts {
+  display: flex;
+  gap: var(--sp-6);
+}
+
+/* Each readout joins the self-test 60 ms after the previous one. */
+.readout {
+  animation: rise 320ms var(--ease-out) both;
+}
+
+.readout:nth-child(1) {
+  animation-delay: 440ms;
+}
+
+.readout:nth-child(2) {
+  animation-delay: 500ms;
+}
+
+.readout:nth-child(3) {
+  animation-delay: 560ms;
+}
+
+.skip {
+  position: absolute;
+  right: var(--sp-5);
+  bottom: var(--sp-5);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  background: transparent;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: var(--sp-2) var(--sp-4);
+  cursor: pointer;
+  animation: rise 320ms var(--ease-out) 700ms both;
+}
+
+.skip:hover {
+  color: var(--text-1);
+  border-color: var(--line-strong);
+}
+
+@keyframes drawIn {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Reduced motion: no sequence at all, the overlay simply is not rendered
+   (handled in splash.tsx) — these resets guard against a mid-flight change. */
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .glyph,
+  .wordmark,
+  .readout,
+  .skip {
+    animation: none;
+  }
+}

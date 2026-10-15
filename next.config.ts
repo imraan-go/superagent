@@ -9,15 +9,9 @@ const nextConfig: NextConfig = {
   // Native/CJS modules that must stay outside the server bundle.
   serverExternalPackages: ["pg", "@node-rs/argon2"],
 
-  // Tailwind v4 via the Turbopack loader (Next 16 default bundler).
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
-  },
+  // Dev-only: without this Next blocks HMR/dev assets when the page is opened
+  // on a loopback host other than the one it printed, and nothing hydrates.
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
 
   async headers() {
     return [

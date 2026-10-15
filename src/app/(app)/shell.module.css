@@ -1,0 +1,122 @@
+/* Phase 0 shell: the real grid, with the regions still empty.
+   64px topbar / [288px left | 1fr chat | 360px right] (DESIGN_SYSTEM §Layout). */
+
+.app {
+  display: grid;
+  grid-template-rows: var(--topbar-h) 1fr;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 0 var(--sp-4);
+  border-bottom: var(--border) solid var(--line);
+  background: var(--ink-0);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-base);
+  font-weight: 600;
+}
+
+.topbarRight {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+}
+
+.connection {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.body {
+  display: grid;
+  grid-template-columns: var(--sidebar-l) 1fr var(--sidebar-r);
+  min-height: 0;
+}
+
+.sidebarLeft {
+  border-right: var(--border) solid var(--line);
+  padding: var(--sp-4);
+  overflow: auto;
+}
+
+.sidebarRight {
+  border-left: var(--border) solid var(--line);
+  padding: var(--sp-4);
+  overflow: auto;
+}
+
+.center {
+  display: grid;
+  place-items: center;
+  padding: var(--sp-6);
+  overflow: auto;
+}
+
+.placeholder {
+  width: min(100%, var(--chat-max));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  text-align: center;
+  color: var(--text-2);
+}
+
+.placeholderTitle {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  color: var(--text-1);
+}
+
+.sectionLabel {
+  font-family: var(--font-display);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: var(--sp-3);
+}
+
+/* Below 1100px the right panel collapses; below 820px the left rail does too.
+   Phase 1 replaces this with real collapse behaviour and a status pill. */
+@media (max-width: 1100px) {
+  .body {
+    grid-template-columns: var(--sidebar-l) 1fr;
+  }
+
+  .sidebarRight {
+    display: none;
+  }
+}
+
+@media (max-width: 820px) {
+  .body {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebarLeft {
+    display: none;
+  }
+}

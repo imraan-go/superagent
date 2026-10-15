@@ -1,0 +1,87 @@
+.base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  position: relative;
+  overflow: hidden;
+  height: 38px;
+  padding: 0 var(--sp-4);
+  border: var(--border) solid var(--amber-dim);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--amber);
+  font-family: var(--font-ui);
+  font-size: var(--fs-base);
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  white-space: nowrap;
+  transition:
+    border-color var(--dur-micro) var(--ease-out),
+    box-shadow var(--dur-std) var(--ease-out);
+}
+
+.base:hover:not(:disabled) {
+  border-color: var(--amber);
+}
+
+.base:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.danger {
+  border-color: var(--danger-dim);
+  color: var(--danger);
+}
+
+.danger:hover:not(:disabled) {
+  border-color: var(--danger);
+}
+
+.sm {
+  height: 30px;
+  padding: 0 var(--sp-3);
+  font-size: var(--fs-small);
+}
+
+/* Fill sweeps left→right over holdMs; width is driven from JS so the progress
+   is honest even if the pointer is released early. */
+.fill {
+  position: absolute;
+  inset: 0;
+  right: auto;
+  background: var(--amber-wash);
+  pointer-events: none;
+}
+
+.danger .fill {
+  background: var(--danger-wash);
+}
+
+.holding {
+  border-color: var(--amber);
+  box-shadow: var(--halo-amber);
+}
+
+.danger.holding {
+  border-color: var(--danger);
+  box-shadow: var(--halo-danger);
+}
+
+.label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.hint {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+}

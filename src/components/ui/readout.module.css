@@ -1,0 +1,107 @@
+.readout {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.inline {
+  flex-direction: row;
+  align-items: baseline;
+  gap: var(--sp-2);
+}
+
+.label {
+  font-family: var(--font-ui);
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.valueRow {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Numeric readouts are always mono with tabular figures (rule 10-design). */
+.value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--text-1);
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.sm .value {
+  font-size: var(--fs-small);
+}
+
+.md .value {
+  font-size: var(--fs-lg);
+}
+
+.lg .value {
+  font-size: var(--fs-2xl);
+}
+
+.unit {
+  font-family: var(--font-mono);
+  font-size: var(--fs-tiny);
+  color: var(--text-3);
+}
+
+/* Estimated values are flagged while a stream is still open
+   (skill-token-metering §Gotchas). */
+.estimate .value {
+  color: var(--text-2);
+}
+
+.estimateMark {
+  font-family: var(--font-mono);
+  font-size: var(--fs-tiny);
+  color: var(--text-3);
+  margin-right: 1px;
+}
+
+.signal .value {
+  color: var(--signal);
+}
+
+.amber .value {
+  color: var(--amber);
+}
+
+.danger .value {
+  color: var(--danger);
+}
+
+.ok .value {
+  color: var(--ok);
+}
+
+/* Brief flash when the value changes, so a glance catches movement.
+   Re-triggered by remounting the span (see readout.tsx), not by a state flag. */
+.flash {
+  animation: tick var(--dur-panel) var(--ease-out);
+}
+
+@keyframes tick {
+  0% {
+    text-shadow: 0 0 10px currentColor;
+  }
+  100% {
+    text-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash {
+    animation: none;
+  }
+}

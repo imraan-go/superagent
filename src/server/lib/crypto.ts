@@ -34,7 +34,8 @@ export function seal(plaintext: string): string {
 
 export function unseal(sealed: string): string {
   const buf = Buffer.from(sealed, "base64");
-  if (buf.length <= IV_BYTES + TAG_BYTES) {
+  // Exactly IV+TAG is valid: that is an empty plaintext.
+  if (buf.length < IV_BYTES + TAG_BYTES) {
     throw new Error("sealed value is malformed");
   }
   const iv = buf.subarray(0, IV_BYTES);
