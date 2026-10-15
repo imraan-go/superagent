@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getOwner } from "@/server/auth/session";
 import { ToastProvider } from "@/components/ui";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { Splash } from "@/components/boot/splash";
 
 /**
@@ -12,9 +13,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!owner) redirect("/login");
 
   return (
-    <ToastProvider>
-      <Splash />
-      {children}
-    </ToastProvider>
+    <QueryProvider>
+      <ToastProvider>
+        <Splash />
+        {children}
+      </ToastProvider>
+    </QueryProvider>
   );
 }

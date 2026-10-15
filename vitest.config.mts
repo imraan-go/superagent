@@ -2,15 +2,19 @@ import { defineConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
 
 /**
- * Unit tests only — pricing math, the retryable-error classifier, approval
- * policy matching, the Manage allowlist, crypto round-trips
- * (IMPLEMENTATION_PLAN §6). Tests never reach the live LHOS server; the client
- * is injected. Browser flows live in Playwright.
+ * Unit tests — pricing math, the retryable-error classifier, approval policy
+ * matching, the Manage allowlist, crypto round-trips (IMPLEMENTATION_PLAN §6).
+ * The default run never reaches the live LHOS server. `LHOS_LIVE=1` swaps in
+ * the read-only contract smoke tests instead. Browser flows live in Playwright.
  */
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts", "tests/unit/**/*.test.ts"],
+    include:
+      process.env.LHOS_LIVE === "1"
+        ? ["tests/smoke/**/*.test.ts"]
+        : ["src/**/*.test.ts", "tests/unit/**/*.test.ts"],
+    testTimeout: process.env.LHOS_LIVE === "1" ? 180_000 : 5_000,
     reporters: "default",
   },
   resolve: {

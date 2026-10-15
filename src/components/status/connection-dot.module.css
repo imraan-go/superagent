@@ -1,0 +1,30 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  cursor: default;
+}
+
+/* Keep the pill width stable as the label changes so the topbar never jitters. */
+.text {
+  min-width: 7ch;
+}
+
+@media (max-width: 640px) {
+  .text {
+    display: none;
+  }
+
+  .wrap {
+    min-width: 0;
+    padding: var(--sp-1) var(--sp-2);
+  }
+}

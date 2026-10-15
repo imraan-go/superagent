@@ -3,6 +3,38 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — Phase 1a: LHOS gateway, `/api/lhos/*` proxies, live connection dot
+- **LHOS client** (`src/server/lhos/*`, ADR-01 — REST, not the MCP SDK): typed
+  gateway over `POST /api/tools/<name>` with zod schemas for every wire shape,
+  120 s tool / 15 s read timeouts, and caller-abort propagation. GET requests
+  retry on transport and 5xx failures; **tool calls are never retried** because
+  they are not idempotent — a retried `desktop_click` clicks twice.
+- **Retryable classifier** (`retryable.ts`): separates "the desktop is waking up"
+  (30 s fixed backoff) from transient transport errors (exponential, capped at
+  8 s) from fatal 4xx. Pure and dependency-free so it is unit-testable.
+- **Tool catalogue cache**: `GET /api/tools` is a 43 KB unpaginated document
+  fetched on nearly every run, so it is cached in-process for 5 minutes with
+  in-flight deduplication and stale-on-error fallback.
+- **Proxies**: `/api/lhos/capabilities|tools|events|report` and `/api/approvals`,
+  all behind a new `ownerRoute` wrapper that verifies the sealed session (the
+  real authorisation boundary — middleware only sees that a cookie exists).
+  Status endpoints return `200 {reachable:false}` rather than an error status so
+  a polling UI can show "waking"/"offline" without treating it as a failure.
+- **Approve/reject proxy** (`POST /api/approvals/[id]`): owner-session only,
+  `confirm` kind only, records `decided_via='panel'`. `APPROVE_TOKEN` stays
+  server-side and never appears in a response or an error message.
+- **Connection dot**: live against `/api/lhos/capabilities` every 20 s via
+  TanStack Query, distinguishing offline / waking / desktop-asleep / live —
+  verified Live against the real sandbox `injo6euds4…`.
+- **Logger** (`src/server/lib/logger.ts`): JSON lines, level-gated, with key
+  redaction so a stray `token`/`password` field can never reach the logs.
+- **Tests**: 20 new unit tests (classifier + wire schemas built from captured
+  live payloads), 3 new e2e (clean hydration, dot resolves, mode switch), and an
+  opt-in live contract suite — `npm run test:smoke` exercises a real screenshot
+  and a real tool call against the agent computer. 28 unit + 8 e2e + 5 smoke green.
+- Fixed: `resultText`/`resultImages` took the whole envelope while naming the
+  parameter `result`; they now take the block array and compose.
+
 ## 2026-10-15 — Phase 0 complete: scaffold, design system, database, owner auth
 - **App**: Next 16.4.1 (App Router, TS strict + `noUncheckedIndexedAccess`,
   Tailwind v4 via PostCSS, standalone output), self-hosted Space Grotesk /

@@ -102,11 +102,28 @@ Run `bash scripts/sync-env.sh` to populate `.env.local` with the live tokens
   `x-forwarded-host`/`host`, never `nextUrl.origin` — Next normalises that to
   localhost and Caddy terminates TLS, so a full-origin match breaks in both
   dev and production.
+- 2026-10-15 ADR-12 Tool calls are **never retried**, at any layer. They are not
+  idempotent — a retried `desktop_click` clicks twice. Only GET reads retry, and
+  the "waking up" backoff applies to the agent loop deciding to re-attempt a
+  step, never to the HTTP client silently repeating a POST.
+- 2026-10-15 ADR-13 Status endpoints (`/api/lhos/capabilities`, `/api/approvals`)
+  answer `200 {reachable:false, code}` instead of a 5xx. They are polled, and an
+  unreachable agent computer is a normal product state, not a request failure.
+- 2026-10-15 ADR-14 Every authenticated API route goes through `ownerRoute`
+  (`src/server/lib/route.ts`), which verifies the sealed session and maps
+  `AppError` → status. Middleware is a fast filter, not the authorisation check.
+- 2026-10-15 ADR-15 The tool catalogue is cached in-process for 5 minutes with
+  stale-on-error fallback. Valid only because the panel is single-instance
+  (ADR-04); revisit if that ever changes.
+- 2026-10-15 ADR-16 Live LHOS assertions live in `tests/smoke/` behind
+  `LHOS_LIVE=1` (`npm run test:smoke`), never in the default unit run. The tool
+  envelope is the one contract types cannot verify, and read-only tools make it
+  safe to assert against the real server.
 
 ## 5. State (update as you go)
-- Phase: **1 — shell & chat core.** Phase 0 is complete and verified (see
-  CHANGELOG 2026-10-15). Next action: TODO.md Phase 1, starting with the app grid
-  and the typed LHOS REST client.
+- Phase: **1 — shell & chat core.** The LHOS gateway, the `/api/lhos/*` proxies
+  and the live connection dot are done and verified against the real sandbox.
+  Next action: chat CRUD + message persistence, then the model adapters.
 - Local dev works: `docker compose up -d db` → `npm run db:migrate` → `npm run dev`
   on :3100. Owner account exists (`owner@h22t.com`); primitives proof sheet at
   `/dev/primitives`.

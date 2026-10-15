@@ -26,9 +26,11 @@
 ## ➤ Phase 1 — Shell & chat core
 - [ ] App grid: topbar (Agent/Manage switch, connection dot), left sidebar
       (history groups, pinned, search, settings at bottom), right Mission panel shell
-- [ ] LHOS client (`src/server/lhos/client.ts`, REST per ADR-01 — parse the
+- [x] LHOS client (`src/server/lhos/client.ts`, REST per ADR-01 — parse the
       `{ok,tool,ms,result[]}` envelope) + `/api/lhos/*` proxies; connection
       dot live against `/api/capabilities`; retryable-error classifier ("waking up")
+      — + 5-min tool-catalogue cache, owner-only `ownerRoute` wrapper, and an
+      opt-in live contract suite (`npm run test:smoke`)
 - [ ] Chat CRUD + message persistence; prompt bar (model picker, pace toggle,
       attach, LiveGlyph); streaming SSE render (markdown, code blocks)
 - [ ] Anthropic adapter first (stream + tools + usage) → then OpenAI, OpenRouter

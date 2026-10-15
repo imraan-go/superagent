@@ -34,20 +34,6 @@
   gap: var(--sp-3);
 }
 
-.connection {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-1) var(--sp-3);
-  border: var(--border) solid var(--line);
-  border-radius: var(--radius-pill);
-  font-family: var(--font-mono);
-  font-size: var(--fs-micro);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-
 .body {
   display: grid;
   grid-template-columns: var(--sidebar-l) 1fr var(--sidebar-r);

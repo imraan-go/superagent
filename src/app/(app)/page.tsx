@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getOwner } from "@/server/auth/session";
 import { Dot, LiveGlyph, Panel, Readout, SkeletonText } from "@/components/ui";
+import { ConnectionDot } from "@/components/status/connection-dot";
 import { ModeSwitch } from "./mode-switch";
 import { SignOutButton } from "./sign-out-button";
 import styles from "./shell.module.css";
@@ -26,10 +27,7 @@ export default async function AppHome() {
         <ModeSwitch />
 
         <div className={styles.topbarRight}>
-          <span className={styles.connection}>
-            <Dot status="pending" label="Connection status" />
-            Connecting
-          </span>
+          <ConnectionDot />
           <SignOutButton email={owner?.email ?? ""} />
         </div>
       </header>
