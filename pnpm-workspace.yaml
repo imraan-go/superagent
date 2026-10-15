@@ -1,0 +1,15 @@
+packages:
+  - apps/*
+  - packages/*
+  - infra/e2b
+
+allowBuilds:
+  "@swc/core": true
+  esbuild: true
+  protobufjs: true
+  sharp: true
+  "@temporalio/core-bridge": true
+
+# Keep pnpm's default minimum release age; never auto-exclude fresh packages.
+minimumReleaseAgeStrict: true
+verifyDepsBeforeRun: false

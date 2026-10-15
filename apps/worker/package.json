@@ -1,0 +1,28 @@
+{
+  "name": "@superagent/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx src/index.ts",
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@superagent/config": "workspace:*",
+    "@superagent/activities": "workspace:*",
+    "@superagent/workflows": "workspace:*",
+    "@superagent/db": "workspace:*",
+    "@superagent/temporal": "workspace:*",
+    "@superagent/observability": "workspace:*",
+    "@temporalio/worker": "1.24.0",
+    "@temporalio/client": "1.24.0",
+    "@superagent/contracts": "workspace:*",
+    "@temporalio/common": "1.24.0",
+    "drizzle-orm": "0.45.4",
+    "@superagent/execution": "workspace:*"
+  }
+}

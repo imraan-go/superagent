@@ -1,0 +1,16 @@
+{
+  "name": "@superagent/policy",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@superagent/contracts": "workspace:*",
+    "zod": "4.6.7"
+  }
+}

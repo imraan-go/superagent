@@ -1,5 +1,22 @@
 .DS_Store
 .env
 .env.*
+!.env.example
 .vscode/
 .idea/
+
+node_modules/
+dist/
+.next/
+.turbo/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Local runtime state: Temporal DB, downloaded catalogues, smoke outputs, browser profiles
+.local/
+*.pem
+*.key
+*.crt
+test-results/
+playwright-report/

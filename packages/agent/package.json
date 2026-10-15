@@ -1,0 +1,21 @@
+{
+  "name": "@superagent/agent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@superagent/config": "workspace:*",
+    "@superagent/contracts": "workspace:*",
+    "@superagent/observability": "workspace:*",
+    "@superagent/policy": "workspace:*",
+    "ai": "7.0.139",
+    "@ai-sdk/gateway": "4.0.112",
+    "zod": "4.6.7"
+  }
+}

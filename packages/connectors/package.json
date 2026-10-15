@@ -1,0 +1,19 @@
+{
+  "name": "@superagent/connectors",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@superagent/config": "workspace:*",
+    "@superagent/contracts": "workspace:*",
+    "@superagent/policy": "workspace:*",
+    "@composio/core": "0.23.0",
+    "zod": "4.6.7"
+  }
+}

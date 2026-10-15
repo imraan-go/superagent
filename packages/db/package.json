@@ -1,0 +1,27 @@
+{
+  "name": "@superagent/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./migrations-dir": "./src/migrate.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "generate": "drizzle-kit generate",
+    "migrate": "tsx src/migrate.ts"
+  },
+  "dependencies": {
+    "@superagent/config": "workspace:*",
+    "@superagent/contracts": "workspace:*",
+    "@superagent/policy": "workspace:*",
+    "@superagent/observability": "workspace:*",
+    "drizzle-orm": "0.45.4",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "drizzle-kit": "0.31.11",
+    "@types/pg": "8.23.1"
+  }
+}

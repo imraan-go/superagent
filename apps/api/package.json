@@ -1,0 +1,32 @@
+{
+  "name": "@superagent/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "seed:dev": "tsx src/seed-dev.ts"
+  },
+  "dependencies": {
+    "@superagent/config": "workspace:*",
+    "@superagent/contracts": "workspace:*",
+    "@superagent/db": "workspace:*",
+    "@superagent/connectors": "workspace:*",
+    "@superagent/storage": "workspace:*",
+    "@superagent/policy": "workspace:*",
+    "@superagent/observability": "workspace:*",
+    "@superagent/temporal": "workspace:*",
+    "better-auth": "1.7.7",
+    "hono": "4.13.13",
+    "@hono/node-server": "2.1.5",
+    "zod": "4.6.7",
+    "drizzle-orm": "0.45.4",
+    "@temporalio/client": "1.24.0",
+    "@superagent/agent": "workspace:*"
+  }
+}
