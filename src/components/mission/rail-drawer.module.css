@@ -1,0 +1,92 @@
+/* Right rail: a fixed column above 1100px, a drawer behind a toggle below. */
+.rail {
+  position: relative;
+  width: var(--sidebar-r);
+  border-left: var(--border) solid var(--line);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.toggle,
+.close,
+.scrim {
+  display: none;
+}
+
+/* Below 1100px the Mission rail is a right-hand drawer behind a toggle. */
+@media (max-width: 1100px) {
+  .rail {
+    display: none;
+  }
+
+  .rail[data-open] {
+    display: block;
+    position: fixed;
+    top: var(--topbar-h);
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-modal);
+    width: min(var(--sidebar-r), 100vw);
+    background: var(--ink-1);
+    box-shadow: var(--elev-2);
+    animation: rail-in var(--dur-panel) var(--ease-out);
+  }
+
+  .close {
+    display: inline-flex;
+    position: absolute;
+    top: var(--sp-2);
+    right: var(--sp-2);
+    z-index: 1;
+  }
+
+  .scrim {
+    display: block;
+    position: fixed;
+    inset: var(--topbar-h) 0 0 0;
+    z-index: var(--z-overlay);
+    background: color-mix(in srgb, var(--ink-0) 60%, transparent);
+  }
+
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    position: absolute;
+    top: var(--sp-2);
+    right: var(--sp-3);
+    z-index: var(--z-sticky);
+    height: 32px;
+    padding: 0 var(--sp-3);
+    border: var(--border) solid var(--line);
+    border-radius: var(--radius-pill);
+    background: var(--ink-1);
+    color: var(--text-2);
+    font-size: var(--fs-tiny);
+    cursor: pointer;
+  }
+
+  .toggle:hover {
+    color: var(--text-1);
+    border-color: var(--line-strong);
+  }
+
+  .toggleCount {
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: var(--radius-pill);
+    background: var(--amber);
+    color: var(--on-amber);
+    font-family: var(--font-mono);
+    font-size: var(--fs-micro);
+    font-weight: 600;
+    text-align: center;
+  }
+}
+
+@keyframes rail-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+}

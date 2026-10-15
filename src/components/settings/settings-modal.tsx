@@ -17,21 +17,36 @@ import {
   Sparkle,
   Warning,
 } from "@phosphor-icons/react/dist/ssr";
-import { Modal } from "@/components/ui";
+import dynamic from "next/dynamic";
+import { Modal, SkeletonText } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import styles from "./settings-modal.module.css";
-import { AgentTab } from "./tabs/agent-tab";
+// Appearance stays static: AppearanceSync must run on every page load.
 import { AppearanceSync, AppearanceTab } from "./tabs/appearance-tab";
-import { ApprovalsTab } from "./tabs/approvals-tab";
-import { DangerTab } from "./tabs/danger-tab";
-import { DataTab } from "./tabs/data-tab";
-import { ModelsTab } from "./tabs/models-tab";
-import { NotificationsTab } from "./tabs/notifications-tab";
-import { UsageTab } from "./tabs/usage-tab";
-import { SchedulesTab } from "./tabs/schedules-tab";
-import { TriggersTab } from "./tabs/triggers-tab";
-import { ConnectorsTab } from "./tabs/connectors-tab";
-import { MemoriesTab } from "./tabs/memories-tab";
+
+/** Each tab is its own chunk: opening Settings loads only the tab being read. */
+function lazyTab(load: () => Promise<ComponentType>) {
+  return dynamic(load, {
+    loading: () => (
+      <div className={styles.tabFallback} role="status" aria-label="Loading">
+        <SkeletonText lines={2} />
+        <SkeletonText lines={4} />
+      </div>
+    ),
+  });
+}
+
+const AgentTab = lazyTab(() => import("./tabs/agent-tab").then((m) => m.AgentTab));
+const ApprovalsTab = lazyTab(() => import("./tabs/approvals-tab").then((m) => m.ApprovalsTab));
+const DangerTab = lazyTab(() => import("./tabs/danger-tab").then((m) => m.DangerTab));
+const DataTab = lazyTab(() => import("./tabs/data-tab").then((m) => m.DataTab));
+const ModelsTab = lazyTab(() => import("./tabs/models-tab").then((m) => m.ModelsTab));
+const NotificationsTab = lazyTab(() => import("./tabs/notifications-tab").then((m) => m.NotificationsTab));
+const UsageTab = lazyTab(() => import("./tabs/usage-tab").then((m) => m.UsageTab));
+const SchedulesTab = lazyTab(() => import("./tabs/schedules-tab").then((m) => m.SchedulesTab));
+const TriggersTab = lazyTab(() => import("./tabs/triggers-tab").then((m) => m.TriggersTab));
+const ConnectorsTab = lazyTab(() => import("./tabs/connectors-tab").then((m) => m.ConnectorsTab));
+const MemoriesTab = lazyTab(() => import("./tabs/memories-tab").then((m) => m.MemoriesTab));
 
 /**
  * Settings: left rail + one component per tab. Each tab owns its data

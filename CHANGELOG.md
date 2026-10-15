@@ -35,6 +35,20 @@ All notable changes to tj-lhos-panel. Newest first. Format:
 - HITL cards are focusable: `R` rejects, `Enter` sends the typed answer, and
   approve is press-and-hold `A` via `HoldToConfirm`'s new `holdKey`/`keyScope`
   (same hold duration; early release or repeat never approves).
+## 2026-10-15 — Polish: a11y, motion, perf, responsive (Phase 6)
+- Lazy chunks with content-shaped skeletons: Manage sections, Computer and
+  Library tabs, markdown (react-markdown/gfm), each Settings tab (Appearance
+  stays static for AppearanceSync).
+- Responsive: below 1100px the history collapses to an icon rail and the
+  Mission rail becomes a drawer behind a "Mission" toggle (shows the waiting
+  count; "Open computer" opens it); below 820px a topbar menu opens the history
+  drawer; Manage nav becomes a scroll strip; 390px reaches chat, approvals and
+  Computer. The waiting badge shows in Manage and deep-links `/manage?section=hitl`.
+- A11y: skip link, `#main` landmarks, labelled asides, polite run-state live
+  region (transitions only), assertive live region for new approvals. Tokens
+  fixed to AA numerically: text-3 both themes, light signal/amber/ok.
+- Motion: mode crossfade and a pulsing edge-light on active runs, both off
+  under reduced motion (system or Settings; "off" re-enables).
 
 ## 2026-10-15 — Manage mode (Phase 5)
 - `/manage` is now the full admin dashboard behind a left rail: Overview (9

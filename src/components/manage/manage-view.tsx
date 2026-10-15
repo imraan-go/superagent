@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   ChartLine,
   Camera,
@@ -11,17 +13,36 @@ import {
   HandPalm,
   Terminal,
 } from "@phosphor-icons/react/dist/ssr";
-import { ToastProvider } from "@/components/ui";
+import { Skeleton, SkeletonText, ToastProvider } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { MANAGE_SECTION_EVENT, consumePendingManageSection } from "@/lib/app-events";
-import { Activity } from "./activity";
-import { Hitl } from "./hitl";
-import { Logs } from "./logs";
-import { Overview } from "./overview";
-import { Persist } from "./persist";
-import { Schedules, Snapshots } from "./storage";
-import { System } from "./system";
 import styles from "./manage-view.module.css";
+
+/** Section-shaped placeholder: heading, a line of copy, then a card grid. */
+function SectionSkeleton() {
+  return (
+    <div role="status" aria-label="Loading section" className={styles.sectionSkeleton}>
+      <Skeleton shape="text" width="30%" height={24} />
+      <SkeletonText lines={2} />
+      <div className={styles.sectionSkeletonGrid}>
+        <Skeleton shape="panel" height={140} />
+        <Skeleton shape="panel" height={140} />
+        <Skeleton shape="panel" height={140} />
+        <Skeleton shape="panel" height={140} />
+      </div>
+    </div>
+  );
+}
+
+/** Every section is its own chunk; Manage opens on Overview and loads the rest on demand. */
+const Overview = dynamic(() => import("./overview").then((m) => m.Overview), { loading: SectionSkeleton });
+const Activity = dynamic(() => import("./activity").then((m) => m.Activity), { loading: SectionSkeleton });
+const Persist = dynamic(() => import("./persist").then((m) => m.Persist), { loading: SectionSkeleton });
+const Snapshots = dynamic(() => import("./storage").then((m) => m.Snapshots), { loading: SectionSkeleton });
+const Schedules = dynamic(() => import("./storage").then((m) => m.Schedules), { loading: SectionSkeleton });
+const System = dynamic(() => import("./system").then((m) => m.System), { loading: SectionSkeleton });
+const Logs = dynamic(() => import("./logs").then((m) => m.Logs), { loading: SectionSkeleton });
+const Hitl = dynamic(() => import("./hitl").then((m) => m.Hitl), { loading: SectionSkeleton });
 
 /**
  * Manage workspace: a left rail of sections over the host bridge and the LHOS
@@ -63,6 +84,15 @@ export function ManageView() {
     return () => window.removeEventListener(MANAGE_SECTION_EVENT, onSection);
   }, []);
 
+  // `/manage?section=hitl` is the deep link behind the topbar waiting badge.
+  const requested = useSearchParams().get("section");
+  const [seenRequest, setSeenRequest] = useState<string | null>(null);
+  if (requested !== seenRequest) {
+    setSeenRequest(requested);
+    const match = SECTIONS.find((s) => s.id === requested);
+    if (match) setSection(match.id);
+  }
+
   return (
     <ToastProvider>
       <div className={styles.root}>
@@ -85,7 +115,7 @@ export function ManageView() {
           })}
         </nav>
 
-        <main className={styles.main}>
+        <main id="main" tabIndex={-1} className={styles.main}>
           {section === "overview" && <Overview />}
           {section === "activity" && <Activity />}
           {section === "persist" && <Persist />}

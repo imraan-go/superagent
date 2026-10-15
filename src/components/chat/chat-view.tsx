@@ -8,9 +8,11 @@ import { useSound } from "@/hooks/use-sound";
 import { useDesktopNotify } from "@/hooks/use-desktop-notify";
 import { PENDING_KEY } from "@/hooks/use-pending";
 import { RUN_RESUMED_EVENT } from "@/lib/hitl";
+import { describeRun } from "@/lib/announce";
 import type { RunResumedDetail } from "@/lib/hitl";
 import type { RunEvent } from "@/lib/run-events";
 import { useToast } from "@/components/ui";
+import { RailAside, RailToggle, useRailDrawer } from "@/components/mission/rail-drawer";
 import { MissionRail } from "@/components/mission/mission-rail";
 import { PromptBar } from "./prompt-bar";
 import { Transcript } from "./transcript";
@@ -115,6 +117,15 @@ export function ChatView({ chatId }: { chatId: string }) {
     return [...stored, ...liveMessages.filter((m) => !seen.has(m.id))];
   }, [data?.chat.messages, liveMessages]);
 
+  const drawer = useRailDrawer();
+
+  // Announce run transitions (never tokens) to assistive tech.
+  const announcement = useMemo(
+    () => describeRun(state),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- transitions only
+    [state.phase, state.activity, state.approval?.tool, state.error],
+  );
+
   const busy = state.phase === "thinking" || state.phase === "tool" || state.phase === "waiting";
 
   // Follow the stream, but only while the owner is already near the bottom.
@@ -127,7 +138,11 @@ export function ChatView({ chatId }: { chatId: string }) {
 
   return (
     <>
-      <main className={styles.center}>
+      <main id="main" tabIndex={-1} className={styles.center} data-running={busy || undefined}>
+        <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {announcement}
+        </p>
+        <RailToggle drawer={drawer} />
         <div className={styles.scroll} ref={scrollRef}>
           {isPending ? (
             <p className={styles.loading}>Loading chat…</p>
@@ -164,9 +179,9 @@ export function ChatView({ chatId }: { chatId: string }) {
         />
       </main>
 
-      <aside className={styles.rail} aria-label="Mission panel">
+      <RailAside drawer={drawer}>
         <MissionRail run={state} chatId={chatId} />
-      </aside>
+      </RailAside>
     </>
   );
 }

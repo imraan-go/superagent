@@ -82,3 +82,29 @@
     flex: none;
   }
 }
+
+.tabFallback {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+}
+
+@media (max-width: 720px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+  }
+
+  .nav {
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: var(--border) solid var(--line);
+  }
+
+  .navItem {
+    width: auto;
+    flex: none;
+    white-space: nowrap;
+  }
+}

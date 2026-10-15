@@ -3,14 +3,32 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Desktop } from "@phosphor-icons/react/dist/ssr";
-import { Dot, Panel, Readout, SegmentedSwitch } from "@/components/ui";
-import { ComputerTab } from "./computer-tab";
-import { LibraryTab } from "./library-tab";
+import dynamic from "next/dynamic";
+import { Dot, Panel, Readout, SegmentedSwitch, Skeleton } from "@/components/ui";
 import { formatCost } from "@/lib/format";
 import { useUsageTicker } from "@/hooks/use-usage-ticker";
 import type { RunState } from "@/hooks/use-run-stream";
 import { WaitingPanel } from "@/components/hitl/waiting-panel";
 import styles from "./mission-rail.module.css";
+
+/**
+ * The live view carries Motion and the VNC framing; it loads as its own chunk
+ * and stays mounted afterwards (see below).
+ */
+const ComputerTab = dynamic(() => import("./computer-tab").then((m) => m.ComputerTab), {
+  loading: () => (
+    <div role="status" aria-label="Loading computer view">
+      <Skeleton shape="panel" height={220} />
+    </div>
+  ),
+});
+const LibraryTab = dynamic(() => import("./library-tab").then((m) => m.LibraryTab), {
+  loading: () => (
+    <div role="status" aria-label="Loading library">
+      <Skeleton shape="panel" height={160} />
+    </div>
+  ),
+});
 
 /**
  * The right rail: one identity block and three tabs

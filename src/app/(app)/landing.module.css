@@ -1,4 +1,5 @@
 .center {
+  position: relative;
   display: grid;
   grid-template-rows: 1fr auto;
   min-height: 0;
@@ -70,15 +71,12 @@
   cursor: default;
 }
 
-.rail {
-  width: var(--sidebar-r);
-  border-left: var(--border) solid var(--line);
-  min-height: 0;
-  overflow: hidden;
+.center:focus {
+  outline: none;
 }
 
 @media (max-width: 1100px) {
-  .rail {
-    display: none;
+  .scroll {
+    padding-top: var(--sp-10);
   }
 }
