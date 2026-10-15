@@ -1,0 +1,142 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border-bottom: var(--border) solid var(--line);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+}
+
+.card {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--ink-1);
+}
+
+.card[data-pinned="true"] {
+  border-color: var(--signal);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.logo {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-chip);
+  background: var(--ink-3);
+  object-fit: contain;
+}
+
+.cardName {
+  min-width: 0;
+  color: var(--text-1);
+  font-size: var(--fs-base);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--text-3);
+  font-size: var(--fs-tiny);
+}
+
+.cardFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.chip {
+  padding: 0 var(--sp-2);
+  border-radius: var(--radius-pill);
+  background: var(--ink-3);
+  color: var(--text-2);
+  font-size: var(--fs-micro);
+}
+
+.chipWarn {
+  composes: chip;
+  color: var(--amber);
+}
+
+.chipOk {
+  composes: chip;
+  color: var(--signal);
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.toolRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
+}
+
+.toolRow + .toolRow {
+  border-top: var(--border) solid var(--line);
+}
+
+.panelBody {
+  border-top: var(--border) solid var(--line);
+  background: var(--ink-2);
+}
+
+.scroll {
+  max-height: 360px;
+  overflow: auto;
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  padding: var(--sp-3);
+}
+
+.urlBox {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+  padding: var(--sp-3) var(--sp-4);
+}
+
+.urlText {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
