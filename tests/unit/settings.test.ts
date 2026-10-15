@@ -113,13 +113,13 @@ describe("approvals can only get stricter", () => {
 });
 
 describe("tool allowlist resolution", () => {
-  const tools = [{ name: "desktop_screenshot" }, { name: "rdp_type" }, { name: "shell_exec" }];
+  const tools = [{ name: "desktop_screenshot" }, { name: "rdp_type" }, { name: "run_command" }];
 
   it("absent setting → ADR-06 default", () => {
     expect(resolveAllowlist(undefined)).toBe(DEFAULT_TOOL_ALLOWLIST);
     expect(filterTools(tools, resolveAllowlist(undefined)).map((t) => t.name)).toEqual([
       "desktop_screenshot",
-      "shell_exec",
+      "run_command",
     ]);
   });
 

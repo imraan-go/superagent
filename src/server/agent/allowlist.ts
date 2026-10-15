@@ -1,38 +1,73 @@
 /**
- * Default tools offered to the model (ADR-06). All 100 schemas are ~11k tokens
- * and dilute attention; RDP and the raw click-family stay opt-in until the
- * owner enables them in Settings → Agent.
+ * Default tools offered to the model (ADR-06): about 50 of the 100 LHOS tools.
+ * Every enabled tool's schema is sent with every model call, so the default
+ * favours the reliable paths (structured browser, OCR, files, API) and leaves
+ * RDP and the raw click family opt-in. Names must match the live catalog
+ * (docs/MCP_REFERENCE.md); tests/unit/tool-categories.test.ts enforces it.
  *
- * The agent can still *name* a tool that is not here — the LHOS client will
- * reject it — but the model will not see its schema, so it should not try.
+ * The agent can still *name* a tool that is not here — the guard rejects it —
+ * but the model will not see its schema, so it should not try.
  */
 export const DEFAULT_TOOL_ALLOWLIST: readonly string[] = [
+  // Observe & vision
+  "observe",
   "desktop_screenshot",
   "screen_text",
+  "read_text",
+  "find_text",
+  "wait_for_text",
+  "read_image",
+  "list_windows",
+  "desktop_screen_size",
+  "computer_info",
+  "capabilities",
+  // Computer control (no raw click family)
   "desktop_type",
   "desktop_key",
   "desktop_scroll",
-  "desktop_wait",
   "desktop_move_mouse",
   "wait",
-  "set_pace",
-  "hitl_check",
+  // Browser (structured)
+  "browser_start",
+  "browser_goto",
+  "browser_nav",
+  "browser_click",
+  "browser_fill",
+  "browser_fill_form",
+  "browser_press",
+  "browser_scroll",
+  "browser_wait",
+  "browser_snapshot",
+  "browser_text",
+  "browser_links",
+  "browser_extract",
+  "browser_screenshot",
+  "browser_tabs",
+  "browser_new_tab",
+  "browser_switch_tab",
+  // Shell, code & files
+  "run_command",
+  "run_python",
+  "list_files",
+  "save_text",
+  "save_csv",
+  "share_file",
+  // API plane
+  "http_request",
+  "connector_list",
+  // Workflows & scheduling (read / run only; creating is owner-only)
+  "workflow_list",
+  "workflow_get",
+  "workflow_run",
+  "workflow_run_saved",
+  "schedule_list",
+  // Human-in-the-loop
   "ask_user",
   "request_takeover",
-  "browser_open",
-  "browser_navigate",
-  "browser_snapshot",
-  "browser_click",
-  "browser_type",
-  "browser_press",
-  "file_read",
-  "file_write",
-  "file_list",
-  "fs_read",
-  "fs_write",
-  "fs_ls",
-  "shell_exec",
-  "shell_run",
+  "hitl_check",
+  // Ops
+  "set_pace",
+  "session_report",
 ];
 
 export function filterTools<T extends { name: string }>(

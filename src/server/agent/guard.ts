@@ -10,20 +10,36 @@ import { normalizeToolName } from "./policy";
  * manage the vault/approvals — owner-only operations performed by the panel
  * itself, never by a model.
  */
-const AGENT_FORBIDDEN = new Set([
-  "trigger_url",
-  "secret_intake_url",
-  "secret_delete",
-  "secret_list",
-  "connector_save",
-  "schedule_create",
-  "schedule_delete",
-  "schedule_enable",
-  "workflow_save",
-]);
+const FORBIDDEN_REASONS: Readonly<Record<string, string>> = {
+  trigger_url: "it mints bearer-equivalent webhook trigger links. Create them in Settings.",
+  secret_intake_url: "it mints vault intake links. Add keys yourself in Settings.",
+  secret_delete: "the key vault is owner-only. Manage it in Settings.",
+  secret_list: "the key vault is owner-only. Manage it in Settings.",
+  connector_save: "connectors are created by the owner in Settings.",
+  schedule_create: "schedules are created by the owner in Settings.",
+  schedule_delete: "schedules are managed by the owner in Settings.",
+  schedule_enable: "schedules are managed by the owner in Settings.",
+  workflow_save: "workflows are created by the owner in Settings.",
+};
+
+const AGENT_FORBIDDEN = new Set(Object.keys(FORBIDDEN_REASONS));
 
 /** Any tool whose name suggests it decides an approval or HITL request. */
 const APPROVAL_VERBS = /(^|_)(approve|approval|approvals|decide|hitl_answer|hitl_done)(_|$)/;
+
+/**
+ * Why a tool can never be offered to or called by the agent, whatever the
+ * allowlist says (the "Locked" state in Settings → Agent), or null. Pure and
+ * name-only so the Settings UI and the loop share one source of truth.
+ */
+export function lockedToolReason(name: string): string | null {
+  const canonical = normalizeToolName(name);
+  const tail = canonical.split("_").slice(-2).join("_");
+  const key = AGENT_FORBIDDEN.has(canonical) ? canonical : AGENT_FORBIDDEN.has(tail) ? tail : null;
+  if (key) return FORBIDDEN_REASONS[key] ?? "it is reserved for the owner.";
+  if (APPROVAL_VERBS.test(canonical)) return "approvals can only be decided by the owner in the panel.";
+  return null;
+}
 
 /**
  * Why a model-requested call must not run at all, or null when it may proceed
