@@ -91,6 +91,8 @@ const mcpConfig = z.object({
   type: z.literal("mcp"),
   url: z.url(),
   bearerEnc: z.string().nullable().optional(),
+  /** Composio-hosted MCP server: authenticated with the stored Composio key (never copied into this row). */
+  composio: z.boolean().optional(),
 });
 
 export interface McpServer {
@@ -127,7 +129,13 @@ export async function listMcpServers(): Promise<McpServer[]> {
   });
 }
 
-export async function addMcpServer(input: { name: string; url: string; bearer?: string | undefined }): Promise<McpServer> {
+export async function addMcpServer(input: {
+  name: string;
+  url: string;
+  bearer?: string | undefined;
+  composio?: boolean | undefined;
+  enabled?: boolean | undefined;
+}): Promise<McpServer> {
   const existing = await listMcpServers();
   if (existing.some((s) => s.name === input.name) || input.name === LHOS_MCP_ID) {
     throw new AppError("conflict", `An MCP server named "${input.name}" already exists.`);
@@ -137,11 +145,12 @@ export async function addMcpServer(input: { name: string; url: string; bearer?: 
     .values({
       kind: "custom",
       name: input.name,
-      config: { type: "mcp", url: input.url, bearerEnc: input.bearer ? seal(input.bearer) : null },
+      enabled: input.enabled ?? true,
+      config: { type: "mcp", url: input.url, bearerEnc: input.bearer ? seal(input.bearer) : null, ...(input.composio ? { composio: true } : {}) },
     })
     .returning();
   if (!row) throw new AppError("internal", "Could not save the MCP server.");
-  return { id: row.id, name: row.name, url: input.url, enabled: true, hasBearer: Boolean(input.bearer), builtin: false };
+  return { id: row.id, name: row.name, url: input.url, enabled: row.enabled, hasBearer: Boolean(input.bearer), builtin: false };
 }
 
 export async function setMcpEnabled(id: string, enabled: boolean): Promise<void> {
@@ -153,9 +162,9 @@ export async function deleteMcpServer(id: string): Promise<void> {
 }
 
 /** Resolves URL + bearer for connecting. Never returned to a client. */
-export async function mcpCredentials(id: string): Promise<{ name: string; url: string; bearer: string | null } | null> {
+export async function mcpCredentials(id: string): Promise<{ name: string; url: string; bearer: string | null; headers: Record<string, string> } | null> {
   if (id === LHOS_MCP_ID) {
-    return { name: "lhos", url: builtinLhosServer().url, bearer: env.LHOS_MCP_TOKEN };
+    return { name: "lhos", url: builtinLhosServer().url, bearer: env.LHOS_MCP_TOKEN, headers: {} };
   }
   if (!z.uuid().safeParse(id).success) return null;
   const [row] = await db.select().from(connectors).where(and(eq(connectors.id, id), isMcp)).limit(1);
@@ -173,7 +182,12 @@ export async function mcpCredentials(id: string): Promise<{ name: string; url: s
   // owner-entered MCP URL must never reach loopback/private hosts such as the
   // Manage bridge on 127.0.0.1:7071.
   await assertPublicUrl(cfg.data.url, { allowOrigins: [env.LHOS_BASE_URL] });
-  return { name: row.name, url: cfg.data.url, bearer };
+  const headers: Record<string, string> = {};
+  if (cfg.data.composio) {
+    const key = await getComposioKey();
+    if (key) headers["x-api-key"] = key.key;
+  }
+  return { name: row.name, url: cfg.data.url, bearer, headers };
 }
 
 /** Validates an owner-entered outbound URL before it is saved or fetched. */
