@@ -75,6 +75,101 @@
   color: var(--text-1);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+  /* Compact: long prompts clamp; the full text is in the title tooltip. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+}
+
+.item[data-kind] .prompt[data-full] {
+  display: block;
+  overflow: visible;
+}
+
+.more {
+  justify-self: start;
+  margin-top: calc(var(--sp-1) * -1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--signal);
+  font: inherit;
+  font-size: var(--fs-micro);
+  cursor: pointer;
+}
+
+.more:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+.item[data-stale] {
+  border-color: var(--line);
+  background: var(--ink-2);
+  opacity: 0.85;
+}
+
+.item[data-stale] .prompt {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--text-2);
+}
+
+.root {
+  outline: none;
+  scroll-margin-top: var(--sp-3);
+}
+
+.stale {
+  display: grid;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.staleToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  justify-self: start;
+  min-height: 28px;
+  padding: 0 var(--sp-2);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  cursor: pointer;
+}
+
+.staleToggle:hover {
+  background: var(--ink-2);
+}
+
+.staleToggle:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 1px;
+}
+
+.caret {
+  transition: transform var(--dur-micro) var(--ease-out);
+}
+
+.staleToggle[aria-expanded="true"] .caret {
+  transform: rotate(90deg);
+}
+
+.staleHint {
+  color: var(--text-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    transition: none;
+  }
 }
 
 .actions {

@@ -1,8 +1,8 @@
 /* The slot holds the card's place in the rail while the stage is a sheet. */
 .slot {
   position: relative;
-  aspect-ratio: 16 / 11;
-  min-height: 200px;
+  /* Tall enough for the viewer's own access-code form inside the frame. */
+  height: clamp(420px, 60vh, 560px);
 }
 
 .stage {
@@ -34,12 +34,14 @@
 /* Amber frame + glow: the owner is driving. */
 .control {
   border-color: var(--amber);
-  box-shadow: 0 0 0 1px var(--amber), var(--halo-amber);
+  box-shadow:
+    0 0 0 1px var(--amber),
+    var(--halo-amber);
 }
 
 .bar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--sp-1) var(--sp-2);
   padding: var(--sp-1) var(--sp-2);
@@ -50,11 +52,22 @@
   color: var(--text-2);
 }
 
-.bar > :last-child {
-  margin-left: auto;
+/* Two groups, never overlapping: status + control left, view tools right. */
+.barLead,
+.barTail {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
 }
 
-.bar > :nth-last-child(2) {
+.barLead {
+  flex-wrap: wrap;
+}
+
+.barTail {
+  flex: none;
+  gap: var(--sp-1);
   margin-left: auto;
 }
 
@@ -83,8 +96,8 @@
 }
 
 .ask {
-  order: 5;
-  flex: 1 1 100%;
+  grid-column: 1 / -1;
+  margin: 0;
   color: var(--amber);
 }
 
@@ -127,7 +140,7 @@
 }
 
 .caption {
-  margin: 0;
+  margin: var(--sp-2) 0 0;
   text-align: center;
   font-size: var(--fs-micro);
   color: var(--text-3);
@@ -149,9 +162,7 @@
 }
 
 .fallback[data-state="asleep"] {
-  background:
-    radial-gradient(circle at 50% 40%, var(--ink-2), transparent 64%),
-    var(--ink-0);
+  background: radial-gradient(circle at 50% 40%, var(--ink-2), transparent 64%), var(--ink-0);
 }
 
 .fallbackGlyph {

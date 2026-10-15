@@ -3,6 +3,30 @@
 All notable changes to tj-lhos-panel. Newest first. Format:
 `## YYYY-MM-DD — summary` + bullets. Update EVERY work session (rule 40-workflow).
 
+## 2026-10-15 — Right rail: live operations console + embedded computer
+- Rail body is one block-flow scroller; panels size to content (fixes the
+  "Spend today / Usage / Steps" headers rendering with 0-height bodies).
+  Identity block compressed to one row; clears the drawer close button.
+- Mission tab: Tokens & cost meter (Today / This chat / This run: in, out,
+  cached, cost, model calls, tool calls; budget bar) from `/api/usage/live`
+  only — summary now carries `run` (`?runId=`, must belong to the chat),
+  per-scope `toolCalls`, and today's tool `stats` from `run_steps`. In-flight
+  run figures are marked `~`. Stats strip (avg tool ms, success %, steps,
+  computer awake/asleep, RDP, pace). Activity log merges this run's steps with
+  LHOS `/api/lhos/events` (5 s poll while visible), filters All/This chat/
+  Computer/Errors, mono timestamps, Follow toggle.
+- Waiting on you: prompts clamp to 4 lines with "more"; actions always
+  visible; items > 24 h go into a collapsed "Stale (n)" group with Dismiss
+  (ask -> answer route, takeover -> done route; confirm keeps approve/reject).
+  Listens for `fd:focus-waiting` to scroll to + focus the first card.
+- Computer tab: popup sign-in removed; the viewer (LHOS_VNC_URL) loads in the
+  iframe and its own access-code form renders inside (frame 420-560 px in the
+  rail, full in the expanded in-page sheet). Toolbar: Watch / Take control
+  (hold) / Reload / Expand in two non-overlapping groups. `/api/computer/viewer`
+  now checks CSP frame-ancestors admits the panel origin (X-Frame-Options probe
+  dropped); result is a hint only.
+- Library: broken thumbnails fall back to the file tile.
+
 ## 2026-10-15 — Wave 2: ops + loose ends
 - LHOS approve/reject: `decideApproval` timeout 15 s -> 45 s; on a timeout it
   re-reads `/api/approvals` and reports success if the record is gone

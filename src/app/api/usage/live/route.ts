@@ -4,7 +4,7 @@ import { getChat } from "@/server/chat/repo";
 import { AppError } from "@/server/lib/errors";
 import { logger } from "@/server/lib/logger";
 import { errorResponse } from "@/server/lib/route";
-import { dayKey, onUsage, startOfToday, usageSummary } from "@/server/usage/live";
+import { dayKey, onUsage, runInChat, startOfToday, usageSummary } from "@/server/usage/live";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +30,12 @@ export async function GET(request: Request): Promise<Response> {
       await getChat(raw, owner.userId); // throws not_found for someone else's chat
       chatId = raw;
     }
+    // A run id only narrows the summary; it must belong to the chat above.
+    const rawRun = new URL(request.url).searchParams.get("runId");
+    const runId =
+      rawRun && chatId && z.uuid().safeParse(rawRun).success && (await runInChat(rawRun, chatId))
+        ? rawRun
+        : null;
 
     const encoder = new TextEncoder();
     let cleanup = () => {};
@@ -43,13 +49,15 @@ export async function GET(request: Request): Promise<Response> {
         const send = async () => {
           if (closed) return;
           try {
-            const summary = await usageSummary(chatId);
+            const summary = await usageSummary(chatId, runId);
             day = summary.day;
             if (!closed) {
               controller.enqueue(encoder.encode(`event: usage\ndata: ${JSON.stringify(summary)}\n\n`));
             }
           } catch (err) {
-            logger.warn("usage.live", { message: err instanceof Error ? err.message : String(err) });
+            logger.warn("usage.live", {
+              message: err instanceof Error ? err.message : String(err),
+            });
           }
         };
         const schedule = () => {

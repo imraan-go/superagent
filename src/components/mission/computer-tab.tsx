@@ -1,16 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "motion/react";
-import {
-  ArrowsIn,
-  ArrowsOut,
-  ArrowSquareOut,
-  ArrowClockwise,
-  Cursor,
-  Monitor,
-} from "@phosphor-icons/react/dist/ssr";
+import { ArrowsIn, ArrowsOut, ArrowClockwise, Cursor, Monitor } from "@phosphor-icons/react/dist/ssr";
 import { Button, Dot, HoldToConfirm, IconButton, Panel, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -27,13 +20,14 @@ import styles from "./computer-tab.module.css";
  * component only frames it.
  *
  * Watch mode lays a transparent overlay over the frame (input is swallowed);
- * Take control removes it. A cross-origin frame cannot report its own state, so
- * the sign-in affordance is explicit rather than detected.
+ * Take control removes it. Sign-in happens INSIDE the frame: the viewer allows
+ * this panel via CSP frame-ancestors and keeps a SameSite=Lax session cookie on
+ * the shared site, so a signed-out viewer simply renders its access-code form
+ * here (no popup). The frame is tall enough for that form; Reload re-fetches it.
  */
 export const OPEN_COMPUTER_EVENT = "lhos:open-computer";
 /** Unused for this long (tab hidden, collapsed) and the iframe is unmounted. */
 const UNMOUNT_AFTER_MS = 10 * 60 * 1000;
-const SIGNED_IN_KEY = "lhos.vnc.connected";
 
 export interface ComputerCapabilities {
   reachable: boolean;
@@ -51,16 +45,6 @@ export interface ComputerTabProps {
   onRequestOpen: () => void;
 }
 
-const noopSubscribe = () => () => undefined;
-
-function readSignedIn(): boolean {
-  try {
-    return window.localStorage.getItem(SIGNED_IN_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
 export function ComputerTab({ capabilities, active, steps, runId, onRequestOpen }: ComputerTabProps) {
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -71,9 +55,6 @@ export function ComputerTab({ capabilities, active, steps, runId, onRequestOpen 
   const [controlSeconds, setControlSeconds] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [frameKey, setFrameKey] = useState(0);
-  const [connectedNow, setConnectedNow] = useState(false);
-  const storedSignedIn = useSyncExternalStore(noopSubscribe, readSignedIn, () => false);
-  const signedIn = storedSignedIn || connectedNow;
   const [takeoverAsked, setTakeoverAsked] = useState(false);
   const controlStartRef = useRef(0);
 
@@ -166,40 +147,26 @@ export function ComputerTab({ capabilities, active, steps, runId, onRequestOpen 
     openForTakeover();
   }, [steps, runId, openForTakeover]);
 
-  /* ---- sign-in popup ---- */
-  const connect = () => {
-    if (!viewer) return;
-    const popup = window.open(viewer.url, "lhos-vnc-signin", "popup,width=520,height=760");
-    if (!popup) {
-      toast.push({ title: "Popup blocked", message: "Allow popups, or use Open in a new tab.", tone: "warning" });
-      return;
-    }
-    const poll = window.setInterval(() => {
-      if (!popup.closed) return;
-      window.clearInterval(poll);
-      try {
-        window.localStorage.setItem(SIGNED_IN_KEY, "1");
-      } catch {
-        /* storage blocked: the reload below still happens */
-      }
-      setConnectedNow(true);
-      setFrameKey((k) => k + 1);
-    }, 800);
-  };
-
   /* ---- wake ---- */
   const [jobId, setJobId] = useState<string | null>(null);
   const wake = useMutation({
     mutationFn: api.wakeComputer,
     onSuccess: ({ job }) => setJobId(job.id),
-    onError: (err: Error) => toast.push({ title: "Could not wake the computer", message: err.message, tone: "error" }),
+    onError: (err: Error) =>
+      toast.push({
+        title: "Could not wake the computer",
+        message: err.message,
+        tone: "error",
+      }),
   });
   const { data: jobData } = useQuery({
     queryKey: ["computer", "job", jobId],
     queryFn: async () => {
       const result = await api.computerJob(jobId ?? "");
       if (result.job.ended) {
-        void queryClient.invalidateQueries({ queryKey: ["lhos", "capabilities"] });
+        void queryClient.invalidateQueries({
+          queryKey: ["lhos", "capabilities"],
+        });
         if (result.job.ok === false) {
           toast.push({
             title: "Wake failed",
@@ -217,8 +184,8 @@ export function ComputerTab({ capabilities, active, steps, runId, onRequestOpen 
   const waking = jobId !== null && !job?.ended;
 
   /* ---- render ---- */
-  const embeddable = viewer?.embeddable !== false;
-  const showFrame = mounted && up && viewer && embeddable;
+  const showFrame = Boolean(mounted && up && viewer);
+  const reload = () => setFrameKey((k) => k + 1);
   const transition = reduced ? { duration: 0 } : { duration: 0.28, ease: [0.22, 0.61, 0.36, 1] as const };
 
   const status = !capabilities?.reachable ? "error" : up ? "live" : "warn";
@@ -239,86 +206,73 @@ export function ComputerTab({ capabilities, active, steps, runId, onRequestOpen 
       <Panel
         title="Screen"
         badge={<Dot status={status} size="sm" pulse={up} label={up ? "Desktop live" : undefined} />}
-        actions={
-          showFrame ? (
-            <>
-              <IconButton
-                label="Reload live view"
-                icon={<ArrowClockwise size={15} />}
-                onClick={() => setFrameKey((k) => k + 1)}
-              />
-              <IconButton
-                label="Open viewer in a new tab"
-                icon={<ArrowSquareOut size={15} />}
-                onClick={() => window.open(viewer.url, "_blank", "noopener,noreferrer")}
-              />
-            </>
-          ) : undefined
-        }
       >
         {/* The placeholder keeps the card's height while the stage is a sheet. */}
         <div className={styles.slot} data-expanded={expanded}>
-          {!up || !embeddable ? (
+          {!up ? (
             <Fallback
               reachable={capabilities?.reachable === true}
               asleep={asleep}
               waking={waking || capabilities?.waking === true}
-              reason={!embeddable ? (viewer?.reason ?? null) : null}
               onWake={() => wake.mutate()}
-              onOpen={viewer ? () => window.open(viewer.url, "_blank", "noopener,noreferrer") : undefined}
             />
           ) : (
             <motion.div
               layout
               transition={transition}
-              className={cn(
-                styles.stage,
-                expanded && styles.sheet,
-                control && styles.control,
-              )}
+              className={cn(styles.stage, expanded && styles.sheet, control && styles.control)}
               role={expanded ? "dialog" : undefined}
               aria-label={expanded ? "Agent computer, full view" : undefined}
               style={{ borderRadius: expanded ? 16 : 12 }}
             >
-              <div className={styles.bar}>
-                {control ? (
-                  <>
-                    <span className={styles.live} role="status">
-                      <Dot status="warn" size="sm" pulse /> LIVE CONTROL
-                      <span className={styles.timer}>{formatClock(controlSeconds)}</span>
-                    </span>
-                    <span className={styles.hint}>Esc to release</span>
-                    <Button size="sm" variant="outline" onClick={release}>
-                      Release
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <span className={styles.watch}>
-                      <Dot status="live" size="sm" /> Watching
-                    </span>
-                    {takeoverAsked && <span className={styles.ask}>The agent asked you to take over</span>}
-                    <HoldToConfirm
-                      size="sm"
-                      holdMs={600}
-                      icon={<Cursor size={14} />}
-                      onConfirm={takeControl}
-                      disabled={!showFrame}
-                      label="Take control of the agent computer"
-                    >
-                      Take control
-                    </HoldToConfirm>
-                  </>
-                )}
-                <IconButton
-                  label={expanded ? "Collapse view" : "Expand view"}
-                  icon={expanded ? <ArrowsIn size={15} /> : <ArrowsOut size={15} />}
-                  onClick={() => setExpanded((v) => !v)}
-                />
+              <div className={styles.bar} role="toolbar" aria-label="Live view controls">
+                <div className={styles.barLead}>
+                  {control ? (
+                    <>
+                      <span className={styles.live} role="status">
+                        <Dot status="warn" size="sm" pulse /> LIVE CONTROL
+                        <span className={styles.timer}>{formatClock(controlSeconds)}</span>
+                      </span>
+                      <Button size="sm" variant="outline" onClick={release} title="Esc also releases">
+                        Release
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span className={styles.watch}>
+                        <Dot status="live" size="sm" /> Watch
+                      </span>
+                      <HoldToConfirm
+                        size="sm"
+                        holdMs={600}
+                        icon={<Cursor size={14} />}
+                        onConfirm={takeControl}
+                        disabled={!showFrame}
+                        label="Take control of the agent computer (hold)"
+                      >
+                        Take control
+                      </HoldToConfirm>
+                    </>
+                  )}
+                </div>
+                <div className={styles.barTail}>
+                  <IconButton
+                    label="Reload live view"
+                    icon={<ArrowClockwise size={15} />}
+                    onClick={reload}
+                    disabled={!showFrame}
+                  />
+                  <IconButton
+                    label={expanded ? "Collapse view" : "Expand view"}
+                    icon={expanded ? <ArrowsIn size={15} /> : <ArrowsOut size={15} />}
+                    onClick={() => setExpanded((v) => !v)}
+                  />
+                </div>
+                {takeoverAsked && <p className={styles.ask}>The agent asked you to take over.</p>}
               </div>
 
               <div className={styles.frameWrap}>
-                {showFrame ? (
+                {showFrame && viewer ? (
                   <iframe
                     key={frameKey}
                     className={styles.frame}
@@ -332,44 +286,34 @@ export function ComputerTab({ capabilities, active, steps, runId, onRequestOpen 
                     <span>Live view paused</span>
                   </div>
                 )}
-                {!control && showFrame && <div className={styles.overlay} title="Watch only. Take control to interact." />}
+                {!control && showFrame && (
+                  <div className={styles.overlay} title="Watch only. Take control to interact." />
+                )}
               </div>
             </motion.div>
           )}
         </div>
 
-        {up && embeddable && (
-          <div className={styles.footer}>
-            <Button size="sm" variant={signedIn ? "ghost" : "primary"} onClick={connect}>
-              {signedIn ? "Reconnect view" : "Connect computer view"}
-            </Button>
-            <p className={styles.caption}>
-              {signedIn
-                ? "Blank or asking for a code? Reconnect to sign in again."
-                : "Sign in to the viewer once with your access code."}
-            </p>
-          </div>
+        {up && (
+          <p className={styles.caption}>
+            {viewer?.embeddable === false
+              ? (viewer.reason ?? "The viewer may refuse to be framed here.")
+              : "Signed out? Take control and type your access code in the frame. Blank? Reload."}
+          </p>
         )}
       </Panel>
     </>
   );
 }
 
-function Fallback(props: {
-  reachable: boolean;
-  asleep: boolean;
-  waking: boolean;
-  reason: string | null;
-  onWake: () => void;
-  onOpen?: () => void;
-}) {
+function Fallback(props: { reachable: boolean; asleep: boolean; waking: boolean; onWake: () => void }) {
   const label = !props.reachable
     ? "Cannot reach the agent computer"
     : props.waking
       ? "Waking the computer…"
       : props.asleep
         ? "Computer is asleep"
-        : "Live view can't be embedded";
+        : "Desktop is starting";
 
   return (
     <div className={styles.fallback} data-state={props.asleep ? "asleep" : "offline"}>
@@ -377,15 +321,9 @@ function Fallback(props: {
         <Monitor size={32} weight="duotone" />
       </span>
       <p className={styles.fallbackLabel}>{label}</p>
-      {props.reason && !props.asleep && <p className={styles.fallbackReason}>{props.reason}</p>}
       {props.asleep && (
         <Button size="sm" variant="outline" loading={props.waking} onClick={props.onWake}>
           Wake
-        </Button>
-      )}
-      {props.reason && !props.asleep && props.reachable && props.onOpen && (
-        <Button size="sm" variant="primary" onClick={props.onOpen} iconRight={<ArrowSquareOut size={14} />}>
-          Open the viewer
         </Button>
       )}
     </div>

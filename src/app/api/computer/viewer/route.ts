@@ -1,20 +1,20 @@
 import { env } from "@/server/env";
 import { json, ownerRoute } from "@/server/lib/route";
+import { frameAncestorsAllows } from "./frame-ancestors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Tells the client where the VNC viewer lives and whether it can be framed.
+ * Tells the client where the VNC viewer lives and whether it allows framing.
  *
- * The viewer URL is not a secret (it has its own access-code sign-in), so it
- * is exposed here rather than through a NEXT_PUBLIC variable. VNC traffic
- * itself never touches this server.
+ * The viewer URL is not a secret (it has its own access-code sign-in, which
+ * renders inside the iframe — no popup), so it is exposed here rather than
+ * through a NEXT_PUBLIC variable. VNC traffic never touches this server.
  *
- * `embeddable` is derived from the viewer's own response headers: an
- * `X-Frame-Options` of DENY/SAMEORIGIN or a restrictive `frame-ancestors`
- * makes the browser refuse the iframe, and the panel should then offer the
- * deep-link card instead of a blank frame (skill-vnc-embed §Gotchas).
+ * The viewer sends `Content-Security-Policy: frame-ancestors 'self' <panel>`;
+ * `embeddable` reports whether that list includes this panel's origin. The
+ * client always frames the viewer and only shows `reason` as a hint.
  */
 let cache: { at: number; value: ViewerInfo } | null = null;
 
@@ -22,18 +22,6 @@ interface ViewerInfo {
   url: string;
   embeddable: boolean;
   reason: string | null;
-}
-
-function frameAncestorsBlocks(csp: string, panelOrigin: string): boolean {
-  const directive = csp
-    .split(";")
-    .map((d) => d.trim())
-    .find((d) => d.toLowerCase().startsWith("frame-ancestors"));
-  if (!directive) return false;
-  const sources = directive.split(/\s+/).slice(1);
-  if (sources.includes("*")) return false;
-  const host = new URL(panelOrigin).host;
-  return !sources.some((s) => s === panelOrigin || s === host || s === `*.${host.split(".").slice(1).join(".")}`);
 }
 
 async function probe(panelOrigin: string): Promise<ViewerInfo> {
@@ -45,20 +33,13 @@ async function probe(panelOrigin: string): Promise<ViewerInfo> {
       signal: AbortSignal.timeout(6_000),
       cache: "no-store",
     });
-    const xfo = res.headers.get("x-frame-options")?.toLowerCase().trim();
-    if (xfo === "deny" || xfo === "sameorigin") {
-      return {
-        url,
-        embeddable: false,
-        reason: `The viewer sends X-Frame-Options: ${xfo.toUpperCase()}, so browsers refuse to frame it.`,
-      };
-    }
     const csp = res.headers.get("content-security-policy");
-    if (csp && frameAncestorsBlocks(csp, panelOrigin)) {
+    const allowed = csp ? frameAncestorsAllows(csp, panelOrigin) : null;
+    if (allowed === false) {
       return {
         url,
         embeddable: false,
-        reason: "The viewer's Content-Security-Policy frame-ancestors does not allow this panel.",
+        reason: `The viewer's frame-ancestors does not list ${panelOrigin}.`,
       };
     }
     return { url, embeddable: true, reason: null };
