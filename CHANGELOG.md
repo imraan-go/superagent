@@ -69,6 +69,37 @@ All notable changes to tj-lhos-panel. Newest first. Format:
 - Appearance (reduced motion, density via `<html data-*>`), Notifications &
   Sound, Data (chat JSON export `/api/data/export`, retention days), Danger
   zone (archive usage mark, sign out everywhere via session epoch).
+## 2026-10-15 — Phase 4: automation & connectors
+- **Schedules** (Settings → Schedules): CRUD/enable/run-now over LHOS `schedule_*`
+  (LHOS = source of truth, mirrored to `schedules`); `snapshot-prune` is
+  protected (cannot be run/enabled/deleted from the panel). Panel-native
+  scheduled prompts (cron UTC + prompt + model) run by an in-process scheduler
+  started once from `src/instrumentation.ts` (tiny cron parser, no new deps);
+  each schedule reuses a dedicated chat.
+- **Webhooks** (Settings → Triggers & Webhooks): sealed per-hook secret shown
+  once; public `POST /api/webhooks/<id>` verifies
+  `x-panel-signature: sha256=HMAC(secret, "<ts>.<rawBody>")` + `x-panel-timestamp`
+  (±5 min), replay memory, per-hook/IP rate limits, 256 KB cap. Targets: agent
+  prompt (payload wrapped as `<untrusted_payload>` data) or LHOS
+  `workflow_run_saved` (payload deliberately NOT passed to workflows: injection
+  risk). Unattended runs are budget-guarded: one at a time, refused (logged +
+  `audit`) once today's spend >= `usage.dailyBudgetUsd` (default $10). Trigger
+  URLs (token-bearing) are UI-only, never in model context. Middleware: `/api/webhooks` is public by path; owner
+  management lives at `/api/automation/webhooks`. LHOS `trigger_url` links listed.
+- **Connectors** (Settings → Connectors): Composio v3 REST (key from env or sealed
+  `composio` secret; apps, hosted OAuth connect, disconnect; actions exposed as
+  `composio__<app>__<action>`), Pipedream (`pipedream__emit`, always approval-gated;
+  optional workflow list), custom REST via LHOS `connector_save` + vault intake
+  link, remote MCP servers over minimal Streamable HTTP JSON-RPC
+  (`mcp__<name>__<tool>`), LHOS MCP as read-only built-in. Loop routes namespaced
+  tools server-side with the same approval policy.
+- **Memories**: post-run extraction (role `memory-extraction`; skipped without a
+  key), OpenAI `text-embedding-3-small` or local hashed fallback (column is NOT
+  NULL), cosine > 0.92 dedupe, recall topK (`agent.memoryRecallTopK`, default 8)
+  into the system prompt; viewer with search/add/edit/delete.
+- Verified live: schedule_list/workflow_list/trigger_url, LHOS schedule
+  create→pause→delete, panel schedule run (mock/echo), signed webhook → prompt run
+  (unsigned/bad/stale/oversize/replay rejected), LHOS MCP tools/list (100 tools).
 
 ## 2026-10-15 — Live spend ticker; Phase 1 complete
 - `/api/usage/live` (SSE, owner session): pushes today's totals — and one

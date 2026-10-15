@@ -61,11 +61,12 @@
 - [x] Approvals & takeover policy tab · Appearance · Notifications & Sound · Data
 
 ## Phase 4 — Automation & connectors
-- [ ] Schedules tab ↔ LHOS schedule_* + panel-native scheduled prompts
-- [ ] Trigger URLs + inbound webhooks (signed) → run workflow/agent prompt
-- [ ] Composio connect flow + agent tool surfacing (INTEGRATIONS.md §4)
-- [ ] Pipedream webhooks in/out (§5) · Custom connectors → LHOS vault intake
-- [ ] Memories: extraction + pgvector recall + Memories viewer in Settings→Data
+- [x] Schedules tab ↔ LHOS schedule_* + panel-native scheduled prompts
+- [x] Trigger URLs + inbound webhooks (signed) → run workflow/agent prompt
+- [x] Composio connect flow + agent tool surfacing (INTEGRATIONS.md §4)
+- [x] Pipedream webhooks in/out (§5) · Custom connectors → LHOS vault intake
+- [x] Memories: extraction + pgvector recall + Memories viewer in Settings→Data
+- [x] Remote MCP connectors (`mcp__<name>__<tool>`) + LHOS MCP built-in entry
 
 ## Phase 5 — Manage mode
 - [x] Host bridge with allowlist (MANAGE_TAB.md §Host bridge) + audit table

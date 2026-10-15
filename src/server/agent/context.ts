@@ -9,6 +9,7 @@ import type { ModelEntry } from "@/server/models/catalog";
 import type { FilePart, MessagePart } from "@/lib/messages";
 import { formatBytes, isVisionMime } from "@/lib/uploads";
 import { getFileRow, readFileBytes } from "@/server/files/store";
+import { recall } from "@/server/memory";
 
 /**
  * Context assembly (skill-agent-loop §2), in order:
@@ -51,6 +52,7 @@ export async function buildContext(args: {
     capabilityFacts(),
     recentTurns(args.chatId, args.model.vision),
   ]);
+  const remembered = await memoryRecall(turns);
 
   // The base rules (approval pauses, verify-after-act) are safety-relevant, so
   // the owner's prompt is appended rather than substituted.
@@ -58,6 +60,7 @@ export async function buildContext(args: {
   const sections = [
     BASE_PROMPT,
     owner ? `## Owner instructions\n${owner}` : null,
+    remembered ? `## What you remember about the owner (may be outdated)\n${remembered}` : null,
     facts ? `## The agent computer right now\n${facts}` : null,
   ].filter((s): s is string => Boolean(s));
 
@@ -86,6 +89,22 @@ async function capabilityFacts(): Promise<string | null> {
     // The loop still works without this; the first tool call will report the
     // real state anyway.
     logger.debug("agent", { msg: "capability facts unavailable", detail: String(err) });
+    return null;
+  }
+}
+
+/** Memory recall keyed on the latest user text (skill-agent-loop §2). */
+async function memoryRecall(turns: AdapterMessage[]): Promise<string | null> {
+  try {
+    const lastUser = [...turns].reverse().find((t) => t.role === "user");
+    const query = (lastUser?.content ?? [])
+      .map((p) => (p.type === "text" ? p.text : ""))
+      .join(" ")
+      .slice(0, 2000);
+    const rows = await recall(query);
+    return rows.length ? rows.map((m) => `- ${m.text}`).join("\n") : null;
+  } catch (err) {
+    logger.debug("agent", { msg: "memory recall unavailable", detail: String(err) });
     return null;
   }
 }

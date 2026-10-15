@@ -4,6 +4,10 @@ import { useState } from "react";
 import type { ComponentType } from "react";
 import {
   ChartBar,
+  Brain,
+  CalendarDots,
+  Lightning,
+  PlugsConnected,
   Gear,
   HardDrives,
   Palette,
@@ -24,6 +28,10 @@ import { DataTab } from "./tabs/data-tab";
 import { ModelsTab } from "./tabs/models-tab";
 import { NotificationsTab } from "./tabs/notifications-tab";
 import { UsageTab } from "./tabs/usage-tab";
+import { SchedulesTab } from "./tabs/schedules-tab";
+import { TriggersTab } from "./tabs/triggers-tab";
+import { ConnectorsTab } from "./tabs/connectors-tab";
+import { MemoriesTab } from "./tabs/memories-tab";
 
 /**
  * Settings: left rail + one component per tab. Each tab owns its data
@@ -42,7 +50,10 @@ const TABS: SettingsTab[] = [
   { id: "usage", label: "Usage", icon: ChartBar, Component: UsageTab },
   { id: "agent", label: "Agent", icon: Robot, Component: AgentTab },
   { id: "approvals", label: "Approvals & Takeover", icon: ShieldCheck, Component: ApprovalsTab },
-  // ── Phase 4 tabs go here: Schedules · Triggers · Connectors · Memories ──
+  { id: "schedules", label: "Schedules", icon: CalendarDots, Component: SchedulesTab },
+  { id: "triggers", label: "Triggers & Webhooks", icon: Lightning, Component: TriggersTab },
+  { id: "connectors", label: "Connectors", icon: PlugsConnected, Component: ConnectorsTab },
+  { id: "memories", label: "Memories", icon: Brain, Component: MemoriesTab },
   { id: "appearance", label: "Appearance", icon: Palette, Component: AppearanceTab },
   { id: "notifications", label: "Notifications & Sound", icon: SpeakerHigh, Component: NotificationsTab },
   { id: "data", label: "Data", icon: HardDrives, Component: DataTab },

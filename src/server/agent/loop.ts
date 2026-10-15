@@ -20,6 +20,13 @@ import { getSection } from "@/server/settings/store";
 import { emit, finishRun, startRun } from "./registry";
 import { buildContext, pruneOldImages, toAdapterParts } from "./context";
 import { saveToolImage } from "@/server/files/store";
+import {
+  executeExternalTool,
+  externalApproval,
+  isExternalToolName,
+  listExternalTools,
+} from "@/server/connectors/external-tools";
+import { extractMemories } from "@/server/memory";
 
 /**
  * Agent loop v1 (docs/skills/skill-agent-loop.md): plan → act → observe, with
@@ -210,9 +217,11 @@ async function execute(input: ExecuteInput): Promise<void> {
       const resultParts: MessagePart[] = [];
 
       for (const call of toolCalls) {
-        const gate = requiresApproval(call.name, {
-          extraPatterns: approvalSettings.checkpointPatterns,
-        });
+        const gate = isExternalToolName(call.name)
+          ? externalApproval(call.name)
+          : requiresApproval(call.name, {
+              extraPatterns: approvalSettings.checkpointPatterns,
+            });
         if (gate.required) {
           await checkpoint({ runId, chatId, stepIdx, call, reason: gate.reason });
           return;
@@ -281,7 +290,15 @@ async function observeTool(args: {
 
   for (let attempt = 0; ; attempt += 1) {
     try {
-      const result = await lhos.callTool(call.name, call.args, { signal });
+      // Namespaced composio__/mcp__/pipedream__ tools run server-side here;
+      // everything else is an LHOS tool.
+      const result = isExternalToolName(call.name)
+        ? await executeExternalTool(call.name, call.args).then((r) => ({
+            ok: r.ok,
+            ms: r.ms,
+            result: [{ type: "text" as const, text: r.text }],
+          }))
+        : await lhos.callTool(call.name, call.args, { signal });
       const text = truncate(resultText(result.result), RESULT_LIMIT);
       const images = resultImages(result.result);
 
@@ -438,15 +455,24 @@ async function endRun(
   emit(runId, { type: "done", status });
   finishRun(runId);
   logger.info("agent", { runId, chatId, status });
+
+  // Phase 4: distil durable facts after a finished run. Never blocks or fails the run.
+  if (status === "done") void extractMemories({ chatId, runId });
 }
 
 async function loadTools(allowlist: readonly string[]): Promise<AdapterTool[]> {
   const catalog = await getToolCatalog();
-  return filterTools(catalog, allowlist).map((t) => ({
+  const lhosTools = filterTools(catalog, allowlist).map((t) => ({
     name: t.name,
     description: t.description,
     inputSchema: t.input_schema,
   }));
+  // Connector tools are best-effort: a dead Composio/MCP source must not stop a run.
+  const external = await listExternalTools().catch((err: unknown) => {
+    logger.warn("agent", { msg: "external tools unavailable", detail: String(err) });
+    return [];
+  });
+  return [...lhosTools, ...external];
 }
 
 async function recordUsage(args: {
