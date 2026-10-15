@@ -1,1 +1,128 @@
-{}
+{
+  "GITHUB_GET_THE_AUTHENTICATED_USER": {
+    "toolkit": "github",
+    "version": "20261014_00",
+    "verifiedAt": "2026-10-15T08:05:45.019Z",
+    "params": []
+  },
+  "GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER": {
+    "toolkit": "github",
+    "version": "20261014_00",
+    "verifiedAt": "2026-10-15T08:05:45.328Z",
+    "params": [
+      "page",
+      "sort",
+      "type",
+      "since",
+      "before",
+      "per_page",
+      "direction"
+    ]
+  },
+  "GOOGLECALENDAR_EVENTS_LIST": {
+    "toolkit": "googlecalendar",
+    "version": "20261010_00",
+    "verifiedAt": "2026-10-15T08:05:45.591Z",
+    "params": [
+      "query",
+      "fields",
+      "iCalUID",
+      "orderBy",
+      "timeMax",
+      "timeMin",
+      "timeZone",
+      "pageToken",
+      "syncToken",
+      "calendarId",
+      "eventTypes",
+      "maxResults",
+      "updatedMin",
+      "showDeleted",
+      "maxAttendees",
+      "singleEvents",
+      "alwaysIncludeEmail",
+      "showHiddenInvitations",
+      "sharedExtendedProperty",
+      "privateExtendedProperty"
+    ]
+  },
+  "GOOGLEDRIVE_FIND_FILE": {
+    "toolkit": "googledrive",
+    "version": "20261001_00",
+    "verifiedAt": "2026-10-15T08:05:45.761Z",
+    "params": [
+      "q",
+      "fields",
+      "spaces",
+      "corpora",
+      "driveId",
+      "orderBy",
+      "pageSize",
+      "folder_id",
+      "pageToken",
+      "include_labels",
+      "pagetoken_dropped",
+      "supportsAllDrives",
+      "original_email_query",
+      "editors_field_removed",
+      "email_query_transformed",
+      "orderby_size_transformed",
+      "original_bare_text_query",
+      "includeItemsFromAllDrives",
+      "emailaddress_field_removed",
+      "original_invalid_pagetoken",
+      "bare_text_query_transformed",
+      "include_permissions_for_view"
+    ]
+  },
+  "GMAIL_FETCH_EMAILS": {
+    "toolkit": "gmail",
+    "version": "20261010_00",
+    "verifiedAt": "2026-10-15T08:05:45.936Z",
+    "params": [
+      "query",
+      "user_id",
+      "verbose",
+      "ids_only",
+      "label_ids",
+      "page_token",
+      "max_results",
+      "include_payload",
+      "include_spam_trash"
+    ]
+  },
+  "GMAIL_CREATE_EMAIL_DRAFT": {
+    "toolkit": "gmail",
+    "version": "20261010_00",
+    "verifiedAt": "2026-10-15T08:05:46.108Z",
+    "params": [
+      "cc",
+      "bcc",
+      "body",
+      "is_html",
+      "subject",
+      "user_id",
+      "thread_id",
+      "attachment",
+      "recipient_email",
+      "extra_recipients"
+    ]
+  },
+  "GMAIL_SEND_EMAIL": {
+    "toolkit": "gmail",
+    "version": "20261010_00",
+    "verifiedAt": "2026-10-15T08:05:46.307Z",
+    "params": [
+      "cc",
+      "bcc",
+      "body",
+      "is_html",
+      "subject",
+      "user_id",
+      "attachment",
+      "from_email",
+      "recipient_email",
+      "extra_recipients"
+    ]
+  }
+}

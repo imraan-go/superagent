@@ -92,8 +92,10 @@ export function browserTemplate() {
 }
 
 export function codeTemplate() {
+  // The E2B base image is Python 3.11. numpy 2.5+ requires 3.12, so the code template starts
+  // from E2B's Python 3.12 image.
   return Template()
-    .fromBaseImage()
+    .fromPythonImage('3.12')
     .pipInstall([`numpy==${PY_PINS.numpy}`, `pandas==${PY_PINS.pandas}`, `matplotlib==${PY_PINS.matplotlib}`])
     .setUser('user');
 }

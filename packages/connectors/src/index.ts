@@ -36,6 +36,18 @@ function mapStatus(s: string | undefined): ConnectionState {
   }
 }
 
+/** Account ids the session reports for a toolkit, or null when the response does not echo them. */
+function boundAccounts(config: unknown, toolkit: string): string[] | null {
+  if (!config || typeof config !== 'object') return null;
+  const record = config as Record<string, unknown>;
+  const map = record.connectedAccounts ?? record.connected_accounts;
+  if (!map || typeof map !== 'object') return null;
+  const value = (map as Record<string, unknown>)[toolkit];
+  if (value === undefined) return null;
+  const ids = Array.isArray(value) ? value : [value];
+  return ids.filter((id): id is string => typeof id === 'string');
+}
+
 function toolkitVersionsFromLock(): Record<string, string> {
   const out: Record<string, string> = {};
   for (const e of Object.values(CONNECTOR_LOCK)) out[e.toolkit] = e.version;
@@ -105,7 +117,14 @@ export class ComposioConnector {
       },
       signal ? { signal } : undefined,
     );
-    const call = session.execute(slug, args, { account: connectedAccountId });
+    // This project has multi-account selection off, so execute rejects an `account` argument
+    // (ToolRouterV2_BadRequest 4300). The account is pinned on the session above; refuse to run
+    // if the session reports a different binding.
+    const bound = boundAccounts(session.config, toolkit);
+    if (bound && (bound.length !== 1 || bound[0] !== connectedAccountId)) {
+      throw new Error(`session is not bound to the requested ${toolkit} account`);
+    }
+    const call = session.execute(slug, args);
     const aborted = signal
       ? new Promise<never>((_, reject) => {
           if (signal.aborted) reject(new Error('composio execution aborted'));

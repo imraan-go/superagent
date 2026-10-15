@@ -15,7 +15,7 @@
   sandbox is ready when `http://127.0.0.1:9222/json/version` answers.
 
 **`superagent-code`**
-- Starts from the E2B base image, with pinned numpy, pandas and matplotlib.
+- Starts from E2B's Python 3.12 image (the default base image is 3.11, which cannot install numpy 2.5), with pinned numpy, pandas and matplotlib.
 
 Python pins are at least 7 days old, matching the npm release-age policy.
 

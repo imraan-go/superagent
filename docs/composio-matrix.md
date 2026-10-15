@@ -5,7 +5,9 @@ Connectors use **Composio sessions** (`@composio/core` 0.23, `sessionPreset: 'di
 Composio meta-tools, MCP URLs and auto-execution are never handed to it.
 
 Every execution creates a session for the server-derived Composio user ID, enables exactly one tool
-slug, and pins `connectedAccounts: {toolkit: <the user's verified account>}`.
+slug, and pins `connectedAccounts: {toolkit: <the user's verified account>}`. The execute call does
+not send an `account` argument: this project has multi-account selection disabled, and Composio
+rejects that field with `ToolRouterV2_BadRequest` (4300).
 
 A curated tool is offered only after `pnpm composio:discover` has locked it in
 `packages/policy/src/connector-catalog.lock.json`. Locking requires all of:
