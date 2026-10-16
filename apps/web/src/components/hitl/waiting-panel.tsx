@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ChatCircleDots,
@@ -29,8 +29,14 @@ export const FOCUS_WAITING_EVENT = "fd:focus-waiting";
  * "Waiting on you": every pending approval, question and takeover request, with
  * the control that answers it inline (skill-approvals-hitl).
  */
+const noopSubscribe = () => () => undefined;
+
 export function WaitingPanel() {
-  const { data } = usePending();
+  // The pending list comes from the client cache; render it only after mount so the server and
+  // first client render agree (no hydration mismatch on the count).
+  const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  const { data: live } = usePending();
+  const data = mounted ? live : undefined;
   const notifications = useDesktopNotify();
   const items = data?.items ?? [];
   const { fresh, stale } = groupStale(items);
@@ -128,11 +134,13 @@ async function post(path: string, body: unknown): Promise<Record<string, unknown
   return json;
 }
 
-function WaitingItem({ item, stale = false }: { item: PendingItem; stale?: boolean }) {
+/** One waiting item with its controls; also rendered inline in the chat for the run it belongs to. */
+export function WaitingItem({ item, stale = false, inChat = false }: { item: PendingItem; stale?: boolean; inChat?: boolean }) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [answer, setAnswer] = useState("");
-  const [showAll, setShowAll] = useState(false);
+  // The exact action is what is being approved, so it is visible unless the owner hides it.
+  const [showAll, setShowAll] = useState(item.kind === "confirm");
   const { icon: Icon, label } = KIND_META[item.kind];
   const promptId = `hitl-${item.id}`;
 
@@ -225,7 +233,7 @@ function WaitingItem({ item, stale = false }: { item: PendingItem; stale?: boole
           {item.approval && (
             <>
               <button type="button" className={styles.more} aria-expanded={showAll} aria-controls={promptId} onClick={() => setShowAll((v) => !v)}>
-                {showAll ? "hide details" : "exact action"}
+                {showAll ? "hide exact action" : "show exact action"}
               </button>
               {showAll && <pre className={styles.args}>{JSON.stringify(item.approval.args, null, 2)}</pre>}
             </>
@@ -291,7 +299,7 @@ function WaitingItem({ item, stale = false }: { item: PendingItem; stale?: boole
         </form>
       )}
 
-      {item.chatId && (
+      {item.chatId && !inChat && (
         <Link className={styles.more} href={`/chat/${item.chatId}`}>
           Open chat
         </Link>

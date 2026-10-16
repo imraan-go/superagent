@@ -55,7 +55,8 @@ export function groupExchanges(messages: readonly ChatMessage[]): Exchange[] {
     const ex: Exchange = {
       key,
       user,
-      runId: null,
+      // The owner's turn already names its run, so a run waiting on approval is placeable.
+      runId: user?.runId ?? null,
       model: null,
       trace: [],
       answer: "",

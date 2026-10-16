@@ -23,6 +23,8 @@ import { RunTrace } from "./parts/run-trace";
 import { ReasoningBlock } from "./parts/reasoning-block";
 import { DebugPanel } from "./parts/debug-panel";
 import { QuestionCard } from "./parts/question-card";
+import { WaitingItem } from "@/components/hitl/waiting-panel";
+import { usePending } from "@/hooks/use-pending";
 import type { QuestionAnswer } from "./parts/question-card";
 import type { QuestionPart } from "@/lib/messages";
 import type { DebugEntry } from "@/hooks/use-run-stream";
@@ -216,7 +218,9 @@ function ExchangeView({
   const reasoning = [ex.reasoning, streamingThinking].filter(Boolean).join("\n\n");
   // Persisted questions, with the live one overlaid (it lands in the stored turn only at the end).
   const questions = question && !ex.questions.some((q) => q.questionId === question.questionId) ? [...ex.questions, question] : ex.questions.map((q) => (question?.questionId === q.questionId ? question : q));
-  const hasAgent = live || trace.length > 0 || Boolean(answer) || Boolean(error) || Boolean(reasoning) || questions.length > 0;
+  const { data: pending } = usePending();
+  const awaitingApproval = Boolean(ex.runId && pending?.items.some((i) => i.source === "approval" && i.runId === ex.runId));
+  const hasAgent = live || trace.length > 0 || Boolean(answer) || Boolean(error) || Boolean(reasoning) || questions.length > 0 || awaitingApproval;
   const expanded = traceStaysOpen(mode);
 
   if (ex.note) {
@@ -247,6 +251,7 @@ function ExchangeView({
               />
             </div>
           )}
+          {ex.runId && <RunApprovals runId={ex.runId} />}
           {questions.map((q) => (
             <QuestionCard
               key={q.questionId}
@@ -279,6 +284,23 @@ function ExchangeView({
         </AgentShell>
       )}
     </>
+  );
+}
+
+/**
+ * Exact-action approvals waiting on this run, decided right here in the chat (the same control
+ * and hash/nonce check as the Inbox). Questions have their own cards.
+ */
+function RunApprovals({ runId }: { runId: string }) {
+  const { data } = usePending();
+  const items = (data?.items ?? []).filter((i) => i.source === "approval" && i.runId === runId);
+  if (!items.length) return null;
+  return (
+    <ul className={styles.approvals} aria-label="Waiting for your approval">
+      {items.map((i) => (
+        <WaitingItem key={i.id} item={i} inChat />
+      ))}
+    </ul>
   );
 }
 

@@ -227,3 +227,12 @@
   color: var(--text-3);
   font-size: var(--fs-tiny);
 }
+
+/* Inline approvals for the run in this exchange (the Inbox's card, in place). */
+.approvals {
+  display: grid;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0;
+  padding: 0;
+  list-style: none;
+}

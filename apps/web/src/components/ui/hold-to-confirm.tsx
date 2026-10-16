@@ -54,6 +54,9 @@ export function HoldToConfirm({
 }: HoldToConfirmProps) {
   const [progress, setProgress] = useState(0);
   const [holding, setHolding] = useState(false);
+  /** A tap (released before the hold completed) shows "keep holding" briefly instead of nothing. */
+  const [nudge, setNudge] = useState(false);
+  const holdingRef = useRef(false);
   const rafRef = useRef<number | undefined>(undefined);
   const startRef = useRef(0);
   const firedRef = useRef(false);
@@ -62,14 +65,24 @@ export function HoldToConfirm({
   const stop = useCallback(() => {
     if (rafRef.current !== undefined) cancelAnimationFrame(rafRef.current);
     rafRef.current = undefined;
+    if (holdingRef.current && !firedRef.current) setNudge(true);
+    holdingRef.current = false;
     setHolding(false);
     setProgress(0);
   }, []);
+
+  useEffect(() => {
+    if (!nudge) return;
+    const t = setTimeout(() => setNudge(false), 2200);
+    return () => clearTimeout(t);
+  }, [nudge]);
 
   const start = useCallback(() => {
     if (disabled || holding) return;
     firedRef.current = false;
     startRef.current = performance.now();
+    holdingRef.current = true;
+    setNudge(false);
     setHolding(true);
 
     const tick = (now: number) => {
@@ -128,6 +141,7 @@ export function HoldToConfirm({
       aria-label={label}
       aria-keyshortcuts={holdKey ? holdKey.toUpperCase() : undefined}
       aria-describedby={undefined}
+      title={label ?? "Press and hold to confirm"}
       className={cn(
         styles.base,
         styles[tone],
@@ -136,7 +150,13 @@ export function HoldToConfirm({
         className,
       )}
       onPointerDown={(e) => {
-        e.currentTarget.setPointerCapture(e.pointerId);
+        // Capture keeps the hold alive if the pointer drifts off the button; it can throw for a
+        // pointer the browser no longer tracks, and the hold must start regardless.
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {
+          /* hold without capture */
+        }
         start();
       }}
       onPointerUp={stop}
@@ -161,7 +181,13 @@ export function HoldToConfirm({
       <span className={styles.label}>
         {icon}
         {children}
-        {hint && !holding && <span className={styles.hint}>{hint}</span>}
+        {nudge && !holding ? (
+          <span className={styles.hint} role="status">
+            keep holding…
+          </span>
+        ) : (
+          hint && !holding && <span className={styles.hint}>{hint}</span>
+        )}
       </span>
     </button>
   );
