@@ -1,0 +1,300 @@
+.center {
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  min-width: 0;
+}
+
+.scroll {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  width: min(100%, var(--chat-max));
+  margin: 0 auto;
+  padding: var(--sp-8) var(--sp-4) var(--sp-6);
+  text-align: center;
+}
+
+/* The glyph sits on a faint radar reticle — the only ornament on the page. */
+.glyph {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  margin-bottom: var(--sp-1);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--c-agent) 22%, transparent) 0, transparent 55%),
+    radial-gradient(circle at 70% 75%, color-mix(in srgb, var(--c-think) 24%, transparent) 0, transparent 55%),
+    repeating-radial-gradient(circle, transparent 0 17px, color-mix(in oklab, var(--line) 70%, transparent) 17px 18px);
+  box-shadow: 0 0 60px color-mix(in srgb, var(--c-agent) 14%, transparent);
+}
+
+/* A slow conic halo orbits the mark (static under reduced motion). */
+.glyph::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  padding: 1px;
+  background: conic-gradient(from 0deg, var(--c-agent), var(--c-think), var(--c-web), transparent 70%, var(--c-agent));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: halo-spin 9s linear infinite;
+}
+
+@keyframes halo-spin {
+  to { transform: rotate(360deg); }
+}
+
+.glyph .heroGlyph {
+  color: var(--c-agent);
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: var(--lh-tight);
+  color: var(--text-1);
+  background: linear-gradient(100deg, var(--text-1) 40%, var(--c-agent) 80%, var(--c-think));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sub {
+  margin: 0;
+  max-width: 56ch;
+  font-size: var(--fs-base);
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+/* Instrument strip: live readouts of what the agent can reach right now. */
+.status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: var(--sp-3) 0 var(--sp-2);
+  border: var(--border) solid var(--glass-line);
+  border-radius: var(--radius-control);
+  background:
+    linear-gradient(180deg, var(--glass-hi), transparent 60%),
+    var(--glass);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 108px;
+  padding: var(--sp-2) var(--sp-4);
+  text-align: left;
+}
+
+.stat dt::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--cat, var(--text-3));
+  box-shadow: 0 0 6px var(--cat, transparent);
+}
+
+.stat + .stat {
+  border-left: var(--border) solid var(--line);
+}
+
+.stat dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.stat dd {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-1);
+}
+
+.suggestions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-2);
+  width: 100%;
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.suggestions li {
+  animation: rise var(--dur-spring) var(--ease-spring) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger) * 2);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.suggestion {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  width: 100%;
+  height: 100%;
+  padding: var(--sp-3);
+  border: var(--border) solid var(--glass-line);
+  border-radius: var(--radius-control);
+  background:
+    linear-gradient(180deg, var(--glass-hi), transparent 60%),
+    var(--glass);
+  color: var(--text-2);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-std) var(--ease-out),
+    box-shadow var(--dur-std) var(--ease-out),
+    transform var(--dur-spring) var(--ease-spring);
+}
+
+.suggestion:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--cat, var(--signal)) 60%, var(--line));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--cat, var(--signal)) 10%, transparent), transparent 70%),
+    var(--ink-2);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--cat, var(--signal)) 14%, transparent);
+}
+
+.suggestion:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.suggestion:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+.suggestion:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sugIcon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-chip);
+  background: var(--ink-0);
+  color: var(--text-2);
+  transition: color var(--dur-micro) ease, border-color var(--dur-micro) ease;
+}
+
+.sugText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sugTitle {
+  font-size: var(--fs-small);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-1);
+}
+
+.sugSub {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+}
+
+.center:focus {
+  outline: none;
+}
+
+@media (max-width: 900px) {
+  .suggestions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1100px) {
+  .scroll { padding-top: var(--sp-8); }
+}
+
+@media (max-width: 480px) {
+  .hero { padding: var(--sp-4) var(--sp-3); gap: var(--sp-2); }
+  .glyph { width: 88px; height: 88px; }
+  .title { font-size: var(--fs-2xl); }
+  .sub { font-size: var(--fs-small); }
+  .status { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .stat { min-width: 0; padding: var(--sp-2) var(--sp-3); border-left: 0 !important; }
+  .stat:nth-child(even) { border-left: var(--border) solid var(--line) !important; }
+  .stat:nth-child(n + 3) { border-top: var(--border) solid var(--line); }
+  .suggestions { grid-template-columns: 1fr; }
+  .suggestion { padding: var(--sp-2) var(--sp-3); align-items: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .suggestions li { animation: none; }
+  .suggestion { transition: none; }
+}
+
+/* Apps stat: the count doubles as the entry to Connect Apps. */
+.statBtn {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.statBtn:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: var(--radius-chip); }
+.statAction { font-size: var(--fs-micro); color: var(--text-3); text-decoration: underline; text-underline-offset: 3px; }
+.statBtn:hover .statAction { color: var(--signal); }

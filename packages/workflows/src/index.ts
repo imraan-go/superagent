@@ -20,11 +20,13 @@ import {
 } from '@temporalio/workflow';
 import {
   APPROVAL_SIGNAL,
+  QUESTION_SIGNAL,
   taskWorkflowId,
   type AgentActivities,
   type AgentCarryState,
   type AgentTaskInput,
   type ApprovalSignal,
+  type QuestionSignal,
   type ScheduledTaskInput,
 } from '@superagent/contracts/workflow';
 
@@ -57,6 +59,7 @@ const writes = proxyActivities<AgentActivities>({
 });
 
 export const approvalDecided = defineSignal<[ApprovalSignal]>(APPROVAL_SIGNAL);
+export const questionAnswered = defineSignal<[QuestionSignal]>(QUESTION_SIGNAL);
 
 function reasonOf(err: unknown): string {
   let e: unknown = err;
@@ -74,6 +77,10 @@ export async function agentTaskWorkflow(input: AgentTaskInput): Promise<string> 
   const signalled = new Set<string>();
   setHandler(approvalDecided, ({ intentId }) => {
     signalled.add(intentId);
+  });
+  const answered = new Set<string>();
+  setHandler(questionAnswered, ({ questionId }) => {
+    answered.add(questionId);
   });
 
   const carry: AgentCarryState = input.carry ?? { step: 0, toolCalls: 0, activeMs: 0, pendingIntentIds: [] };
@@ -121,6 +128,34 @@ export async function agentTaskWorkflow(input: AgentTaskInput): Promise<string> 
         }
         const verdict = await db.evaluateProposal({ ...ref, readOnly: ctx.readOnly });
         if (verdict.verdict === 'deny') continue;
+        if (verdict.verdict === 'needs_answer') {
+          // Ask in chat and wait durably (no compute while waiting; survives deploys and restarts).
+          const q = { ...ref, questionId: verdict.questionId };
+          tick();
+          await db.prepareForQuestionWait(q);
+          let state: 'answered' | 'expired' | 'cancelled' | 'pending' = 'pending';
+          while (state === 'pending') {
+            const remaining = verdict.expiresAtMs - Date.now();
+            if (remaining <= 0 || !(await condition(() => answered.has(verdict.questionId), remaining))) {
+              state = 'expired';
+              break;
+            }
+            answered.delete(verdict.questionId);
+            // A raw signal is not an answer: re-read the persisted, owner-checked row.
+            state = (await db.checkQuestion(q)).state;
+          }
+          segmentStart = Date.now();
+          const { runGatedTool } = await db.recordQuestionOutcome({ ...q, gate: verdict.gate, state });
+          if (runGatedTool) {
+            try {
+              await tools.executeTool(ref);
+            } catch (err) {
+              if (isCancellation(err)) throw err;
+              await db.recordToolOutcome({ ...ref, status: 'failed', summary: `tool failed: ${reasonOf(err)}` });
+            }
+          }
+          continue;
+        }
         if (verdict.verdict === 'allow') {
           try {
             await tools.executeTool(ref);

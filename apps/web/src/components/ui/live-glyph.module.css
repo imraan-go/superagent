@@ -1,0 +1,215 @@
+/* LiveGlyph — three orbital arcs, one component, state-driven.
+   Spec: docs/DESIGN_SYSTEM.md §Signature elements. */
+
+.root {
+  display: inline-grid;
+  place-items: center;
+  position: relative;
+  flex-shrink: 0;
+  color: var(--text-3);
+  transition: color var(--dur-panel) var(--ease-out), filter var(--dur-panel) var(--ease-out);
+}
+
+.arc {
+  transition: stroke var(--dur-panel) var(--ease-out);
+}
+
+.svg {
+  display: block;
+  overflow: visible;
+}
+
+.arc {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  transform-origin: 50% 50%;
+}
+
+.a1 {
+  animation: spin 9s linear infinite;
+}
+
+.a2 {
+  animation: spin 6s linear infinite reverse;
+}
+
+.a3 {
+  animation: spin 13s linear infinite;
+}
+
+.core {
+  fill: currentColor;
+  transform-origin: 50% 50%;
+}
+
+/* ---- idle: slow drift, muted ------------------------------------------ */
+
+.idle {
+  color: var(--text-3);
+}
+
+.idle .core {
+  opacity: 0.5;
+}
+
+/* ---- thinking: fast spin + halo --------------------------------------- */
+
+.thinking {
+  color: var(--c-think);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--c-think) 55%, transparent));
+}
+
+/* Two-tone orbit while thinking: the inner arc carries the agent hue. */
+.thinking .a3 {
+  stroke: var(--c-agent);
+}
+
+.thinking .a1 {
+  animation-duration: 1.5s;
+}
+
+.thinking .a2 {
+  animation-duration: 1.1s;
+}
+
+.thinking .a3 {
+  animation-duration: 2.1s;
+}
+
+.thinking .core {
+  animation: breathe 1.4s var(--ease-out) infinite;
+}
+
+/* ---- tool: stepped rotation, a tool call is executing ------------------ */
+
+.tool {
+  color: var(--c-agent);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c-agent) 45%, transparent));
+}
+
+.tool .a2 {
+  stroke: var(--c-web);
+}
+
+.tool .a1 {
+  animation: step 2s steps(8) infinite;
+}
+
+.tool .a2 {
+  animation-duration: 2.4s;
+}
+
+.tool .a3 {
+  animation-duration: 3.2s;
+}
+
+/* ---- approval: amber double pulse, waiting on the owner ---------------- */
+
+.approval {
+  color: var(--c-approval);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--c-approval) 50%, transparent));
+}
+
+.approval .a1,
+.approval .a2,
+.approval .a3 {
+  animation: none;
+}
+
+.approval .core {
+  animation: doublePulse 1.8s var(--ease-out) infinite;
+}
+
+/* ---- done: settles green ----------------------------------------------- */
+
+.done {
+  color: var(--c-money);
+}
+
+.done .a1,
+.done .a2,
+.done .a3 {
+  animation: none;
+}
+
+.done .core {
+  animation: settle var(--dur-panel) var(--ease-out);
+}
+
+/* ---- error ------------------------------------------------------------- */
+
+.error {
+  color: var(--c-error);
+}
+
+.error .a1,
+.error .a2,
+.error .a3 {
+  animation: none;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes step {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.65;
+  }
+}
+
+@keyframes doublePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  12% {
+    transform: scale(1.7);
+  }
+  24% {
+    transform: scale(1);
+  }
+  36% {
+    transform: scale(1.7);
+  }
+  48% {
+    transform: scale(1);
+  }
+}
+
+@keyframes settle {
+  from {
+    transform: scale(1.8);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Reduced motion: every state becomes a static, still-distinguishable glyph. */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) .arc,
+  :root:not([data-motion="full"]) .core {
+    animation: none !important;
+  }
+}
+
+:root[data-motion="reduce"] .arc,
+:root[data-motion="reduce"] .core {
+  animation: none !important;
+}

@@ -12,6 +12,7 @@ import {
 import { getEnv, type AppEnv } from '@superagent/config';
 import {
   APPROVAL_SIGNAL,
+  QUESTION_SIGNAL,
   RETENTION_WORKFLOW_TYPE,
   SCHEDULED_WORKFLOW_TYPE,
   TASK_WORKFLOW_TYPE,
@@ -84,6 +85,17 @@ export async function startTaskWorkflow(client: Client, taskQueue: string, input
 export async function signalApproval(client: Client, taskId: string, intentId: string): Promise<'signalled' | 'not_running'> {
   try {
     await client.workflow.getHandle(taskWorkflowId(taskId)).signal(APPROVAL_SIGNAL, { intentId });
+    return 'signalled';
+  } catch (err) {
+    if (err instanceof WorkflowNotFoundError) return 'not_running';
+    throw err;
+  }
+}
+
+/** The signal carries only the question id; the workflow re-reads the persisted answer via an Activity. */
+export async function signalQuestion(client: Client, taskId: string, questionId: string): Promise<'signalled' | 'not_running'> {
+  try {
+    await client.workflow.getHandle(taskWorkflowId(taskId)).signal(QUESTION_SIGNAL, { questionId });
     return 'signalled';
   } catch (err) {
     if (err instanceof WorkflowNotFoundError) return 'not_running';

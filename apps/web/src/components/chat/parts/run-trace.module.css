@@ -1,0 +1,381 @@
+/* Run trace — the instrument log inside an assistant turn. */
+.trace {
+  --trace-accent: var(--line-strong);
+  position: relative;
+  border: var(--border) solid var(--glass-line);
+  border-radius: var(--radius-control);
+  background:
+    linear-gradient(180deg, var(--glass-hi), transparent 60%),
+    var(--glass);
+  overflow: hidden;
+  transition: border-color var(--dur-std) var(--ease-out);
+}
+
+/* Phase colour: thinking violet → tool teal → approval amber → done lime → error coral. */
+.trace[data-phase="thinking"] { --trace-accent: var(--c-think); }
+.trace[data-phase="tool"] { --trace-accent: var(--c-agent); }
+.trace[data-phase="approval"] { --trace-accent: var(--c-approval); }
+.trace[data-phase="done"] { --trace-accent: var(--c-money); }
+.trace[data-phase="error"] { --trace-accent: var(--c-error); }
+
+.live,
+.trace[data-phase="approval"] {
+  border-color: color-mix(in oklab, var(--trace-accent) 45%, var(--line));
+  box-shadow: 0 0 28px color-mix(in srgb, var(--trace-accent) 16%, transparent);
+  transition: border-color var(--dur-panel) var(--ease-out), box-shadow var(--dur-panel) var(--ease-out);
+}
+
+.stack {
+  display: inline-flex;
+  flex: none;
+}
+.stack > * + * { margin-left: -6px; box-shadow: 0 0 0 2px var(--ink-1); }
+
+/* A 1px scanline along the top edge while live — the "frame is alive" cue. */
+.live::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--trace-accent), transparent);
+  background-size: 50% 100%;
+  background-repeat: no-repeat;
+  animation: sweep 1.8s linear infinite;
+}
+
+@keyframes sweep {
+  from { background-position: -50% 0; }
+  to { background-position: 150% 0; }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 36px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--fs-small);
+  text-align: left;
+  cursor: pointer;
+}
+
+.head:disabled { cursor: default; }
+.head:not(:disabled):hover { color: var(--text-1); background: var(--ink-2); }
+.head:focus-visible { outline: 2px solid var(--signal); outline-offset: -2px; }
+
+.headline {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live .headline { color: var(--text-1); }
+
+.meta {
+  display: inline-flex;
+  gap: var(--sp-2);
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.caret {
+  flex: none;
+  color: var(--text-3);
+  transition: transform var(--dur-micro) ease;
+}
+
+.open > .head .caret,
+[aria-expanded="true"] > .caret,
+[aria-expanded="true"] .caret { transform: rotate(90deg); }
+
+.dots { display: inline-flex; gap: 3px; flex: none; }
+.dots i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--trace-accent);
+  animation: breathe 1.2s ease-in-out infinite;
+}
+.dots i:nth-child(2) { animation-delay: 0.15s; }
+.dots i:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+/* --- steps ------------------------------------------------------------- */
+.steps {
+  position: relative;
+  margin: 0;
+  padding: var(--sp-1) var(--sp-3) var(--sp-3);
+  list-style: none;
+  border-top: var(--border) solid var(--line);
+}
+
+/* The timeline spine. */
+.steps::before {
+  content: "";
+  position: absolute;
+  top: var(--sp-3);
+  bottom: var(--sp-4);
+  left: calc(var(--sp-3) + 11px);
+  width: 1px;
+  background: var(--line);
+}
+
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 23px minmax(0, 1fr);
+  gap: var(--sp-2);
+  padding-top: var(--sp-2);
+  animation: enter var(--dur-spring) var(--ease-spring) both;
+  animation-delay: calc(min(var(--i, 0), 10) * var(--stagger));
+}
+
+@keyframes enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.rail {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  margin-top: 4px;
+  border-radius: 7px;
+  background: var(--ink-1);
+}
+
+.card {
+  --cat: var(--line-strong);
+  position: relative;
+  min-width: 0;
+  border: var(--border) solid var(--line);
+  border-left: 2px solid color-mix(in srgb, var(--cat) 70%, transparent);
+  border-radius: var(--radius-chip);
+  background: var(--ink-0);
+  overflow: hidden;
+  transition: transform var(--dur-spring) var(--ease-spring), border-color var(--dur-std) var(--ease-out);
+}
+.step[data-cat] .card { --cat: inherit; }
+.step:hover .card { transform: translateX(2px); }
+.step[data-status="error"] .card { border-left-color: var(--c-error); }
+
+/* Running tool: a soft shimmer crosses the card in its category hue. */
+.step[data-status="pending"] .card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--cat) 14%, transparent) 50%, transparent 80%);
+  transform: translateX(-100%);
+  animation: card-shimmer 1.6s var(--ease-out) infinite;
+}
+
+@keyframes card-shimmer {
+  to { transform: translateX(100%); }
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: 6px var(--sp-3);
+  border: 0;
+  background: none;
+  color: var(--text-1);
+  font: inherit;
+  font-size: var(--fs-small);
+  text-align: left;
+  cursor: pointer;
+}
+.cardHead:disabled { cursor: default; }
+.cardHead:not(:disabled):hover { background: var(--ink-2); }
+.cardHead:focus-visible { outline: 2px solid var(--signal); outline-offset: -2px; }
+
+.title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title code,
+.approvalBody code {
+  padding: 0.05em 0.35em;
+  border-radius: 5px;
+  background: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: var(--signal);
+}
+
+.cardMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-left: auto;
+  flex: none;
+}
+
+.ms {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+
+.shots {
+  display: flex;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3) var(--sp-2);
+  overflow-x: auto;
+}
+
+.shot {
+  flex: none;
+  display: block;
+  border: var(--border) solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: border-color var(--dur-micro) ease;
+}
+.shot:hover,
+.shot:focus-visible { border-color: var(--signal); }
+.shot img {
+  display: block;
+  height: 72px;
+  width: auto;
+  max-width: 200px;
+  object-fit: cover;
+}
+
+.detail {
+  padding: var(--sp-2) var(--sp-3) var(--sp-3);
+  border-top: var(--border) solid var(--line);
+}
+
+.toolName,
+.detailLabel {
+  margin: 0 0 var(--sp-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+.detailLabel { margin-top: var(--sp-2); text-transform: uppercase; }
+
+.detail pre {
+  margin: 0;
+  max-height: 260px;
+  overflow: auto;
+  padding: var(--sp-2);
+  border-radius: 6px;
+  background: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  line-height: 1.55;
+  color: var(--text-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.thoughtText {
+  margin: 0;
+  padding-top: 6px;
+  font-size: var(--fs-small);
+  line-height: 1.55;
+  color: var(--text-2);
+  font-style: italic;
+  white-space: pre-wrap;
+}
+
+/* --- approval ---------------------------------------------------------- */
+
+.approvalCard {
+  padding: var(--sp-2) var(--sp-3);
+  border: var(--border) solid var(--amber);
+  border-radius: var(--radius-chip);
+  background: var(--amber-wash);
+}
+
+.approvalTitle {
+  margin: 0 0 2px;
+  font-family: var(--font-display);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.approvalBody {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+  color: var(--text-1);
+}
+
+.approvalLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--amber);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 500;
+  cursor: pointer;
+}
+.approvalLink:hover { text-decoration: underline; }
+.approvalLink:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .live::before,
+  .dots i,
+  .step { animation: none; }
+}
+
+.shotMissing {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  width: 112px;
+  height: 72px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+  background: var(--ink-2);
+  text-align: center;
+}
+
+/* Composio steps show the app's logo; it opens that app in Connect apps. */
+.appLogoBtn {
+  display: grid;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  cursor: pointer;
+  transition: transform var(--dur-micro) var(--ease-out);
+}
+.appLogoBtn:hover { transform: scale(1.06); }
+.appLogoBtn:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }

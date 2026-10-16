@@ -1,0 +1,63 @@
+/* Skeletons are shaped like the content they stand in for — never a spinner
+   in the void (rule 10-design §Loading). */
+
+.skeleton {
+  display: block;
+  background: var(--skeleton-base);
+  border-radius: var(--radius-chip);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--skeleton-sheen) 50%,
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: sheen 1.4s var(--ease-out) infinite;
+}
+
+.text {
+  height: 0.85em;
+  border-radius: 4px;
+  margin: 0.35em 0;
+}
+
+.circle {
+  border-radius: 50%;
+}
+
+.panel {
+  border-radius: var(--radius-panel);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+/* Last line of a paragraph block reads as a partial line. */
+.group > .text:last-child {
+  width: 62%;
+}
+
+@keyframes sheen {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+    opacity: 0.35;
+    transform: none;
+  }
+}

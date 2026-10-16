@@ -1,0 +1,431 @@
+/* Shared styles for the Settings tabs. Tokens only (DESIGN_SYSTEM). */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.muted {
+  color: var(--text-3);
+  font-size: var(--fs-small);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.error {
+  margin: var(--sp-2) 0 0;
+  color: var(--danger);
+  font-size: var(--fs-small);
+}
+
+.ok {
+  color: var(--ok);
+  font-size: var(--fs-small);
+}
+
+/* ------------------------------------------------------------ toggle -- */
+
+.toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  flex: none;
+  padding: 0;
+  border: var(--border) solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--ink-2);
+  cursor: pointer;
+  transition: background var(--dur-micro) var(--ease-out);
+}
+
+.toggleOn {
+  background: var(--signal);
+  border-color: var(--signal);
+}
+
+.toggleThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-1);
+  transition: transform var(--dur-micro) var(--ease-out);
+}
+
+.toggleOn .toggleThumb {
+  transform: translateX(16px);
+  background: var(--on-signal);
+}
+
+.toggle:focus-visible,
+.input:focus-visible,
+.select:focus-visible,
+.textarea:focus-visible,
+.th button:focus-visible,
+.chip:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+.toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ------------------------------------------------------------ inputs -- */
+
+.numberField {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.affix {
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+}
+
+.input,
+.select,
+.textarea {
+  padding: var(--sp-1) var(--sp-2);
+  border: var(--border) solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--ink-0);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+}
+
+.input {
+  min-width: 0;
+}
+
+.wideInput {
+  width: min(320px, 100%);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 160px;
+  resize: vertical;
+  font-family: var(--font-ui);
+  line-height: 1.5;
+}
+
+.range {
+  width: 160px;
+  accent-color: var(--signal);
+}
+
+/* ------------------------------------------------------------- chips -- */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 2px var(--sp-2);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-chip);
+  background: var(--ink-1);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-tiny);
+}
+
+.chipLocked {
+  color: var(--text-3);
+}
+
+.chipRemove {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+  font: inherit;
+}
+
+.chipRemove:hover {
+  color: var(--danger);
+}
+
+/* ------------------------------------------------------------- table -- */
+
+.tableWrap {
+  overflow-x: auto;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-panel);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-small);
+}
+
+.table td,
+.th {
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: var(--border) solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table tfoot td {
+  border-bottom: 0;
+  color: var(--text-1);
+  font-weight: 600;
+}
+
+.num {
+  text-align: right !important;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.th {
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.th button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.th[aria-sort="ascending"],
+.th[aria-sort="descending"] {
+  color: var(--text-1);
+}
+
+.labelCell {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------ banner -- */
+
+.banner {
+  padding: var(--sp-3) var(--sp-4);
+  border: var(--border) solid var(--amber);
+  border-radius: var(--radius-panel);
+  background: var(--amber-wash);
+  color: var(--text-1);
+  font-size: var(--fs-small);
+}
+
+.bannerDanger {
+  border-color: var(--danger);
+  background: var(--danger-wash);
+}
+
+.meter {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--ink-2);
+  overflow: hidden;
+}
+
+.meterFill {
+  height: 100%;
+  background: var(--signal);
+}
+
+.meterWarn {
+  background: var(--amber);
+}
+
+.meterOver {
+  background: var(--danger);
+}
+
+/* ------------------------------------------------------- tool groups -- */
+
+.toolGroup {
+  padding: var(--sp-2) 0;
+  border-bottom: var(--border) solid var(--line);
+}
+
+.toolGroup:last-child {
+  border-bottom: 0;
+}
+
+.toolGroup summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  cursor: pointer;
+  color: var(--text-1);
+  font-size: var(--fs-sm);
+}
+
+.toolList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--sp-1) var(--sp-3);
+  margin-top: var(--sp-2);
+}
+
+.toolItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  color: var(--text-2);
+  font-size: var(--fs-small);
+}
+
+.toolItem input {
+  accent-color: var(--signal);
+  margin-top: 3px;
+}
+
+.toolName {
+  font-family: var(--font-mono);
+  color: var(--text-1);
+}
+
+.modelPrice {
+  display: inline-flex;
+  gap: var(--sp-1);
+  align-items: center;
+}
+
+/* ---------------------------------------------------- tool allowlist -- */
+
+.allowIntro {
+  color: var(--text-2);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+}
+
+.allowIntro p {
+  margin: 0 0 var(--sp-2);
+}
+
+.allowIntro ul {
+  margin: 0;
+  padding-left: var(--sp-4);
+  list-style: disc;
+}
+
+.allowGroupActions {
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.allowStats {
+  margin-top: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--text-1);
+}
+
+.allowToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0;
+}
+
+.toolGroupName {
+  font-weight: 600;
+}
+
+.allowRows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--sp-2) var(--sp-4);
+  margin-top: var(--sp-2);
+}
+
+.allowRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  font-size: var(--fs-small);
+}
+
+.allowRow input {
+  accent-color: var(--signal);
+  margin-top: 3px;
+}
+
+.allowBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.allowLocked {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.badge {
+  padding: 0 var(--sp-1);
+  border: var(--border) solid var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.badgeWarn {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.badgeLock {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Free content inside a SettingSection card (copy, chips, forms) gets the row padding. */
+.pad {
+  display: grid;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: var(--sp-4);
+}
+
+.pad + .pad {
+  border-top: var(--border) solid var(--line);
+}
+
+.pad .textarea {
+  width: 100%;
+}
+
+.flush {
+  margin: 0;
+}

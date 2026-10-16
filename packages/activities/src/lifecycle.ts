@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull, lt } from 'drizzle-orm';
 import type { TaskContextResult, TaskFinalization, TaskRef, ScheduledTaskInput } from '@superagent/contracts/workflow';
-import { createTaskWithOutbox, getScheduleForOwner, getTaskForOwner, schema, setTaskStatus, NotFoundError } from '@superagent/db';
+import { appendChatMessage, createTaskWithOutbox, getScheduleForOwner, getTaskForOwner, runParts, schema, setTaskStatus, NotFoundError } from '@superagent/db';
 import { emit, taskScope, type Deps } from './deps';
 
 const TERMINAL = new Set(['completed', 'failed', 'cancelled']);
@@ -22,6 +22,29 @@ export async function loadTaskContext(d: Deps, ref: TaskRef): Promise<TaskContex
 export async function finalizeTask(d: Deps, f: TaskFinalization) {
   const changed = await setTaskStatus(d.db, f.ownerId, f.taskId, f.status, f.reason ? { error: f.reason.slice(0, 2000) } : {});
   if (changed) await emit(d, f.ownerId, f.taskId, `task.${f.status}`, `task.${f.status}`, f.reason ? { reason: f.reason } : {});
+  await postRunToChat(d, f);
+}
+
+/** The chat column's copy of a finished run (idempotent: one assistant turn per task). */
+async function postRunToChat(d: Deps, f: TaskFinalization) {
+  const task = await getTaskForOwner(d.db, f.ownerId, f.taskId);
+  if (!task.chatId) return;
+  const text =
+    f.status === 'completed'
+      ? (task.resultSummary ?? '').trim() || 'Done.'
+      : f.status === 'cancelled'
+        ? 'Stopped.'
+        : `This run failed: ${(f.reason ?? task.error ?? 'unknown error').slice(0, 500)}`;
+  const parts = await runParts(d.db, f.ownerId, f.taskId, text);
+  await appendChatMessage(d.db, {
+    ownerId: f.ownerId,
+    chatId: task.chatId,
+    role: 'assistant',
+    taskId: task.id,
+    model: task.model ?? d.env.AI_MODEL_PRIMARY ?? null,
+    content: parts,
+    dedupeKey: `final:${task.id}`,
+  });
 }
 
 async function workspaceRows(d: Deps, ownerId: string, taskId: string) {
@@ -84,7 +107,18 @@ export async function createScheduledTask(d: Deps, input: ScheduledTaskInput & {
     readOnly: sched.readOnly,
     timezone: sched.timezone,
     retentionDays: d.env.TASK_RETENTION_DAYS,
+    chatId: sched.chatId,
   });
+  if (sched.chatId) {
+    await appendChatMessage(d.db, {
+      ownerId: input.ownerId,
+      chatId: sched.chatId,
+      role: 'system',
+      taskId: task.id,
+      content: [{ type: 'text', text: `Routine “${sched.name}” is running.` }],
+      dedupeKey: `routine:${task.id}`,
+    });
+  }
   return { taskId: task.id };
 }
 

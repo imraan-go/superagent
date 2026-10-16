@@ -1,0 +1,33 @@
+.icons {
+  display: grid;
+  place-items: center;
+}
+
+.sun,
+.moon {
+  grid-area: 1 / 1;
+}
+
+.sun {
+  display: none;
+}
+
+.moon {
+  display: block;
+}
+
+:global([data-theme="dark"]) .sun {
+  display: block;
+}
+
+:global([data-theme="dark"]) .moon {
+  display: none;
+}
+
+:global([data-theme="light"]) .sun {
+  display: none;
+}
+
+:global([data-theme="light"]) .moon {
+  display: block;
+}

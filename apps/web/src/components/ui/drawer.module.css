@@ -1,0 +1,49 @@
+.drawer {
+  /* Closed <dialog> must stay display:none (see modal.module.css). */
+  display: none;
+  margin: 0;
+  padding: 0;
+  height: 100dvh;
+  max-height: 100dvh;
+  width: min(var(--sidebar-l), 92vw);
+  border: 0;
+  border-right: var(--border) solid var(--line);
+  background: var(--ink-1);
+  color: var(--text-1);
+  box-shadow: var(--elev-2);
+  overflow: hidden;
+}
+
+.drawer[open] {
+  display: flex;
+  flex-direction: column;
+  animation: slide var(--dur-panel) var(--ease-out);
+}
+
+.drawer::backdrop {
+  background: color-mix(in srgb, var(--ink-0) 72%, transparent);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
+  border-bottom: var(--border) solid var(--line);
+}
+
+.title {
+  font-size: var(--fs-base);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+}
+
+@keyframes slide {
+  from {
+    transform: translateX(-16px);
+    opacity: 0;
+  }
+}

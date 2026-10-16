@@ -19,15 +19,22 @@ import {
   setToolCallStatus,
   settleReservation,
   updateConnection,
+  createScheduleWithOutbox,
+  describeSpec,
+  listSchedules,
+  transitionSchedule,
+  type ScheduleTransition,
 } from '@superagent/db';
 import { BrowserPolicyError, WorkspacePathError, chromeVersion, ensureController, readBytesForExport, readTextFile, runPython, writeNewFile } from '@superagent/execution';
 import { priceTimes } from "@superagent/observability";
 import { evaluateTool, safeArtifactName } from '@superagent/policy';
+import { ScheduleSpecInput, isIanaTimezone } from '@superagent/contracts';
 import { artifactKey } from '@superagent/storage';
 import type { Toolkit } from '@superagent/connectors';
 import { emit, taskScope, type Deps } from './deps';
 import { budgetDefaults } from './model';
-import { isConnectorSpec, toolRegistry, type AnyToolSpec } from './registry';
+import { openQuestion } from './questions';
+import { capabilityOfTool, isConnectorSpec, toolRegistry, type AnyToolSpec } from './registry';
 
 type ToolOutput = { type: 'text'; value: string } | { type: 'error-text'; value: string } | { type: 'content'; value: unknown[] };
 interface RunOutcome {
@@ -90,9 +97,17 @@ export async function evaluateProposal(d: Deps, ref: ToolRef & { readOnly: boole
   const readOnly = ref.readOnly || task.readOnly;
   if (spec.executor === 'browser' && task.allowedDomains.length === 0) return deny('this task has no approved browsing domains');
 
+  if (spec.interactiveOnly && task.origin === 'schedule') return deny('routines cannot manage routines');
+  const cap = capabilityOfTool(spec);
+  if (task.capabilities?.length && cap && !task.capabilities.includes(cap)) return deny(`${cap} is switched off for this message`);
+
   const conn = isConnectorSpec(spec) && spec.toolkit ? await activeConnection(d.db, ref.ownerId, spec.toolkit) : undefined;
   const decision = evaluateTool(spec, { readOnly, configured: d.configured(), connectorActive: () => Boolean(conn) });
   if (decision.verdict === 'deny') return deny(decision.reason);
+  if (decision.verdict === 'allow' && (spec.name === 'ask_user' || spec.confirm)) {
+    const v = await openQuestion(d, ref, spec.name, parsed.data as Record<string, unknown>, spec.name !== 'ask_user');
+    return v ?? deny('single/multi questions need at least two options; use kind "text" for a free reply');
+  }
   if (decision.verdict === 'allow') {
     await setToolCallStatus(d.db, ref.ownerId, ref.toolCallId, 'allowed');
     return { verdict: 'allow', toolCallId: ref.toolCallId, executor: spec.executor };
@@ -161,7 +176,9 @@ async function storeArtifact(d: Deps, ref: ToolRef, name: string, contentType: s
     sizeBytes: bytes.byteLength,
     sha256: put.sha256,
     objectKey: key,
-    source,
+    // The producing tool call lets the chat attach screenshots to the right step.
+    source: { ...source, toolCallId: ref.toolCallId },
+    chatId: (await getTaskForOwner(d.db, ref.ownerId, ref.taskId)).chatId,
     expiresAt: new Date(Date.now() + d.env.TASK_RETENTION_DAYS * 86_400_000),
   });
   await emit(d, ref.ownerId, ref.taskId, 'artifact.created', `artifact.created:${row.id}`, { artifactId: row.id, name: row.name, contentType, sizeBytes: row.sizeBytes, sha256: row.sha256 });
@@ -293,6 +310,37 @@ async function runBrowserTool(d: Deps, ref: ToolRef, name: string, input: Record
   );
 }
 
+async function runScheduleTool(d: Deps, ref: ToolRef, name: string, input: Record<string, unknown>, task: Awaited<ReturnType<typeof getTaskForOwner>>): Promise<RunOutcome> {
+  if (name === 'schedule_list') {
+    const rows = (await listSchedules(d.db, ref.ownerId)).filter((s) => s.state !== 'deleted');
+    const text = rows.length
+      ? rows.map((s) => `- ${s.id} · “${s.name}” · ${describeSpec(s.spec as ScheduleSpecInput)} (${s.timezone}) · ${s.state}${s.chatId === task.chatId ? ' · this chat' : ''}`).join('\n')
+      : 'No routines yet.';
+    return { ok: true, output: { type: 'text', value: text }, summary: `${rows.length} routines` };
+  }
+  if (name === 'schedule_create') {
+    const timezone = (input.timezone as string | undefined) ?? task.timezone ?? 'UTC';
+    if (!isIanaTimezone(timezone)) return { ok: false, output: { type: 'error-text', value: `Unknown timezone ${timezone}.` }, summary: 'bad timezone' };
+    const spec = ScheduleSpecInput.parse(input.cron ? { kind: 'cron', cron: input.cron } : { kind: 'interval', everyMinutes: input.everyMinutes });
+    const s = await createScheduleWithOutbox(d.db, {
+      ownerId: ref.ownerId,
+      name: input.name as string,
+      prompt: input.prompt as string,
+      spec,
+      timezone,
+      allowedDomains: task.allowedDomains,
+      catchupWindowMinutes: 10,
+      chatId: task.chatId,
+    });
+    await emit(d, ref.ownerId, ref.taskId, 'schedule.changed', `schedule.changed:${s.id}:created`, { scheduleId: s.id, name: s.name, action: 'created' });
+    return { ok: true, output: { type: 'text', value: `Created routine ${s.id} “${s.name}” (${describeSpec(spec)}, ${timezone}). Its results will be posted in this chat.` }, summary: `created routine ${s.name}` };
+  }
+  const t = name.replace('schedule_', '') as ScheduleTransition;
+  const { schedule, state } = await transitionSchedule(d.db, ref.ownerId, input.id as string, t);
+  await emit(d, ref.ownerId, ref.taskId, 'schedule.changed', `schedule.changed:${schedule.id}:${t}:${ref.toolCallId}`, { scheduleId: schedule.id, name: schedule.name, action: t });
+  return { ok: true, output: { type: 'text', value: `Routine “${schedule.name}” is now ${state}.` }, summary: `${t} routine ${schedule.name}` };
+}
+
 async function runConnectorRead(d: Deps, ref: ToolRef, spec: AnyToolSpec, input: Record<string, unknown>, signal: AbortSignal): Promise<RunOutcome> {
   if (!isConnectorSpec(spec) || !spec.toolkit || !spec.composioSlug) throw new Error('not a connector tool');
   if (spec.classification === 'external_write') throw new Error('external writes only run through executeApprovedAction');
@@ -326,6 +374,7 @@ export async function executeTool(d: Deps, ref: ToolRef): Promise<ToolExecutionR
       supervised(async (signal) => {
         switch (spec.executor) {
           case 'local': {
+            if (spec.name.startsWith('schedule_')) return runScheduleTool(d, ref, spec.name, input, task);
             const m = await createMemory(d.db, ref.ownerId, input.content as string, { source: 'agent', taskId: ref.taskId, toolCallId: ref.toolCallId });
             return { ok: true, output: { type: 'text', value: `Saved memory ${m.id}. The user can review, edit or delete it.` }, summary: 'memory saved' } satisfies RunOutcome;
           }

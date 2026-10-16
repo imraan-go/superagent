@@ -60,7 +60,7 @@ async function main() {
     let lastSweep = Date.now();
     while (!stopping) {
       try {
-        const n = await drainOutbox(db, client, s.taskQueue, log);
+        const n = await drainOutbox(db, client, s.taskQueue, log, e2b ? deps.workspaces : undefined);
         if (Date.now() - lastProjection > 60_000) {
           lastProjection = Date.now();
           await reconcileProjections(db, client, log);

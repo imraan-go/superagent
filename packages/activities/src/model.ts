@@ -9,6 +9,7 @@ import {
   getArtifactForOwner,
   getBudgetLimits,
   getMessageByDedupe,
+  getPreference,
   getTaskForOwner,
   listConnections,
   listMemories,
@@ -78,12 +79,15 @@ export async function modelDecision(d: Deps, ref: TaskRef & { step: number }): P
   const reg = toolRegistry(d);
   const conns = await listConnections(d.db, ownerId);
   const activeToolkits = new Set(conns.filter((c) => c.status === 'active').map((c) => c.toolkit));
-  const tools = exposedTools(reg, { configured: d.configured(), activeToolkits, readOnly: task.readOnly, allowedDomains: task.allowedDomains });
+  const tools = exposedTools(reg, { configured: d.configured(), activeToolkits, readOnly: task.readOnly, allowedDomains: task.allowedDomains, scheduled: task.origin === 'schedule', capabilities: task.capabilities });
 
   const rows = await listMessages(d.db, ownerId, taskId);
-  const hasImages = rows.some((r) => r.kind === 'tool_result' && JSON.stringify(r.content).includes('"artifact-image"'));
+  const hasImages = rows.some((r) => JSON.stringify(r.content).includes('"artifact-image"'));
   const usesBrowser = tools.some((t) => t.executor === 'browser');
-  const modelId = usesBrowser && env.AI_MODEL_BROWSER ? env.AI_MODEL_BROWSER : env.AI_MODEL_PRIMARY;
+  // A model picked in the composer wins when the installation allows it; checkModel below still
+  // validates capabilities, so an unsuitable pick fails loudly instead of silently degrading.
+  const picked = task.model && d.allowlist().includes(task.model) ? task.model : null;
+  const modelId = picked ?? (usesBrowser && env.AI_MODEL_BROWSER ? env.AI_MODEL_BROWSER : env.AI_MODEL_PRIMARY);
   const catalog = await d.catalog();
   const check = checkModel(catalog, modelId, d.allowlist(), usesBrowser || hasImages ? ['tool-use', 'vision'] : ['tool-use']);
   if (!check.ok || !check.entry) throw new ModelConfigError(`model ${check.modelId} rejected: ${check.problems.join('; ')}`);
@@ -103,6 +107,7 @@ export async function modelDecision(d: Deps, ref: TaskRef & { step: number }): P
     },
   );
   const memories = await listMemories(d.db, ownerId);
+  const agentPrefs = await getPreference(d.db, ownerId, 'agent');
   const context = buildContext({
     nowIso: new Date().toISOString(),
     timezone: task.timezone,
@@ -112,6 +117,7 @@ export async function modelDecision(d: Deps, ref: TaskRef & { step: number }): P
     memories: memories.map((m) => ({ id: m.id, content: m.content })),
     connectedToolkits: [...activeToolkits],
     remainingDecisions: Math.max(0, env.MAX_MODEL_DECISIONS_PER_RUN - step),
+    userInstructions: typeof agentPrefs.systemPrompt === 'string' ? agentPrefs.systemPrompt : undefined,
   });
 
   const toolSchemas = tools.map((t) => ({ n: t.name, d: t.description, s: JSON.stringify(t.schema.toJSONSchema?.() ?? {}) }));

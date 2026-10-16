@@ -10,7 +10,6 @@ import {
   CreateScheduleRequest,
   CreateTaskRequest,
   MemoryUpsertRequest,
-  scheduleTemporalId,
 } from '@superagent/contracts';
 import {
   ApprovalError,
@@ -27,7 +26,6 @@ import {
   getArtifactForOwner,
   getBudgetLimits,
   getConnectionForOwner,
-  getScheduleForOwner,
   getSettings,
   getTaskForOwner,
   listArtifacts,
@@ -36,6 +34,10 @@ import {
   listMemories,
   listSchedules,
   listTasksForOwner,
+  appendChatMessage,
+  createScheduleWithOutbox,
+  transitionSchedule,
+  type ScheduleTransition,
   markArtifactDeleted,
   schema,
   updateConnection,
@@ -48,6 +50,12 @@ import { nanosToUsd, redact, usdToNanos, type Logger } from '@superagent/observa
 import type { ArtifactStore } from '@superagent/storage';
 import type { Toolkit, VerifiedConnection } from '@superagent/connectors';
 import type { Auth } from './auth';
+import { registerChatRoutes } from './routes/chats';
+import { registerSettingsRoutes } from './routes/settings';
+import { registerUsageRoutes } from './routes/usage';
+import { registerSystemRoutes } from './routes/system';
+import { registerAppRoutes } from './routes/apps';
+import { budgetDefaultsFor } from './budget';
 
 export interface ConnectionsPort {
   initiate(composioUserId: string, toolkit: Toolkit, callbackUrl: string): Promise<{ redirectUrl: string; connectedAccountId: string }>;
@@ -66,10 +74,17 @@ export interface ApiDeps {
 
 type User = { id: string; email: string; name: string };
 type Env = { Variables: { user: User } };
+export type AppEnvVars = Env;
+
+export interface RouteHelpers {
+  uid: (c: Context<Env>) => string;
+  body: <T>(c: Context<Env>, schemaParse: { parse: (v: unknown) => T }) => Promise<T>;
+  taskLimiter: RateLimiter;
+}
 
 const TERMINAL = ['completed', 'failed', 'cancelled'];
 
-class RateLimiter {
+export class RateLimiter {
   private hits = new Map<string, { n: number; reset: number }>();
   constructor(
     private readonly max: number,
@@ -126,7 +141,12 @@ export function createApp(d: ApiDeps) {
     c.header('X-Content-Type-Options', 'nosniff');
     c.header('Referrer-Policy', 'no-referrer');
     c.header('X-Frame-Options', 'DENY');
-    c.header('Cache-Control', c.res.headers.get('Cache-Control') ?? 'no-store');
+    // Event streams must reach the browser unbuffered: `no-transform` stops the web origin's
+    // compression (Next.js gzips proxied responses otherwise and holds SSE frames back).
+    if (c.res.headers.get('Content-Type')?.startsWith('text/event-stream')) {
+      c.header('Cache-Control', 'no-cache, no-transform');
+      c.header('X-Accel-Buffering', 'no');
+    } else c.header('Cache-Control', c.res.headers.get('Cache-Control') ?? 'no-store');
   });
 
   app.onError((err, c) => {
@@ -162,6 +182,7 @@ export function createApp(d: ApiDeps) {
 
   const uid = (c: Context<Env>) => c.get('user').id;
   const body = async <T>(c: Context<Env>, schemaParse: { parse: (v: unknown) => T }) => schemaParse.parse(await c.req.json().catch(() => ({})));
+  const helpers: RouteHelpers = { uid, body, taskLimiter };
 
   /* ---------- session / setup ---------- */
   app.get('/api/me', (c) => c.json({ user: c.get('user') }));
@@ -256,43 +277,22 @@ export function createApp(d: ApiDeps) {
 
   app.post('/api/schedules', async (c) => {
     const req = await body(c, CreateScheduleRequest);
-    const id = crypto.randomUUID();
-    const row = await d.db.transaction(async (tx) => {
-      const [s] = await tx
-        .insert(schema.schedules)
-        .values({
-          id,
-          ownerId: uid(c),
-          name: req.name,
-          prompt: req.prompt,
-          spec: req.spec,
-          timezone: req.timezone,
-          allowedDomains: req.allowedDomains,
-          readOnly: true,
-          overlapPolicy: 'SKIP',
-          catchupWindowSeconds: req.catchupWindowMinutes * 60,
-          temporalScheduleId: scheduleTemporalId(id),
-          state: 'pending_create',
-        })
-        .returning();
-      await tx.insert(schema.workflowOutbox).values({ ownerId: uid(c), kind: 'create_schedule', refId: id, payload: { scheduleId: id } });
-      return s!;
-    });
+    const row = await createScheduleWithOutbox(d.db, { ownerId: uid(c), ...req });
     return c.json({ schedule: row }, 201);
   });
 
-  const scheduleTransition = (kind: 'pause_schedule' | 'resume_schedule' | 'delete_schedule', state: 'paused' | 'active' | 'deleted') => async (c: Context<Env>) => {
-    const s = await getScheduleForOwner(d.db, uid(c), c.req.param('id')!);
-    if (s.state === 'deleted') throw new NotFoundError('schedule');
-    await d.db.transaction(async (tx) => {
-      await tx.update(schema.schedules).set({ state, updatedAt: new Date() }).where(and(eq(schema.schedules.id, s.id), eq(schema.schedules.ownerId, uid(c))));
-      await enqueueOutbox(tx, { ownerId: uid(c), kind, refId: s.id, payload: { scheduleId: s.id } });
-    });
+  // Changes made outside the chat leave a note in the routine's chat, so its history stays true.
+  const scheduleTransition = (t: ScheduleTransition) => async (c: Context<Env>) => {
+    const { schedule, state } = await transitionSchedule(d.db, uid(c), c.req.param('id')!, t);
+    if (schedule.chatId) {
+      const verb = { pause: 'paused', resume: 'resumed', delete: 'deleted' }[t];
+      await appendChatMessage(d.db, { ownerId: uid(c), chatId: schedule.chatId, role: 'system', content: [{ type: 'text', text: `Routine “${schedule.name}” ${verb} from Settings.` }] }).catch(() => undefined);
+    }
     return c.json({ ok: true, state });
   };
-  app.post('/api/schedules/:id/pause', scheduleTransition('pause_schedule', 'paused'));
-  app.post('/api/schedules/:id/resume', scheduleTransition('resume_schedule', 'active'));
-  app.delete('/api/schedules/:id', scheduleTransition('delete_schedule', 'deleted'));
+  app.post('/api/schedules/:id/pause', scheduleTransition('pause'));
+  app.post('/api/schedules/:id/resume', scheduleTransition('resume'));
+  app.delete('/api/schedules/:id', scheduleTransition('delete'));
 
   /* ---------- connections (Composio) ---------- */
   const publicConn = (x: typeof schema.connectedAccounts.$inferSelect) => ({
@@ -338,9 +338,10 @@ export function createApp(d: ApiDeps) {
     const cid = c.req.query('cid') ?? '';
     try {
       const conn = await verifyConnection(uid(c), cid);
-      return c.redirect(`${d.env.WEB_ORIGIN}/connections?result=${encodeURIComponent(conn.status)}&toolkit=${encodeURIComponent(conn.toolkit)}`, 302);
+      // Back to the app's page in the Connect Apps modal.
+      return c.redirect(`${d.env.WEB_ORIGIN}/?app=${encodeURIComponent(conn.toolkit)}&result=${encodeURIComponent(conn.status)}`, 302);
     } catch (err) {
-      if (err instanceof NotFoundError) return c.redirect(`${d.env.WEB_ORIGIN}/connections?result=not_found`, 302);
+      if (err instanceof NotFoundError) return c.redirect(`${d.env.WEB_ORIGIN}/?result=not_found`, 302);
       throw err;
     }
   });
@@ -405,10 +406,7 @@ export function createApp(d: ApiDeps) {
   });
 
   /* ---------- usage + budget ---------- */
-  const defaults = () => ({
-    perRunNanos: d.env.MAX_COST_PER_RUN ? usdToNanos(d.env.MAX_COST_PER_RUN) : null,
-    monthlyNanos: d.env.MONTHLY_COST_LIMIT ? usdToNanos(d.env.MONTHLY_COST_LIMIT) : null,
-  });
+  const defaults = () => budgetDefaultsFor(d.env);
   app.get('/api/usage', async (c) => {
     const limits = await getBudgetLimits(d.db, uid(c), defaults());
     const summary = await usageSummary(d.db, uid(c));
@@ -434,6 +432,12 @@ export function createApp(d: ApiDeps) {
       retention: { taskDays: d.env.TASK_RETENTION_DAYS, operationalLogDays: d.env.OPERATIONAL_LOG_RETENTION_DAYS, approvalExpiryHours: d.env.APPROVAL_EXPIRY_HOURS },
     });
   });
+
+  registerChatRoutes(app, d, helpers);
+  registerSettingsRoutes(app, d, helpers);
+  registerUsageRoutes(app, d, helpers);
+  registerSystemRoutes(app, d, helpers);
+  registerAppRoutes(app, d, helpers);
 
   /* ---------- export + deletion ---------- */
   app.get('/api/export', async (c) => {

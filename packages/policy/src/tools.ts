@@ -24,6 +24,13 @@ export interface ToolSpec<S extends z.ZodType = z.ZodType> {
   toolkit?: string;
   composioSlug?: string;
   requires: Array<'e2b_code' | 'e2b_browser' | 'composio' | 'storage'>;
+  /**
+   * The workflow asks the user a Yes/No question in chat before this call runs; anything but an
+   * explicit Yes refuses it. Used for routines, which spend money while nobody is watching.
+   */
+  confirm?: boolean;
+  /** Not offered to runs started by a schedule (a routine must not create or edit routines). */
+  interactiveOnly?: boolean;
 }
 
 const relPath = z.string().min(1).max(255).describe('Path relative to the workspace, e.g. reports/summary.md');
@@ -136,6 +143,89 @@ export const APP_TOOLS = {
     executor: 'browser',
     schema: z.object({}).strict(),
     requires: ['e2b_browser'],
+  },
+  ask_user: {
+    name: 'ask_user',
+    version: '1',
+    description:
+      'Ask the user a question in the chat and wait for the answer. Use when a choice is genuinely theirs: kind "single" (pick one option), "multi" (pick several), "confirm" (yes/no) or "text" (free reply). Give 2-6 short options for single/multi. The user may also type a reply instead of picking. Do not ask about things you can find out yourself.',
+    classification: 'app_write',
+    executor: 'local',
+    schema: z
+      .object({
+        question: z.string().trim().min(1).max(500),
+        kind: z.enum(['single', 'multi', 'text', 'confirm']),
+        options: z
+          .array(z.object({ id: z.string().trim().min(1).max(40), label: z.string().trim().min(1).max(200) }))
+          .max(8)
+          .default([]),
+      })
+      .strict(),
+    requires: [],
+  },
+  schedule_create: {
+    name: 'schedule_create',
+    version: '1',
+    description:
+      'Create a routine that runs a prompt on a schedule and posts results into this chat. Give either a 5-field cron expression or everyMinutes (>= 5). Routines run read-only. The user is asked to confirm before it is created.',
+    classification: 'app_write',
+    executor: 'local',
+    schema: z
+      .object({
+        name: z.string().trim().min(1).max(120),
+        prompt: z.string().trim().min(1).max(4000).describe('What each run should do, written as an instruction to yourself'),
+        cron: z.string().trim().min(9).max(120).optional(),
+        everyMinutes: z.number().int().min(5).max(60 * 24 * 7).optional(),
+        timezone: z.string().trim().max(64).optional().describe('IANA timezone; defaults to the user timezone'),
+      })
+      .strict()
+      .refine((v) => Boolean(v.cron) !== Boolean(v.everyMinutes), 'give exactly one of cron or everyMinutes'),
+    requires: [],
+    confirm: true,
+    interactiveOnly: true,
+  },
+  schedule_list: {
+    name: 'schedule_list',
+    version: '1',
+    description: "List the user's routines with their ids, timing and state.",
+    classification: 'read',
+    executor: 'local',
+    schema: z.object({}).strict(),
+    requires: [],
+    interactiveOnly: true,
+  },
+  schedule_pause: {
+    name: 'schedule_pause',
+    version: '1',
+    description: 'Pause a routine by id (from schedule_list). The user is asked to confirm.',
+    classification: 'app_write',
+    executor: 'local',
+    schema: z.object({ id: z.uuid() }).strict(),
+    requires: [],
+    confirm: true,
+    interactiveOnly: true,
+  },
+  schedule_resume: {
+    name: 'schedule_resume',
+    version: '1',
+    description: 'Resume a paused routine by id (from schedule_list). The user is asked to confirm.',
+    classification: 'app_write',
+    executor: 'local',
+    schema: z.object({ id: z.uuid() }).strict(),
+    requires: [],
+    confirm: true,
+    interactiveOnly: true,
+  },
+  schedule_delete: {
+    name: 'schedule_delete',
+    version: '1',
+    description: 'Delete a routine by id (from schedule_list). The user is asked to confirm.',
+    classification: 'app_write',
+    executor: 'local',
+    schema: z.object({ id: z.uuid() }).strict(),
+    requires: [],
+    confirm: true,
+    interactiveOnly: true,
   },
   memory_save: {
     name: 'memory_save',

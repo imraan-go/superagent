@@ -83,6 +83,24 @@ export const userSettings = pgTable('user_settings', {
   updatedAt: updated(),
 });
 
+/** A conversation. Each user turn that does work becomes one task (one Temporal workflow run). */
+export const chats = pgTable(
+  'chats',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: owner(),
+    title: text('title').notNull().default('New chat'),
+    pinned: boolean('pinned').notNull().default(false),
+    archived: boolean('archived').notNull().default(false),
+    model: text('model'),
+    /** Composer prefs (mode, capability chips). Display state only; never authorization. */
+    prefs: jsonb('prefs').$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (t) => [index('chats_owner_updated_idx').on(t.ownerId, t.updatedAt)],
+);
+
 export const schedules = pgTable(
   'schedules',
   {
@@ -98,6 +116,8 @@ export const schedules = pgTable(
     catchupWindowSeconds: integer('catchup_window_seconds').notNull().default(600),
     temporalScheduleId: text('temporal_schedule_id').notNull().unique(),
     state: text('state').notNull().default('pending_create'), // pending_create | active | paused | deleted
+    /** Chat that created the routine; its runs post their results there. */
+    chatId: uuid('chat_id').references(() => chats.id, { onDelete: 'set null' }),
     createdAt: created(),
     updatedAt: updated(),
   },
@@ -114,6 +134,14 @@ export const tasks = pgTable(
     status: text('status').notNull().default('queued'),
     origin: text('origin').notNull().default('user'), // user | schedule
     scheduleId: uuid('schedule_id').references(() => schedules.id, { onDelete: 'set null' }),
+    chatId: uuid('chat_id').references(() => chats.id, { onDelete: 'set null' }),
+    /** Model chosen for this run (validated against the allowlist); null = installation default. */
+    model: text('model'),
+    /**
+     * Composer chips that NARROW the tools offered to this run (computer, browser, connectors,
+     * memory); null = no narrowing. Never widens what policy and configuration allow.
+     */
+    capabilities: jsonb('capabilities').$type<string[]>(),
     readOnly: boolean('read_only').notNull().default(false),
     allowedDomains: jsonb('allowed_domains').$type<string[]>().notNull().default([]),
     timezone: text('timezone'),
@@ -126,7 +154,67 @@ export const tasks = pgTable(
     completedAt: ts('completed_at'),
     expiresAt: ts('expires_at').notNull(),
   },
-  (t) => [uniqueIndex('tasks_owner_idem_uq').on(t.ownerId, t.idempotencyKey), index('tasks_owner_created_idx').on(t.ownerId, t.createdAt)],
+  (t) => [uniqueIndex('tasks_owner_idem_uq').on(t.ownerId, t.idempotencyKey), index('tasks_owner_created_idx').on(t.ownerId, t.createdAt), index('tasks_chat_idx').on(t.chatId, t.createdAt)],
+);
+
+/**
+ * What the chat column shows: user turns, the assistant's final answer per run, and system notes
+ * (e.g. "routine paused from Settings"). Content is an array of display parts (apps/web lib/messages).
+ */
+export const chatMessages = pgTable(
+  'chat_messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    chatId: uuid('chat_id')
+      .notNull()
+      .references(() => chats.id, { onDelete: 'cascade' }),
+    ownerId: owner(),
+    role: text('role').notNull(), // user | assistant | system
+    taskId: uuid('task_id').references(() => tasks.id, { onDelete: 'set null' }),
+    model: text('model'),
+    content: jsonb('content').$type<Array<Record<string, unknown>>>().notNull(),
+    /** Idempotency for writes from retried Activities (e.g. `final:<taskId>`). */
+    dedupeKey: text('dedupe_key').unique(),
+    createdAt: created(),
+  },
+  (t) => [index('chat_messages_chat_idx').on(t.chatId, t.createdAt)],
+);
+
+/** Questions the agent asked the user in chat (ask_user, or a confirm gate before a tool runs). */
+export const questions = pgTable(
+  'questions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: owner(),
+    taskId: uuid('task_id')
+      .notNull()
+      .references(() => tasks.id, { onDelete: 'cascade' }),
+    chatId: uuid('chat_id').references(() => chats.id, { onDelete: 'set null' }),
+    toolCallId: text('tool_call_id').notNull().unique(),
+    kind: text('kind').notNull(), // single | multi | text | confirm
+    prompt: text('prompt').notNull(),
+    options: jsonb('options').$type<Array<{ id: string; label: string }>>().notNull().default([]),
+    /** True when the question gates a tool call (Yes runs it, anything else does not). */
+    gate: boolean('gate').notNull().default(false),
+    status: text('status').notNull().default('pending'), // pending | answered | expired | cancelled
+    answer: jsonb('answer').$type<{ choices: string[]; text?: string }>(),
+    expiresAt: ts('expires_at').notNull(),
+    answeredAt: ts('answered_at'),
+    createdAt: created(),
+  },
+  (t) => [index('questions_owner_status_idx').on(t.ownerId, t.status), index('questions_chat_idx').on(t.chatId)],
+);
+
+/** Per-user UI/agent preferences by section (appearance, sound, notifications, …). */
+export const userPreferences = pgTable(
+  'user_preferences',
+  {
+    ownerId: owner(),
+    section: text('section').notNull(),
+    value: jsonb('value').$type<Record<string, unknown>>().notNull().default({}),
+    updatedAt: updated(),
+  },
+  (t) => [uniqueIndex('user_preferences_owner_section_uq').on(t.ownerId, t.section)],
 );
 
 /** Model conversation state for a task (sensitive; app storage, never Temporal history). */
@@ -248,6 +336,8 @@ export const artifacts = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     ownerId: owner(),
     taskId: uuid('task_id').references(() => tasks.id, { onDelete: 'set null' }),
+    /** Set for files the user uploaded into a chat (and for run outputs, via the task). */
+    chatId: uuid('chat_id').references(() => chats.id, { onDelete: 'set null' }),
     name: text('name').notNull(),
     contentType: text('content_type').notNull(),
     sizeBytes: bigint('size_bytes', { mode: 'number' }).notNull(),

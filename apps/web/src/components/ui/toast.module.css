@@ -1,0 +1,114 @@
+/* Bottom-right stack, max 3 visible, the rest queue
+   (docs/DESIGN_SYSTEM.md §Notifications). */
+
+.viewport {
+  position: fixed;
+  right: var(--sp-4);
+  bottom: var(--sp-4);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: min(380px, calc(100vw - var(--sp-8)));
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
+  background: var(--ink-2);
+  border: var(--border) solid var(--line);
+  border-left-width: 3px;
+  border-left-color: var(--line-strong);
+  border-radius: var(--radius-control);
+  box-shadow: var(--elev-2);
+  animation: slideIn var(--dur-spring) var(--ease-spring);
+}
+
+.leaving {
+  animation: slideOut var(--dur-std) var(--ease-out) forwards;
+}
+
+.info {
+  border-left-color: var(--info);
+}
+
+.success {
+  border-left-color: var(--ok);
+}
+
+.warning {
+  border-left-color: var(--amber);
+}
+
+.error {
+  border-left-color: var(--danger);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+}
+
+.info .icon {
+  color: var(--info);
+}
+
+.success .icon {
+  color: var(--ok);
+}
+
+.warning .icon {
+  color: var(--amber);
+}
+
+.error .icon {
+  color: var(--danger);
+}
+
+.content {
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.message {
+  margin-top: 2px;
+  font-size: var(--fs-small);
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+
+.action {
+  margin-top: var(--sp-2);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(24px) scale(0.94);
+  }
+}
+
+@keyframes slideOut {
+  to {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .leaving {
+    animation: none;
+  }
+}

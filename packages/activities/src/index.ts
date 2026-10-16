@@ -3,6 +3,7 @@ import * as actions from './actions';
 import type { Deps } from './deps';
 import * as lifecycle from './lifecycle';
 import { modelDecision } from './model';
+import * as questions from './questions';
 import * as tools from './tools';
 
 export * from './deps';
@@ -23,6 +24,9 @@ export function createActivities(d: Deps): AgentActivities {
     executeApprovedAction: (r) => actions.executeApprovedAction(d, r),
     reconcileAttempt: (r) => actions.reconcileAttempt(d, r),
     recordApprovalOutcome: (r) => actions.recordApprovalOutcome(d, r),
+    prepareForQuestionWait: (r) => questions.prepareForQuestionWait(d, r),
+    checkQuestion: (r) => questions.checkQuestion(d, r),
+    recordQuestionOutcome: (r) => questions.recordQuestionOutcome(d, r),
     finalizeTask: (f) => lifecycle.finalizeTask(d, f),
     releaseTaskResources: (r) => lifecycle.releaseTaskResources(d, r),
     createScheduledTask: (i) => lifecycle.createScheduledTask(d, i),

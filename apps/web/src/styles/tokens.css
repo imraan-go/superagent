@@ -1,0 +1,287 @@
+/* ============================================================================
+   LHOS — design tokens (spec: docs/DESIGN_SYSTEM.md)
+   Components reference these variables ONLY. Never a raw hex in a component.
+   ========================================================================= */
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces: 0 = deepest ink, 3 = raised control */
+  --ink-0: #0b0d10;
+  --ink-1: #111419;
+  --ink-2: #171b22;
+  --ink-3: #1f242e;
+
+  --line: #2a313d;
+  --line-strong: #3a4452;
+
+  --text-1: #e8ecf1;
+  --text-2: #9aa4b2;
+  --text-3: #8592a0; /* AA on ink-0..3 (>=4.9) */
+
+  /* Accents — one per view (rule 10-design) */
+  --signal: #2de2c5; /* agent activity, focus, primary action */
+  --signal-dim: #17816f;
+  --amber: #ffb224; /* approvals, attention, paused, Manage mode */
+  --amber-dim: #8a5c0d;
+  --danger: #ff5d5d;
+  --danger-dim: #8c2f2f;
+  --ok: #5de28a;
+  --info: #6ca8ff;
+
+  /* Accent foregrounds: text placed ON a filled accent */
+  --on-signal: #04201b;
+  --on-amber: #241602;
+  --on-danger: #2a0808;
+
+  /* Translucent accent washes for hover/selected states */
+  --signal-wash: rgb(45 226 197 / 0.1);
+  --signal-wash-strong: rgb(45 226 197 / 0.18);
+  --amber-wash: rgb(255 178 36 / 0.1);
+  --danger-wash: rgb(255 93 93 / 0.1);
+
+  --halo: 0 0 24px rgb(45 226 197 / 0.18);
+  --halo-amber: 0 0 24px rgb(255 178 36 / 0.18);
+  --halo-danger: 0 0 24px rgb(255 93 93 / 0.18);
+
+  /* Skeleton shimmer */
+  --skeleton-base: #171b22;
+  --skeleton-sheen: #222835;
+
+  /* ---- Meaning palette (DESIGN_SYSTEM §Colour) — one hue per MEANING ---- */
+  --hue-teal: #2de2c5; /* agent activity */
+  --hue-violet: #b69cff; /* model / AI thinking, memory */
+  --hue-amber: #ffb224; /* approvals, attention */
+  --hue-sky: #5cc8ff; /* browser / web */
+  --hue-magenta: #f47fd8; /* connectors */
+  --hue-fuchsia: #d59bff; /* MCP servers */
+  --hue-lime: #b4ec51; /* success, money, tokens */
+  --hue-coral: #ff7b6b; /* errors */
+  --hue-indigo: #8f9cff; /* Windows PC / RDP */
+  --hue-peach: #ffb38a; /* files */
+  --hue-gold: #ffd66b; /* schedules */
+
+  /* Aurora mesh behind the shell — kept faint so text contrast is untouched. */
+  --aurora-1: rgb(45 226 197 / 0.07);
+  --aurora-2: rgb(150 120 255 / 0.07);
+  --aurora-3: rgb(92 200 255 / 0.05);
+  --glass: rgb(17 20 25 / 0.72);
+  --glass-strong: rgb(17 20 25 / 0.86);
+  --glass-line: rgb(255 255 255 / 0.07);
+  --glass-hi: rgb(255 255 255 / 0.04);
+  --logo-bg: #ffffff; /* tile behind third-party app logos, both themes */
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --ink-0: #f6f8fa;
+  --ink-1: #ffffff;
+  --ink-2: #f0f3f6;
+  --ink-3: #e6ebf0;
+
+  --line: #d6dde5;
+  --line-strong: #b4c0cc;
+
+  --text-1: #10151c;
+  --text-2: #4d5a68;
+  --text-3: #5d6977; /* AA on ink-0..3 (>=4.67) */
+
+  --signal: #087564; /* AA text on all light surfaces (>=4.68) */
+  --signal-dim: #055a4c;
+  --amber: #8a5600; /* AA (>=5.13) */
+  --amber-dim: #5e3c00;
+  --danger: #c62a2a;
+  --danger-dim: #8f1f1f;
+  --ok: #146c37;
+  --info: #1f63c8;
+
+  --on-signal: #ffffff;
+  --on-amber: #ffffff;
+  --on-danger: #ffffff;
+
+  --signal-wash: rgb(8 117 100 / 0.1);
+  --signal-wash-strong: rgb(8 117 100 / 0.16);
+  --amber-wash: rgb(138 86 0 / 0.1);
+  --danger-wash: rgb(198 42 42 / 0.08);
+
+  --halo: 0 0 20px rgb(8 117 100 / 0.16);
+  --halo-amber: 0 0 20px rgb(138 86 0 / 0.14);
+  --halo-danger: 0 0 20px rgb(198 42 42 / 0.14);
+
+  --skeleton-base: #e6ebf0;
+  --skeleton-sheen: #f2f5f8;
+
+  --hue-teal: #087564;
+  --hue-violet: #6a3fd0;
+  --hue-amber: #8a5600;
+  --hue-sky: #0a659f;
+  --hue-magenta: #a3277c;
+  --hue-fuchsia: #8a2fb8;
+  --hue-lime: #3f6a00;
+  --hue-coral: #b5361f;
+  --hue-indigo: #3c49c0;
+  --hue-peach: #9a4510;
+  --hue-gold: #7a5800;
+
+  --aurora-1: rgb(8 117 100 / 0.07);
+  --aurora-2: rgb(106 63 208 / 0.06);
+  --aurora-3: rgb(10 101 159 / 0.05);
+  --glass: rgb(255 255 255 / 0.74);
+  --glass-strong: rgb(255 255 255 / 0.9);
+  --glass-line: rgb(16 21 28 / 0.08);
+  --glass-hi: rgb(255 255 255 / 0.6);
+}
+
+:root {
+  /* ---- Geometry ---------------------------------------------------- */
+  --radius-panel: 14px;
+  --radius-control: 10px;
+  --radius-pill: 999px;
+  --radius-chip: 8px;
+
+  --border: 1px;
+
+  /* ---- Layout (docs/DESIGN_SYSTEM.md §Layout) ----------------------- */
+  --topbar-h: 64px;
+  --sidebar-l: 288px;
+  --sidebar-l-rail: 56px;
+  --sidebar-r: 360px;
+  --sidebar-r-dock: 56px;
+  --chat-max: 760px;
+
+  /* ---- Spacing scale (4px base) ------------------------------------ */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+
+  /* ---- Type -------------------------------------------------------- */
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-ui: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --fs-micro: 11px;
+  --fs-tiny: 12px;
+  --fs-small: 13px;
+  --fs-base: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 26px;
+  --fs-3xl: 34px;
+
+  --lh-tight: 1.2;
+  --lh-base: 1.55;
+
+  /* ---- Motion (docs/DESIGN_SYSTEM.md §Motion) ----------------------- */
+  --dur-micro: 120ms;
+  --dur-std: 200ms;
+  --dur-panel: 280ms;
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* Spring approximations as CSS linear() — no JS, compositor-only. */
+  --ease-spring: linear(0, 0.013 0.6%, 0.05 1.2%, 0.2 2.6%, 0.43 4.3%, 0.7 6.4%, 0.92 8.6%, 1.04 10.3%, 1.1 12%, 1.12 13.5%, 1.11 15.4%, 1.07 18%, 1.01 22.5%, 0.99 26.4%, 0.985 30%, 0.995 38%, 1.002 50%, 1);
+  --ease-snappy: cubic-bezier(0.2, 0.9, 0.25, 1.15);
+  --dur-spring: 420ms;
+  --stagger: 28ms;
+
+  /* ---- Elevation: border + glow, never heavy shadow ----------------- */
+  --elev-1: 0 1px 2px rgb(0 0 0 / 0.18);
+  --elev-2: 0 6px 20px rgb(0 0 0 / 0.24);
+
+  /* ---- Z-index scale ------------------------------------------------ */
+  --z-sticky: 10;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+}
+
+/* ---- Semantic colour roles (map MEANING → hue) ------------------------ */
+:root {
+  --c-agent: var(--hue-teal);
+  --c-think: var(--hue-violet);
+  --c-approval: var(--hue-amber);
+  --c-web: var(--hue-sky);
+  --c-connect: var(--hue-magenta);
+  --c-money: var(--hue-lime);
+  --c-error: var(--hue-coral);
+
+  /* Tool categories (src/components/chat/parts/tool-meta.ts ToolCategory). */
+  --cat-screen: var(--hue-teal);
+  --cat-browser: var(--hue-sky);
+  --cat-rdp: var(--hue-indigo);
+  --cat-shell: var(--hue-lime);
+  --cat-files: var(--hue-peach);
+  --cat-connector: var(--hue-magenta);
+  --cat-mcp: var(--hue-fuchsia);
+  --cat-memory: var(--hue-violet);
+  --cat-schedule: var(--hue-gold);
+  --cat-human: var(--hue-amber);
+  --cat-other: var(--text-2);
+}
+
+/* `data-cat` on any element exposes its category hue as --cat. */
+[data-cat="screen"] { --cat: var(--cat-screen); }
+[data-cat="browser"] { --cat: var(--cat-browser); }
+[data-cat="rdp"] { --cat: var(--cat-rdp); }
+[data-cat="shell"] { --cat: var(--cat-shell); }
+[data-cat="files"] { --cat: var(--cat-files); }
+[data-cat="connector"] { --cat: var(--cat-connector); }
+[data-cat="mcp"] { --cat: var(--cat-mcp); }
+[data-cat="memory"] { --cat: var(--cat-memory); }
+[data-cat="schedule"] { --cat: var(--cat-schedule); }
+[data-cat="human"] { --cat: var(--cat-human); }
+[data-cat="other"] { --cat: var(--cat-other); }
+[data-cat="think"] { --cat: var(--c-think); }
+[data-cat="agent"] { --cat: var(--c-agent); }
+[data-cat="money"] { --cat: var(--c-money); }
+[data-cat="error"] { --cat: var(--c-error); }
+
+/* Manage mode recolors the primary accent to amber (docs/MANAGE_TAB.md). */
+[data-mode="manage"] {
+  --signal: var(--amber);
+  --signal-dim: var(--amber-dim);
+  --on-signal: var(--on-amber);
+  --signal-wash: var(--amber-wash);
+  --halo: var(--halo-amber);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-spring: 0ms;
+    --stagger: 0ms;
+    --dur-micro: 0ms;
+    --dur-std: 0ms;
+    --dur-panel: 0ms;
+  }
+}
+
+/* Settings → Appearance overrides (set on <html> by AppearanceSync). */
+:root[data-motion="reduce"] {
+  --dur-spring: 0ms;
+  --stagger: 0ms;
+  --dur-micro: 0ms;
+  --dur-std: 0ms;
+  --dur-panel: 0ms;
+}
+
+:root[data-density="compact"] {
+  --sp-3: 10px;
+  --sp-4: 12px;
+  --sp-5: 16px;
+  --sp-6: 18px;
+}
+
+/* "Reduced motion: off" keeps motion even when the OS asks for less. */
+:root[data-motion="full"] {
+  --dur-spring: 420ms;
+  --stagger: 28ms;
+  --dur-micro: 120ms;
+  --dur-std: 200ms;
+  --dur-panel: 280ms;
+}
