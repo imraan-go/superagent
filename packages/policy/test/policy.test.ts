@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { APP_TOOLS, canonicalJson, checkBrowserUrl, checkWorkspacePath, evaluateTool, hostMatches, intentHash, isPrivateAddress, safeArtifactName, verifiedConnectorTools, type IntentBinding } from '../src';
+import { APP_TOOLS, CONNECTOR_CANDIDATES, canonicalJson, checkBrowserUrl, checkWorkspacePath, evaluateTool, hostMatches, intentHash, isPrivateAddress, safeArtifactName, verifiedConnectorTools, type IntentBinding } from '../src';
 
 describe('browser URL policy (SSRF)', () => {
   const allowed = ['example.com', '*.wikipedia.org'];
@@ -101,6 +101,16 @@ describe('tool policy', () => {
     expect(verifiedConnectorTools({})).toHaveLength(0);
     expect(verifiedConnectorTools({ GMAIL_SEND_EMAIL: { toolkit: 'gmail', version: 'v1', verifiedAt: 'x', params: ['recipient_email'] } })).toHaveLength(0);
     expect(verifiedConnectorTools({ GMAIL_SEND_EMAIL: { toolkit: 'github', version: 'v1', verifiedAt: 'x', params: ['recipient_email', 'subject', 'body'] } })).toHaveLength(0);
+  });
+  it('curated connector writes are exact-approval external writes that name their destination', () => {
+    for (const c of CONNECTOR_CANDIDATES) {
+      if (/_(SEND|CREATE|APPEND|INSERT|UPDATE|DELETE)/.test(c.slug)) expect(c.classification, c.slug).toBe('external_write');
+      if (c.classification === 'external_write') {
+        expect(c.destinationFields?.length, c.slug).toBeGreaterThan(0);
+        for (const f of c.destinationFields!) expect(Object.keys(c.schema.shape), c.slug).toContain(f);
+      }
+      expect(c.schema.safeParse({ __smuggled: 1 }).success, c.slug).toBe(false);
+    }
   });
   it('app tool schemas are strict (no smuggled extra fields)', () => {
     expect(APP_TOOLS.workspace_write_file.schema.safeParse({ path: 'a.txt', content: 'x', overwrite: true }).success).toBe(false);

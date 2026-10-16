@@ -2,13 +2,13 @@
   "GITHUB_GET_THE_AUTHENTICATED_USER": {
     "toolkit": "github",
     "version": "20261014_00",
-    "verifiedAt": "2026-10-15T08:05:45.019Z",
+    "verifiedAt": "2026-10-16T08:45:57.672Z",
     "params": []
   },
   "GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER": {
     "toolkit": "github",
     "version": "20261014_00",
-    "verifiedAt": "2026-10-15T08:05:45.328Z",
+    "verifiedAt": "2026-10-16T08:45:57.890Z",
     "params": [
       "page",
       "sort",
@@ -22,7 +22,7 @@
   "GOOGLECALENDAR_EVENTS_LIST": {
     "toolkit": "googlecalendar",
     "version": "20261010_00",
-    "verifiedAt": "2026-10-15T08:05:45.591Z",
+    "verifiedAt": "2026-10-16T08:45:58.096Z",
     "params": [
       "query",
       "fields",
@@ -49,7 +49,7 @@
   "GOOGLEDRIVE_FIND_FILE": {
     "toolkit": "googledrive",
     "version": "20261001_00",
-    "verifiedAt": "2026-10-15T08:05:45.761Z",
+    "verifiedAt": "2026-10-16T08:45:58.462Z",
     "params": [
       "q",
       "fields",
@@ -77,8 +77,8 @@
   },
   "GMAIL_FETCH_EMAILS": {
     "toolkit": "gmail",
-    "version": "20261010_00",
-    "verifiedAt": "2026-10-15T08:05:45.936Z",
+    "version": "20261015_00",
+    "verifiedAt": "2026-10-16T08:45:58.621Z",
     "params": [
       "query",
       "user_id",
@@ -93,8 +93,8 @@
   },
   "GMAIL_CREATE_EMAIL_DRAFT": {
     "toolkit": "gmail",
-    "version": "20261010_00",
-    "verifiedAt": "2026-10-15T08:05:46.108Z",
+    "version": "20261015_00",
+    "verifiedAt": "2026-10-16T08:45:58.883Z",
     "params": [
       "cc",
       "bcc",
@@ -110,8 +110,8 @@
   },
   "GMAIL_SEND_EMAIL": {
     "toolkit": "gmail",
-    "version": "20261010_00",
-    "verifiedAt": "2026-10-15T08:05:46.307Z",
+    "version": "20261015_00",
+    "verifiedAt": "2026-10-16T08:45:59.043Z",
     "params": [
       "cc",
       "bcc",
@@ -123,6 +123,300 @@
       "from_email",
       "recipient_email",
       "extra_recipients"
+    ]
+  },
+  "NOTION_SEARCH_NOTION_PAGE": {
+    "toolkit": "notion",
+    "version": "20261008_00",
+    "verifiedAt": "2026-10-16T08:45:59.248Z",
+    "params": [
+      "query",
+      "direction",
+      "page_size",
+      "timestamp",
+      "filter_value",
+      "start_cursor",
+      "filter_property",
+      "filter_properties"
+    ]
+  },
+  "NOTION_GET_PAGE_MARKDOWN": {
+    "toolkit": "notion",
+    "version": "20261008_00",
+    "verifiedAt": "2026-10-16T08:45:59.410Z",
+    "params": [
+      "page_id",
+      "include_transcript"
+    ]
+  },
+  "NOTION_QUERY_DATABASE": {
+    "toolkit": "notion",
+    "version": "20261008_00",
+    "verifiedAt": "2026-10-16T08:45:59.586Z",
+    "params": [
+      "sorts",
+      "page_size",
+      "database_id",
+      "start_cursor"
+    ]
+  },
+  "NOTION_CREATE_NOTION_PAGE": {
+    "toolkit": "notion",
+    "version": "20261008_00",
+    "verifiedAt": "2026-10-16T08:45:59.767Z",
+    "params": [
+      "icon",
+      "cover",
+      "title",
+      "markdown",
+      "parent_id"
+    ]
+  },
+  "SLACK_LIST_ALL_CHANNELS": {
+    "toolkit": "slack",
+    "version": "20261015_00",
+    "verifiedAt": "2026-10-16T08:45:59.941Z",
+    "params": [
+      "limit",
+      "types",
+      "cursor",
+      "team_id",
+      "exclude_archived"
+    ]
+  },
+  "SLACK_FETCH_CONVERSATION_HISTORY": {
+    "toolkit": "slack",
+    "version": "20261015_00",
+    "verifiedAt": "2026-10-16T08:46:00.129Z",
+    "params": [
+      "limit",
+      "cursor",
+      "latest",
+      "oldest",
+      "channel",
+      "inclusive",
+      "include_all_metadata"
+    ]
+  },
+  "SLACK_SEARCH_MESSAGES": {
+    "toolkit": "slack",
+    "version": "20261015_00",
+    "verifiedAt": "2026-10-16T08:46:00.386Z",
+    "params": [
+      "page",
+      "sort",
+      "count",
+      "query",
+      "cursor",
+      "team_id",
+      "sort_dir",
+      "highlight",
+      "auto_paginate"
+    ]
+  },
+  "SLACK_SEND_MESSAGE": {
+    "toolkit": "slack",
+    "version": "20261015_00",
+    "verifiedAt": "2026-10-16T08:46:00.602Z",
+    "params": [
+      "blocks",
+      "channel",
+      "thread_ts",
+      "unfurl_links",
+      "unfurl_media",
+      "fallback_text",
+      "markdown_text",
+      "reply_broadcast"
+    ]
+  },
+  "GOOGLESHEETS_SEARCH_SPREADSHEETS": {
+    "toolkit": "googlesheets",
+    "version": "20261001_00",
+    "verifiedAt": "2026-10-16T08:46:00.816Z",
+    "params": [
+      "query",
+      "order_by",
+      "page_token",
+      "max_results",
+      "search_type",
+      "starred_only",
+      "created_after",
+      "modified_after",
+      "shared_with_me",
+      "include_trashed",
+      "include_shared_drives"
+    ]
+  },
+  "GOOGLESHEETS_VALUES_GET": {
+    "toolkit": "googlesheets",
+    "version": "20261001_00",
+    "verifiedAt": "2026-10-16T08:46:01.031Z",
+    "params": [
+      "range",
+      "end_row",
+      "start_row",
+      "spreadsheet_id",
+      "major_dimension",
+      "value_render_option",
+      "date_time_render_option"
+    ]
+  },
+  "GOOGLESHEETS_SPREADSHEETS_VALUES_APPEND": {
+    "toolkit": "googlesheets",
+    "version": "20261001_00",
+    "verifiedAt": "2026-10-16T08:46:01.227Z",
+    "params": [
+      "range",
+      "values",
+      "spreadsheetId",
+      "majorDimension",
+      "insertDataOption",
+      "valueInputOption",
+      "includeValuesInResponse",
+      "responseValueRenderOption",
+      "responseDateTimeRenderOption"
+    ]
+  },
+  "GOOGLEDOCS_SEARCH_DOCUMENTS": {
+    "toolkit": "googledocs",
+    "version": "20261008_00",
+    "verifiedAt": "2026-10-16T08:46:01.389Z",
+    "params": [
+      "query",
+      "order_by",
+      "page_token",
+      "max_results",
+      "starred_only",
+      "created_after",
+      "modified_after",
+      "shared_with_me",
+      "include_trashed",
+      "response_detail",
+      "include_shared_drives"
+    ]
+  },
+  "GOOGLEDOCS_GET_DOCUMENT_PLAINTEXT": {
+    "toolkit": "googledocs",
+    "version": "20261008_00",
+    "verifiedAt": "2026-10-16T08:46:01.556Z",
+    "params": [
+      "tab_ids",
+      "document_id",
+      "include_tables",
+      "include_footers",
+      "include_headers",
+      "include_footnotes",
+      "table_row_delimiter",
+      "include_tabs_content",
+      "table_cell_delimiter"
+    ]
+  },
+  "GOOGLEDOCS_CREATE_DOCUMENT_MARKDOWN": {
+    "toolkit": "googledocs",
+    "version": "20261008_00",
+    "verifiedAt": "2026-10-16T08:46:01.790Z",
+    "params": [
+      "title",
+      "image_assets",
+      "markdown_text"
+    ]
+  },
+  "GOOGLEDOCS_INSERT_TEXT_ACTION": {
+    "toolkit": "googledocs",
+    "version": "20261008_00",
+    "verifiedAt": "2026-10-16T08:46:02.015Z",
+    "params": [
+      "tab_id",
+      "segment_id",
+      "document_id",
+      "append_to_end",
+      "text_to_insert",
+      "insertion_index"
+    ]
+  },
+  "OUTLOOK_LIST_MESSAGES": {
+    "toolkit": "outlook",
+    "version": "20261014_00",
+    "verifiedAt": "2026-10-16T08:46:02.215Z",
+    "params": [
+      "top",
+      "skip",
+      "filter",
+      "folder",
+      "search",
+      "select",
+      "is_read",
+      "orderby",
+      "subject",
+      "user_id",
+      "categories",
+      "importance",
+      "page_token",
+      "from_address",
+      "conversation_id",
+      "has_attachments",
+      "response_detail",
+      "subject_contains",
+      "subject_endswith",
+      "sent_date_time_gt",
+      "sent_date_time_lt",
+      "subject_startswith",
+      "received_date_time_ge",
+      "received_date_time_gt",
+      "received_date_time_le",
+      "received_date_time_lt",
+      "include_sensitivity_label"
+    ]
+  },
+  "OUTLOOK_GET_CALENDAR_VIEW": {
+    "toolkit": "outlook",
+    "version": "20261014_00",
+    "verifiedAt": "2026-10-16T08:46:02.390Z",
+    "params": [
+      "top",
+      "skip",
+      "select",
+      "orderby",
+      "user_id",
+      "timezone",
+      "page_token",
+      "calendar_id",
+      "end_datetime",
+      "start_datetime",
+      "include_sensitivity_label"
+    ]
+  },
+  "OUTLOOK_CREATE_DRAFT": {
+    "toolkit": "outlook",
+    "version": "20261014_00",
+    "verifiedAt": "2026-10-16T08:46:02.538Z",
+    "params": [
+      "body",
+      "is_html",
+      "subject",
+      "user_id",
+      "attachment",
+      "cc_recipients",
+      "to_recipients",
+      "bcc_recipients"
+    ]
+  },
+  "OUTLOOK_SEND_EMAIL": {
+    "toolkit": "outlook",
+    "version": "20261014_00",
+    "verifiedAt": "2026-10-16T08:46:02.694Z",
+    "params": [
+      "to",
+      "body",
+      "is_html",
+      "subject",
+      "to_name",
+      "user_id",
+      "cc_emails",
+      "attachment",
+      "bcc_emails",
+      "from_address",
+      "save_to_sent_items"
     ]
   }
 }

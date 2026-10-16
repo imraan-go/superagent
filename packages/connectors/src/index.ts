@@ -1,8 +1,9 @@
 import { Composio } from '@composio/core';
 import { composioAuthConfigs, getEnv, requireKeys } from '@superagent/config';
+import type { ConnectorToolkit } from '@superagent/contracts';
 import { CONNECTOR_CANDIDATES, CONNECTOR_LOCK } from '@superagent/policy';
 
-export type Toolkit = 'github' | 'googlecalendar' | 'googledrive' | 'gmail' | 'notion';
+export type Toolkit = ConnectorToolkit;
 export type ConnectionState = 'initiated' | 'active' | 'expired' | 'revoked' | 'failed' | 'disconnected';
 
 export interface VerifiedConnection {

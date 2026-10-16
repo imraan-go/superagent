@@ -102,8 +102,12 @@ export const MemoryUpsertRequest = z.object({
   content: z.string().trim().min(1).max(2000),
 });
 
+/** Composio toolkits the agent has curated tools for (packages/policy connector-catalog.ts). */
+export const ConnectorToolkit = z.enum(['github', 'googlecalendar', 'googledrive', 'gmail', 'notion', 'slack', 'googlesheets', 'googledocs', 'outlook']);
+export type ConnectorToolkit = z.infer<typeof ConnectorToolkit>;
+
 export const ConnectRequest = z.object({
-  toolkit: z.enum(['github', 'googlecalendar', 'googledrive', 'gmail', 'notion']),
+  toolkit: ConnectorToolkit,
 });
 
 export const BudgetSettingsRequest = z.object({
