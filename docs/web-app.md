@@ -7,7 +7,9 @@ Settings and a Workspaces view. It talks only to the API (`apps/api`) through th
 ## Chats and runs
 
 - A **chat** (`chats`) is a conversation. Its visible turns live in `chat_messages` (user turns, one
-  assistant turn per finished run, and system notes such as "Routine … is running").
+  assistant turn per finished run, and system notes such as "Routine … is running"). Turns are
+  ordered by `created_at`, then `seq` (a bigserial), so messages saved in the same instant keep
+  their insertion order.
 - Each user turn that does work is one **task** (`tasks.chat_id`), i.e. one `agentTaskWorkflow`
   run. The chat's earlier turns are copied into the new task's model messages as plain text
   (`chatHistoryForModel`: bounded by turns and characters, with a note of the tools each earlier

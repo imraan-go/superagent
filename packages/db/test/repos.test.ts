@@ -6,6 +6,8 @@ import {
   NotFoundError,
   acquireWorkspaceLease,
   appendEvent,
+  chatHistoryForModel,
+  createChat,
   beginAttempt,
   checkApproval,
   claimOutbox,
@@ -23,6 +25,7 @@ import {
   getScheduleForOwner,
   getTaskForOwner,
   insertArtifact,
+  listChatMessages,
   listEvents,
   listMemories,
   reserveBudget,
@@ -311,6 +314,30 @@ describe('budget reservations', () => {
     await expect(
       reserveBudget(db, { ownerId: owner, taskId: null, dedupeKey: 'u2', amountNanos: 200n, limits: lim }),
     ).rejects.toBeInstanceOf(BudgetExceededError);
+  });
+});
+
+describe('chat message order', () => {
+  it('messages saved with the same createdAt come back in insertion order', async () => {
+    const chat = await createChat(db, ALICE);
+    const createdAt = new Date('2026-01-01T00:00:00.000Z');
+    const texts = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
+    for (const [i, text] of texts.entries()) {
+      await db.insert(schema.chatMessages).values({
+        ownerId: ALICE,
+        chatId: chat.id,
+        role: i % 2 ? 'assistant' : 'user',
+        content: [{ type: 'text', text }],
+        createdAt,
+      });
+    }
+
+    const listed = await listChatMessages(db, ALICE, chat.id);
+    expect(listed.map((m) => (m.content[0] as { text: string }).text)).toEqual(texts);
+    const history = await chatHistoryForModel(db, ALICE, chat.id);
+    expect(history.map((m) => m.content)).toEqual(texts);
+    const latest = await chatHistoryForModel(db, ALICE, chat.id, { maxTurns: 4 });
+    expect(latest.map((m) => m.content)).toEqual(texts.slice(-4));
   });
 });
 

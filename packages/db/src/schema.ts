@@ -192,6 +192,8 @@ export const chatMessages = pgTable(
     /** Idempotency for writes from retried Activities (e.g. `final:<taskId>`). */
     dedupeKey: text('dedupe_key').unique(),
     createdAt: created(),
+    /** Insertion order: breaks ties between messages saved with the same `createdAt`. */
+    seq: bigserial('seq', { mode: 'number' }).notNull(),
   },
   (t) => [index('chat_messages_chat_idx').on(t.chatId, t.createdAt)],
 );
