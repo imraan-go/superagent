@@ -1,0 +1,32 @@
+name: ClickUp sync
+
+# Merged PR → linked ClickUp tickets go to "shipped"; closed without merging → "cancelled".
+# pull_request_target so the CLICKUP_API_TOKEN secret is available for PRs from forks too. This is
+# safe because the job runs main's copy of the script and never checks out or runs PR code; PR text
+# reaches the script only through env vars.
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Move linked tickets to shipped / cancelled
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/clickup-pr-sync.sh
+          sparse-checkout-cone-mode: false
+      - run: scripts/clickup-pr-sync.sh
+        env:
+          CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}

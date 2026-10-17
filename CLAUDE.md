@@ -19,6 +19,11 @@ Before changing any code:
 
 When the work is committed and waiting for review, move the ticket to **ready to review**.
 
+Don't move tickets to **shipped** or **cancelled** yourself: when a PR closes, the ClickUp sync
+workflow moves every ticket the PR links (`https://app.clickup.com/t/<id>` or `CU-<id>`) to
+**shipped** if it merged, or **cancelled** if it didn't. Link only the tickets the PR finishes;
+name other tickets by title or ID without a link.
+
 ### 2. Keep docs, skills and memory current
 
 Update documentation in the same piece of work as the change it describes:
