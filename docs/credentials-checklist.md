@@ -68,6 +68,17 @@ model, a sandbox or a developer MCP.
 Set `TEMPORAL_MODE=cloud`, `TEMPORAL_ADDRESS`, `TEMPORAL_NAMESPACE` and either `TEMPORAL_API_KEY` or
 `TEMPORAL_TLS_CERT_PATH` + `TEMPORAL_TLS_KEY_PATH` (files outside the repo).
 
+## GitHub Actions secrets
+
+### ClickUp — `CLICKUP_API_TOKEN` (PR → ticket status sync)
+
+Used only by `.github/workflows/clickup-sync.yml`, never by the app, so it is not in `.env`.
+
+1. ClickUp → avatar → Settings → Apps → API Token → Generate (starts with `pk_`).
+2. `gh secret set CLICKUP_API_TOKEN` and paste it at the prompt.
+
+Without it the workflow skips with a warning.
+
 ## How the assistant asks for credentials
 
 When a capability is missing, the assistant says:
