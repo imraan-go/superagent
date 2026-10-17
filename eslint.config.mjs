@@ -52,7 +52,7 @@ const boundaryBlocks = workspaceDirs.flatMap((dir) => {
 
 export default tseslint.config(
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/.next/**', '.local/**', '**/test-results/**', '**/next-env.d.ts', 'packages/db/drizzle/**'],
+    ignores: ['**/node_modules/**', '**/dist/**', '**/.next/**', '.local/**', '**/test-results/**', '**/next-env.d.ts', 'packages/db/migrations/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
