@@ -25,7 +25,10 @@ export type Capability = 'tool-use' | 'vision' | 'structured-output';
 
 let cache: { at: number; entries: Map<string, CatalogEntry> } | undefined;
 
-export async function fetchGatewayCatalog(fetchImpl: typeof fetch = fetch, ttlMs = 3_600_000): Promise<Map<string, CatalogEntry>> {
+export async function fetchGatewayCatalog(
+  fetchImpl: typeof fetch = fetch,
+  ttlMs = 3_600_000,
+): Promise<Map<string, CatalogEntry>> {
   if (cache && Date.now() - cache.at < ttlMs) return cache.entries;
   const res = await fetchImpl(GATEWAY_MODELS_URL, { signal: AbortSignal.timeout(15_000) });
   if (!res.ok) throw new Error(`Gateway catalogue request failed: HTTP ${res.status}`);
@@ -50,7 +53,12 @@ export interface ModelCheck {
  * A configured slug must be on the explicit allowlist, present in the live catalogue, a language
  * model, and tagged with every capability the call site needs. No silent substitution.
  */
-export function checkModel(catalog: Map<string, CatalogEntry>, modelId: string | undefined, allowlist: string[], required: Capability[]): ModelCheck {
+export function checkModel(
+  catalog: Map<string, CatalogEntry>,
+  modelId: string | undefined,
+  allowlist: string[],
+  required: Capability[],
+): ModelCheck {
   if (!modelId) return { modelId: '(unset)', ok: false, problems: ['model is not configured'] };
   const problems: string[] = [];
   if (!allowlist.includes(modelId)) problems.push('not on AI_MODEL_ALLOWLIST');

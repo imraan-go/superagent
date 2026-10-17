@@ -33,12 +33,19 @@ export interface TemporalConnectionSettings {
 
 /** Mode validation already ran in config (cloud needs endpoint + namespace + API key or mTLS). */
 export function temporalSettings(env: AppEnv = getEnv()): TemporalConnectionSettings {
-  const base = { address: env.TEMPORAL_ADDRESS, namespace: env.TEMPORAL_NAMESPACE, taskQueue: env.TEMPORAL_TASK_QUEUE, mode: env.TEMPORAL_MODE };
+  const base = {
+    address: env.TEMPORAL_ADDRESS,
+    namespace: env.TEMPORAL_NAMESPACE,
+    taskQueue: env.TEMPORAL_TASK_QUEUE,
+    mode: env.TEMPORAL_MODE,
+  };
   if (env.TEMPORAL_MODE === 'local') return base;
   if (env.TEMPORAL_API_KEY) return { ...base, tls: true, apiKey: env.TEMPORAL_API_KEY };
   return {
     ...base,
-    tls: { clientCertPair: { crt: readFileSync(env.TEMPORAL_TLS_CERT_PATH!), key: readFileSync(env.TEMPORAL_TLS_KEY_PATH!) } },
+    tls: {
+      clientCertPair: { crt: readFileSync(env.TEMPORAL_TLS_CERT_PATH!), key: readFileSync(env.TEMPORAL_TLS_KEY_PATH!) },
+    },
   };
 }
 
@@ -65,7 +72,11 @@ export function getTemporalClient(): Promise<Client> {
  * Idempotent start: the workflow id is derived from the task id and duplicates are rejected, so an
  * outbox retry or reconciler pass never creates a second execution for the same task.
  */
-export async function startTaskWorkflow(client: Client, taskQueue: string, input: AgentTaskInput): Promise<'started' | 'already_started'> {
+export async function startTaskWorkflow(
+  client: Client,
+  taskQueue: string,
+  input: AgentTaskInput,
+): Promise<'started' | 'already_started'> {
   try {
     await client.workflow.start(TASK_WORKFLOW_TYPE, {
       taskQueue,
@@ -82,7 +93,11 @@ export async function startTaskWorkflow(client: Client, taskQueue: string, input
 }
 
 /** The signal carries only the intent id; the workflow re-validates the persisted approval via an Activity. */
-export async function signalApproval(client: Client, taskId: string, intentId: string): Promise<'signalled' | 'not_running'> {
+export async function signalApproval(
+  client: Client,
+  taskId: string,
+  intentId: string,
+): Promise<'signalled' | 'not_running'> {
   try {
     await client.workflow.getHandle(taskWorkflowId(taskId)).signal(APPROVAL_SIGNAL, { intentId });
     return 'signalled';
@@ -93,7 +108,11 @@ export async function signalApproval(client: Client, taskId: string, intentId: s
 }
 
 /** The signal carries only the question id; the workflow re-reads the persisted answer via an Activity. */
-export async function signalQuestion(client: Client, taskId: string, questionId: string): Promise<'signalled' | 'not_running'> {
+export async function signalQuestion(
+  client: Client,
+  taskId: string,
+  questionId: string,
+): Promise<'signalled' | 'not_running'> {
   try {
     await client.workflow.getHandle(taskWorkflowId(taskId)).signal(QUESTION_SIGNAL, { questionId });
     return 'signalled';
@@ -113,7 +132,15 @@ export async function cancelTaskWorkflow(client: Client, taskId: string): Promis
   }
 }
 
-export type WorkflowState = 'running' | 'completed' | 'failed' | 'cancelled' | 'terminated' | 'timed_out' | 'continued' | 'missing';
+export type WorkflowState =
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'terminated'
+  | 'timed_out'
+  | 'continued'
+  | 'missing';
 
 export async function describeTaskWorkflow(client: Client, taskId: string): Promise<WorkflowState> {
   try {
@@ -149,7 +176,11 @@ export interface ScheduleDefinition {
  * previous one), bounded catch-up after downtime, IANA timezone evaluated by Temporal (DST-aware).
  * Idempotent: an existing schedule with the same id is treated as created.
  */
-export async function createTemporalSchedule(client: Client, taskQueue: string, def: ScheduleDefinition): Promise<'created' | 'exists'> {
+export async function createTemporalSchedule(
+  client: Client,
+  taskQueue: string,
+  def: ScheduleDefinition,
+): Promise<'created' | 'exists'> {
   const spec =
     def.spec.kind === 'cron'
       ? { cronExpressions: [def.spec.cron], timezone: def.timezone }
@@ -165,7 +196,11 @@ export async function createTemporalSchedule(client: Client, taskQueue: string, 
         workflowId: `sched-run-${def.scheduleId}`,
         args: [{ scheduleId: def.scheduleId, ownerId: def.ownerId } satisfies ScheduledTaskInput],
       },
-      policies: { overlap: ScheduleOverlapPolicy.SKIP, catchupWindow: `${def.catchupWindowSeconds} seconds`, pauseOnFailure: false },
+      policies: {
+        overlap: ScheduleOverlapPolicy.SKIP,
+        catchupWindow: `${def.catchupWindowSeconds} seconds`,
+        pauseOnFailure: false,
+      },
       state: { paused: def.paused ?? false },
     });
     return 'created';
@@ -175,7 +210,11 @@ export async function createTemporalSchedule(client: Client, taskQueue: string, 
   }
 }
 
-export async function setTemporalSchedulePaused(client: Client, temporalScheduleId: string, paused: boolean): Promise<'ok' | 'missing'> {
+export async function setTemporalSchedulePaused(
+  client: Client,
+  temporalScheduleId: string,
+  paused: boolean,
+): Promise<'ok' | 'missing'> {
   try {
     const h = client.schedule.getHandle(temporalScheduleId);
     if (paused) await h.pause('paused by owner');
@@ -187,7 +226,10 @@ export async function setTemporalSchedulePaused(client: Client, temporalSchedule
   }
 }
 
-export async function deleteTemporalSchedule(client: Client, temporalScheduleId: string): Promise<'deleted' | 'missing'> {
+export async function deleteTemporalSchedule(
+  client: Client,
+  temporalScheduleId: string,
+): Promise<'deleted' | 'missing'> {
   try {
     await client.schedule.getHandle(temporalScheduleId).delete();
     return 'deleted';
@@ -200,7 +242,11 @@ export async function deleteTemporalSchedule(client: Client, temporalScheduleId:
 export async function describeTemporalSchedule(client: Client, temporalScheduleId: string) {
   try {
     const d = await client.schedule.getHandle(temporalScheduleId).describe();
-    return { paused: d.state.paused, nextActionTimes: d.info.nextActionTimes.slice(0, 5).map((t) => t.toISOString()), recentActions: d.info.recentActions.length };
+    return {
+      paused: d.state.paused,
+      nextActionTimes: d.info.nextActionTimes.slice(0, 5).map((t) => t.toISOString()),
+      recentActions: d.info.recentActions.length,
+    };
   } catch (err) {
     if (err instanceof ScheduleNotFoundError) return null;
     throw err;
@@ -214,7 +260,13 @@ export async function ensureRetentionSchedule(client: Client, taskQueue: string)
     await client.schedule.create({
       scheduleId: RETENTION_SCHEDULE_ID,
       spec: { cronExpressions: ['17 3 * * *'], timezone: 'UTC' },
-      action: { type: 'startWorkflow', workflowType: RETENTION_WORKFLOW_TYPE, taskQueue, workflowId: 'retention-run', args: [] },
+      action: {
+        type: 'startWorkflow',
+        workflowType: RETENTION_WORKFLOW_TYPE,
+        taskQueue,
+        workflowId: 'retention-run',
+        args: [],
+      },
       policies: { overlap: ScheduleOverlapPolicy.SKIP, catchupWindow: '1 hour' },
     });
     return 'created';

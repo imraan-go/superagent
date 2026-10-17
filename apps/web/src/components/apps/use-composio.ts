@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/components/settings/tabs/shared";
-import { appStatus, connectedSlugs } from "@/lib/apps";
-import { COMPOSIO_STATUS_KEY } from "@/lib/composio-types";
-import type { ComposioStatus } from "@/lib/composio-types";
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/components/settings/tabs/shared';
+import { appStatus, connectedSlugs } from '@/lib/apps';
+import { COMPOSIO_STATUS_KEY } from '@/lib/composio-types';
+import type { ComposioStatus } from '@/lib/composio-types';
 
-const PENDING = (s: string) => appStatus(s) === "PENDING";
+const PENDING = (s: string) => appStatus(s) === 'PENDING';
 
 /**
  * Composio status + connected accounts. One cache key shared by Settings, the
@@ -16,7 +16,7 @@ const PENDING = (s: string) => appStatus(s) === "PENDING";
 export function useComposioStatus(opts: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: COMPOSIO_STATUS_KEY,
-    queryFn: () => api<ComposioStatus>("/api/connectors/composio"),
+    queryFn: () => api<ComposioStatus>('/api/connectors/composio'),
     enabled: opts.enabled ?? true,
     staleTime: 30_000,
     refetchInterval: (q) => {

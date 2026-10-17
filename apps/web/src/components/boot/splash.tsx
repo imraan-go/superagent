@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useSyncExternalStore } from "react";
-import { LiveGlyph, Readout } from "@/components/ui";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import styles from "./splash.module.css";
+import { useEffect, useSyncExternalStore } from 'react';
+import { LiveGlyph, Readout } from '@/components/ui';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import styles from './splash.module.css';
 
 /**
  * Plays once per browser session, immediately after login. The login form sets
@@ -17,7 +17,7 @@ import styles from "./splash.module.css";
  * and hydration renders in agreement.
  */
 const TOTAL_MS = 1600;
-const KEY = "fd.splash";
+const KEY = 'fd.splash';
 
 const listeners = new Set<() => void>();
 
@@ -28,7 +28,7 @@ function subscribe(onChange: () => void): () => void {
 
 function getSnapshot(): boolean {
   try {
-    return sessionStorage.getItem(KEY) === "pending";
+    return sessionStorage.getItem(KEY) === 'pending';
   } catch {
     return false;
   }
@@ -40,7 +40,7 @@ function getServerSnapshot(): boolean {
 
 function dismiss(): void {
   try {
-    sessionStorage.setItem(KEY, "done");
+    sessionStorage.setItem(KEY, 'done');
   } catch {
     // Private-mode storage failure just means the splash does not replay.
   }

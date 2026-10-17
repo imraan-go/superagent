@@ -3,8 +3,8 @@
  * owns its own state (Settings tab, Manage section) without lifting that
  * state into a global store.
  */
-export const OPEN_SETTINGS_EVENT = "fd:open-settings";
-export const MANAGE_SECTION_EVENT = "fd:manage-section";
+export const OPEN_SETTINGS_EVENT = 'fd:open-settings';
+export const MANAGE_SECTION_EVENT = 'fd:manage-section';
 
 export interface OpenSettingsDetail {
   tab?: string;
@@ -29,7 +29,7 @@ export function consumePendingManageSection(): string | null {
 }
 
 export function focusPrompt(): boolean {
-  const el = document.querySelector<HTMLElement>("[data-prompt-input]");
+  const el = document.querySelector<HTMLElement>('[data-prompt-input]');
   if (!el || (el as HTMLTextAreaElement).disabled) return false;
   el.focus();
   return true;
@@ -37,19 +37,19 @@ export function focusPrompt(): boolean {
 
 /** Move focus to the first "Waiting on you" card. */
 export function focusWaitingCard(): boolean {
-  const el = document.querySelector<HTMLElement>("[data-waiting-card]");
+  const el = document.querySelector<HTMLElement>('[data-waiting-card]');
   if (!el) return false;
   el.focus();
   return true;
 }
 
 /** Connect Apps modal (Composio catalog). Anything can open it, optionally at one app or the Manage view. */
-export const OPEN_APPS_EVENT = "fd:open-apps";
+export const OPEN_APPS_EVENT = 'fd:open-apps';
 
 export interface OpenAppsDetail {
   /** Composio toolkit slug to open straight to its detail view. */
   app?: string;
-  view?: "browse" | "manage";
+  view?: 'browse' | 'manage';
 }
 
 export function openApps(detail: OpenAppsDetail = {}): void {

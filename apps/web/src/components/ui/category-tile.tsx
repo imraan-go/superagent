@@ -15,10 +15,10 @@ import {
   WarningOctagon,
   WindowsLogo,
   Wrench,
-} from "@phosphor-icons/react/dist/ssr";
-import type { Icon } from "@phosphor-icons/react";
-import { cn } from "@/lib/cn";
-import styles from "./category-tile.module.css";
+} from '@phosphor-icons/react/dist/ssr';
+import type { Icon } from '@phosphor-icons/react';
+import { cn } from '@/lib/cn';
+import styles from './category-tile.module.css';
 
 /**
  * Meaning-coloured icon tiles (DESIGN_SYSTEM §Colour). The category set is the
@@ -27,21 +27,21 @@ import styles from "./category-tile.module.css";
  * category — trace cards, the rail log, the sidebar, the palette — agrees.
  */
 export type TileCategory =
-  | "screen"
-  | "browser"
-  | "shell"
-  | "rdp"
-  | "files"
-  | "connector"
-  | "mcp"
-  | "memory"
-  | "schedule"
-  | "human"
-  | "other"
-  | "think"
-  | "agent"
-  | "money"
-  | "error";
+  | 'screen'
+  | 'browser'
+  | 'shell'
+  | 'rdp'
+  | 'files'
+  | 'connector'
+  | 'mcp'
+  | 'memory'
+  | 'schedule'
+  | 'human'
+  | 'other'
+  | 'think'
+  | 'agent'
+  | 'money'
+  | 'error';
 
 export const CATEGORY_ICONS: Record<TileCategory, Icon> = {
   screen: Monitor,
@@ -65,7 +65,7 @@ export const THOUGHT_ICON = ChatCenteredDots;
 
 export interface CategoryTileProps {
   cat: TileCategory;
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   /** Overrides the category's default glyph. */
   icon?: Icon;
   /** Animated sheen while the thing it labels is running. */
@@ -75,14 +75,10 @@ export interface CategoryTileProps {
 
 const PX = { xs: 11, sm: 13, md: 16, lg: 20 } as const;
 
-export function CategoryTile({ cat, size = "md", icon, active, className }: CategoryTileProps) {
+export function CategoryTile({ cat, size = 'md', icon, active, className }: CategoryTileProps) {
   const Glyph = icon ?? CATEGORY_ICONS[cat];
   return (
-    <span
-      className={cn(styles.tile, styles[size], active && styles.active, className)}
-      data-cat={cat}
-      aria-hidden
-    >
+    <span className={cn(styles.tile, styles[size], active && styles.active, className)} data-cat={cat} aria-hidden>
       <Glyph size={PX[size]} weight="duotone" />
     </span>
   );

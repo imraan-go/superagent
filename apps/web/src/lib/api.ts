@@ -1,7 +1,7 @@
-import type { ChatMode, ChatPrefs } from "./chat-mode";
-import type { ChatMessage, QuestionPart } from "./messages";
-import type { FileInfo } from "./uploads";
-import { readApiError } from "./api-error";
+import type { ChatMode, ChatPrefs } from './chat-mode';
+import type { ChatMessage, QuestionPart } from './messages';
+import type { FileInfo } from './uploads';
+import { readApiError } from './api-error';
 
 /**
  * Typed client for the panel's own API.
@@ -21,7 +21,7 @@ export class ApiError extends Error {
     readonly retryable = false,
   ) {
     super(message);
-    this.name = "ApiError";
+    this.name = 'ApiError';
   }
 }
 
@@ -29,10 +29,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
     headers: {
-      ...(typeof init?.body === "string" ? { "content-type": "application/json" } : {}),
+      ...(typeof init?.body === 'string' ? { 'content-type': 'application/json' } : {}),
       ...init?.headers,
     },
-    cache: "no-store",
+    cache: 'no-store',
   });
 
   const text = await response.text();
@@ -78,7 +78,6 @@ export interface ModelOption {
   ready: boolean;
 }
 
-
 function browserTimezone(): string | undefined {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
@@ -88,27 +87,23 @@ function browserTimezone(): string | undefined {
 }
 
 export const api = {
-  listChats: () => request<{ chats: ChatSummary[] }>("/api/chats"),
+  listChats: () => request<{ chats: ChatSummary[] }>('/api/chats'),
 
   createChat: () =>
-    request<{ chat: ChatSummary }>("/api/chats", {
-      method: "POST",
+    request<{ chat: ChatSummary }>('/api/chats', {
+      method: 'POST',
       body: JSON.stringify({}),
     }),
 
   getChat: (id: string) => request<{ chat: ChatDetail }>(`/api/chats/${id}`),
 
-  updateChat: (
-    id: string,
-    patch: Partial<Pick<ChatSummary, "title" | "pinned" | "archived">> & Partial<ChatPrefs>,
-  ) =>
+  updateChat: (id: string, patch: Partial<Pick<ChatSummary, 'title' | 'pinned' | 'archived'>> & Partial<ChatPrefs>) =>
     request<{ chat: ChatSummary }>(`/api/chats/${id}`, {
-      method: "PATCH",
+      method: 'PATCH',
       body: JSON.stringify(patch),
     }),
 
-  deleteChat: (id: string) =>
-    request<{ ok: true }>(`/api/chats/${id}`, { method: "DELETE" }),
+  deleteChat: (id: string) => request<{ ok: true }>(`/api/chats/${id}`, { method: 'DELETE' }),
 
   /**
    * `capabilities` is an advisory hint from the composer chips (computer,
@@ -127,7 +122,7 @@ export const api = {
     request<{ message: ChatMessage | null; runId: string; model: string; mode: ChatMode; answered?: string }>(
       `/api/chats/${chatId}/messages`,
       {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({
           text,
           timezone: browserTimezone(),
@@ -143,17 +138,17 @@ export const api = {
   /** Answers the agent's question (option ids, or typed text). The run continues server-side. */
   answerQuestion: (chatId: string, questionId: string, choices: string[], text?: string) =>
     request<{ ok: true; runId: string; question: QuestionPart }>(`/api/chats/${chatId}/answer`, {
-      method: "POST",
+      method: 'POST',
       body: JSON.stringify({ questionId, choices, ...(text ? { text } : {}) }),
     }),
 
   /** Multipart upload; the browser sets the boundary, so no content-type here. */
   uploadFile: (file: File, chatId?: string | null) => {
     const form = new FormData();
-    form.set("file", file);
-    if (chatId) form.set("chatId", chatId);
-    return request<{ file: FileInfo; deduped: boolean }>("/api/uploads", {
-      method: "POST",
+    form.set('file', file);
+    if (chatId) form.set('chatId', chatId);
+    return request<{ file: FileInfo; deduped: boolean }>('/api/uploads', {
+      method: 'POST',
       body: form,
     });
   },
@@ -162,12 +157,9 @@ export const api = {
 
   cancelRun: (runId: string) =>
     request<{ ok: true; cancelled: boolean }>(`/api/runs/${runId}/cancel`, {
-      method: "POST",
+      method: 'POST',
       body: JSON.stringify({}),
     }),
 
-  listModels: () =>
-    request<{ models: ModelOption[]; defaultModel: string; anyVendorReady: boolean }>(
-      "/api/models",
-    ),
+  listModels: () => request<{ models: ModelOption[]; defaultModel: string; anyVendorReady: boolean }>('/api/models'),
 };

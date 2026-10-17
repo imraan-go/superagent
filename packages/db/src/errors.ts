@@ -21,7 +21,14 @@ export class BudgetExceededError extends Error {
 
 export class ApprovalError extends Error {
   constructor(
-    public readonly code: 'not_pending' | 'expired' | 'hash_mismatch' | 'nonce_mismatch' | 'not_approved' | 'already_consumed' | 'tampered',
+    public readonly code:
+      | 'not_pending'
+      | 'expired'
+      | 'hash_mismatch'
+      | 'nonce_mismatch'
+      | 'not_approved'
+      | 'already_consumed'
+      | 'tampered',
     message: string,
   ) {
     super(message);

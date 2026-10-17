@@ -1,15 +1,15 @@
-import { notFound } from "next/navigation";
-import { z } from "zod";
-import { getChatTitle } from "@/server/api";
-import { ChatView } from "@/components/chat/chat-view";
+import { notFound } from 'next/navigation';
+import { z } from 'zod';
+import { getChatTitle } from '@/server/api';
+import { ChatView } from '@/components/chat/chat-view';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (!z.uuid().safeParse(id).success) return { title: "Superagent" };
+  if (!z.uuid().safeParse(id).success) return { title: 'Superagent' };
   const title = await getChatTitle(id);
-  return { title: title ? `${title} — Superagent` : "Superagent" };
+  return { title: title ? `${title} — Superagent` : 'Superagent' };
 }
 
 export default async function ChatPage({ params }: { params: Promise<{ id: string }> }) {

@@ -26,8 +26,22 @@ function upsertEnv(key: string, value: string) {
 }
 
 const targets = [
-  { kind: 'browser', name: BROWSER_TEMPLATE_NAME, tpl: browserTemplate(), key: 'E2B_BROWSER_TEMPLATE_ID', cpuCount: 2, memoryMB: 2048 },
-  { kind: 'code', name: CODE_TEMPLATE_NAME, tpl: codeTemplate(), key: 'E2B_CODE_TEMPLATE_ID', cpuCount: 2, memoryMB: 1024 },
+  {
+    kind: 'browser',
+    name: BROWSER_TEMPLATE_NAME,
+    tpl: browserTemplate(),
+    key: 'E2B_BROWSER_TEMPLATE_ID',
+    cpuCount: 2,
+    memoryMB: 2048,
+  },
+  {
+    kind: 'code',
+    name: CODE_TEMPLATE_NAME,
+    tpl: codeTemplate(),
+    key: 'E2B_CODE_TEMPLATE_ID',
+    cpuCount: 2,
+    memoryMB: 1024,
+  },
 ].filter((t) => !only || t.kind === only);
 
 for (const t of targets) {
@@ -39,7 +53,9 @@ for (const t of targets) {
     memoryMB: t.memoryMB,
     onBuildLogs: defaultBuildLogger({ minLevel: 'info' }),
   });
-  console.log(`built ${t.name}: template ${info.templateId}, build ${info.buildId} in ${Math.round((Date.now() - started) / 1000)}s`);
+  console.log(
+    `built ${t.name}: template ${info.templateId}, build ${info.buildId} in ${Math.round((Date.now() - started) / 1000)}s`,
+  );
   upsertEnv(t.key, t.name);
   console.log(`${t.key}=${t.name} recorded in .env`);
 }

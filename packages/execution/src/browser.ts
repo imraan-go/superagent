@@ -16,7 +16,8 @@ export class BrowserPolicyError extends Error {
 }
 
 export type Resolver = (host: string) => Promise<string[]>;
-export const dnsResolver: Resolver = async (host) => (await lookup(host, { all: true, verbatim: true })).map((a) => a.address);
+export const dnsResolver: Resolver = async (host) =>
+  (await lookup(host, { all: true, verbatim: true })).map((a) => a.address);
 
 /**
  * Rejects hosts that resolve to private/loopback/link-local/metadata ranges (best effort from the
@@ -29,7 +30,8 @@ export async function assertPublicResolution(host: string, resolve: Resolver = d
   } catch {
     throw new BrowserPolicyError(`could not resolve ${host}`);
   }
-  if (!addrs.length || addrs.some(isPrivateAddress)) throw new BrowserPolicyError(`${host} resolves to a non-public address`);
+  if (!addrs.length || addrs.some(isPrivateAddress))
+    throw new BrowserPolicyError(`${host} resolves to a non-public address`);
 }
 
 export async function validateDestination(url: string, allowed: string[], resolve: Resolver = dnsResolver) {
@@ -70,7 +72,10 @@ export async function ensureController(sbx: Sandbox) {
 async function ctl(sbx: Sandbox, req: CtlRequest, allowed: string[], timeoutMs = 60_000): Promise<CtlResult> {
   const payload = Buffer.from(JSON.stringify({ ...req, allowed })).toString('base64');
   const r = await sbx.commands.run(`python3 ${CTL_PATH}`, { envs: { BCTL_REQ: payload }, timeoutMs });
-  const line = r.stdout.split('\n').reverse().find((l) => l.startsWith('SA_RESULT '));
+  const line = r.stdout
+    .split('\n')
+    .reverse()
+    .find((l) => l.startsWith('SA_RESULT '));
   if (!line) throw new Error(`browser controller produced no result (exit ${r.exitCode})`);
   return JSON.parse(line.slice('SA_RESULT '.length)) as CtlResult;
 }
@@ -91,7 +96,12 @@ export class BrowserBroker {
   private async postCheck(sbx: Sandbox, res: CtlResult, allowed: string[]) {
     if (res.url && res.url !== 'about:blank') {
       const c = checkBrowserUrl(res.url, allowed);
-      const bad = !c.ok ? c.reason : await assertPublicResolution(c.url.hostname, this.resolve).then(() => null, (e: Error) => e.message);
+      const bad = !c.ok
+        ? c.reason
+        : await assertPublicResolution(c.url.hostname, this.resolve).then(
+            () => null,
+            (e: Error) => e.message,
+          );
       if (bad) {
         await ctl(sbx, { action: 'blank' }, allowed).catch(() => undefined);
         throw new BrowserPolicyError(`navigation ended at a disallowed destination (${bad}); page was closed`);
@@ -148,6 +158,11 @@ export class BrowserBroker {
     if (!final.ok) throw new BrowserPolicyError(`download ended at a disallowed destination: ${final.reason}`);
     const bytes = await sbx.files.read(res.path, { format: 'bytes' });
     await sbx.files.remove(res.path).catch(() => undefined);
-    return { bytes, url: res.url!, contentType: (res.contentType ?? '').split(';')[0]!.trim(), size: res.size ?? bytes.byteLength };
+    return {
+      bytes,
+      url: res.url!,
+      contentType: (res.contentType ?? '').split(';')[0]!.trim(),
+      size: res.size ?? bytes.byteLength,
+    };
   }
 }

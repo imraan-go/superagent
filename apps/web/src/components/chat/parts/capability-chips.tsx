@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { Brain, Globe, MagicWand, Monitor, Plugs } from "@phosphor-icons/react/dist/ssr";
-import { cn } from "@/lib/cn";
-import { CAPABILITIES } from "./composer";
-import type { CapabilityId } from "./composer";
-import styles from "./modes.module.css";
+import { Brain, Globe, MagicWand, Monitor, Plugs } from '@phosphor-icons/react/dist/ssr';
+import { cn } from '@/lib/cn';
+import { CAPABILITIES } from './composer';
+import type { CapabilityId } from './composer';
+import styles from './modes.module.css';
 
 /** Chips share the tool-category hues (DESIGN_SYSTEM §Colour). */
 const CAP_CATEGORY: Record<CapabilityId, string> = {
-  computer: "screen",
-  browser: "browser",
-  connectors: "connector",
-  memory: "memory",
+  computer: 'screen',
+  browser: 'browser',
+  connectors: 'connector',
+  memory: 'memory',
 };
 
 const ICONS: Record<CapabilityId, typeof Monitor> = {
@@ -43,17 +43,19 @@ export function CapabilityChips({
   onAuto: () => void;
   onToggle: (id: CapabilityId) => void;
 }) {
-  const why = pickedWhy?.join("\n");
+  const why = pickedWhy?.join('\n');
   return (
     <div className={styles.caps} role="group" aria-label="Focus this message on">
       <button
         type="button"
         className={cn(styles.cap, styles.capAuto, auto && styles.capOn)}
         aria-pressed={auto}
-        title={auto ? `Auto picks tools per message${why ? `\nLast pick:\n${why}` : ""}` : "Let the agent pick per message"}
+        title={
+          auto ? `Auto picks tools per message${why ? `\nLast pick:\n${why}` : ''}` : 'Let the agent pick per message'
+        }
         onClick={onAuto}
       >
-        <MagicWand size={13} weight={auto ? "fill" : "regular"} aria-hidden />
+        <MagicWand size={13} weight={auto ? 'fill' : 'regular'} aria-hidden />
         <span>Auto</span>
       </button>
       {CAPABILITIES.map((c) => {
@@ -70,7 +72,7 @@ export function CapabilityChips({
             title={lit ? `${c.hint} — picked by Auto` : c.hint}
             onClick={() => onToggle(c.id)}
           >
-            <Icon size={13} weight={on || lit ? "fill" : "regular"} aria-hidden />
+            <Icon size={13} weight={on || lit ? 'fill' : 'regular'} aria-hidden />
             <span>{c.label}</span>
           </button>
         );

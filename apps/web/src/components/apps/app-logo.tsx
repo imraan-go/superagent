@@ -1,26 +1,48 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { logoSrc } from "@/lib/apps";
-import { cn } from "@/lib/cn";
-import styles from "./apps.module.css";
+import { useState } from 'react';
+import { logoSrc } from '@/lib/apps';
+import { cn } from '@/lib/cn';
+import styles from './apps.module.css';
 
 /**
  * App logo through the same-origin proxy (CSP `img-src 'self'`). Falls back to a
  * letter tile when the toolkit has no logo or the image fails to load.
  */
-export function AppLogo({ slug, name, size = 40, className }: { slug: string; name?: string; size?: number; className?: string }) {
+export function AppLogo({
+  slug,
+  name,
+  size = 40,
+  className,
+}: {
+  slug: string;
+  name?: string;
+  size?: number;
+  className?: string;
+}) {
   const [failed, setFailed] = useState(false);
-  const letter = (name ?? slug).trim().charAt(0).toUpperCase() || "?";
+  const letter = (name ?? slug).trim().charAt(0).toUpperCase() || '?';
   return (
-    <span className={cn(styles.logo, className)} style={{ width: size, height: size, fontSize: Math.round(size * 0.42) }} data-size={size}>
+    <span
+      className={cn(styles.logo, className)}
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.42) }}
+      data-size={size}
+    >
       {failed ? (
         <span className={styles.logoLetter} aria-hidden>
           {letter}
         </span>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={logoSrc(slug)} alt="" width={size} height={size} loading="lazy" decoding="async" onError={() => setFailed(true)} />
+        <img
+          src={logoSrc(slug)}
+          alt=""
+          width={size}
+          height={size}
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+        />
       )}
     </span>
   );

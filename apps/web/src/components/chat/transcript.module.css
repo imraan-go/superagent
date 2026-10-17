@@ -43,12 +43,16 @@
   border: var(--border) solid var(--glass-line);
   border-radius: var(--radius-panel);
   background:
-    linear-gradient(120deg, color-mix(in srgb, var(--c-agent) 7%, transparent), color-mix(in srgb, var(--c-think) 6%, transparent) 70%),
+    linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--c-agent) 7%, transparent),
+      color-mix(in srgb, var(--c-think) 6%, transparent) 70%
+    ),
     var(--ink-1);
 }
 
 .user .body::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 10px auto 10px -1px;
   width: 2px;
@@ -115,10 +119,15 @@
   color: var(--text-3);
 }
 
-
 @keyframes rise {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .assistant .body {
@@ -127,13 +136,17 @@
   gap: var(--sp-3);
 }
 
-.traceSlot { min-width: 0; }
+.traceSlot {
+  min-width: 0;
+}
 
-.answer { min-width: 0; }
+.answer {
+  min-width: 0;
+}
 
 /* Streaming caret: a signal-coloured block after the last rendered block. */
 .streaming > * > :last-child::after {
-  content: "";
+  content: '';
   display: inline-block;
   width: 0.5em;
   height: 1.05em;
@@ -145,7 +158,9 @@
 }
 
 @keyframes caret {
-  to { visibility: hidden; }
+  to {
+    visibility: hidden;
+  }
 }
 
 .footer {
@@ -169,7 +184,7 @@
 }
 
 .readouts > span + span::before {
-  content: "·";
+  content: '·';
   margin-right: var(--sp-3);
   color: var(--line-strong);
 }
@@ -182,7 +197,9 @@
 }
 
 .turn:hover .actions,
-.actions:focus-within { opacity: 1; }
+.actions:focus-within {
+  opacity: 1;
+}
 
 .action {
   display: inline-flex;
@@ -199,22 +216,42 @@
   cursor: pointer;
 }
 
-.action:hover { color: var(--text-1); border-color: var(--line); background: var(--ink-2); }
-.action:focus-visible { outline: 2px solid var(--signal); outline-offset: 1px; }
+.action:hover {
+  color: var(--text-1);
+  border-color: var(--line);
+  background: var(--ink-2);
+}
+.action:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 1px;
+}
 
 @media (hover: none) {
-  .actions { opacity: 1; }
+  .actions {
+    opacity: 1;
+  }
 }
 
 @media (max-width: 480px) {
-  .turn { grid-template-columns: minmax(0, 1fr); gap: var(--sp-1); }
-  .gutter { justify-content: flex-start; }
-  .root { padding-inline: var(--sp-3); }
+  .turn {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-1);
+  }
+  .gutter {
+    justify-content: flex-start;
+  }
+  .root {
+    padding-inline: var(--sp-3);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .turn { animation: none; }
-  .streaming > * > :last-child::after { animation: none; }
+  .turn {
+    animation: none;
+  }
+  .streaming > * > :last-child::after {
+    animation: none;
+  }
 }
 
 /* System notes (a routine ran, a routine was changed elsewhere): one quiet centred line. */

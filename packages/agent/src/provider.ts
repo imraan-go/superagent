@@ -98,7 +98,11 @@ export class VercelGatewayModelProvider {
     const result = await generateText({
       model: this.opts.languageModel ? this.opts.languageModel(req.modelId) : this.gateway(req.modelId),
       instructions: [
-        { role: 'system', content: req.system, providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } } },
+        {
+          role: 'system',
+          content: req.system,
+          providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
+        },
         { role: 'system', content: req.context },
       ],
       messages: req.messages,
@@ -118,17 +122,32 @@ export class VercelGatewayModelProvider {
     const calls: ProposedCall[] = result.toolCalls.map((c) => {
       const spec = byName.get(c.toolName);
       const invalid = (c as { invalid?: boolean }).invalid === true || (c as { dynamic?: boolean }).dynamic === true;
-      if (!spec) return { toolCallId: c.toolCallId, toolName: c.toolName, input: c.input, valid: false, error: 'unknown tool' };
+      if (!spec)
+        return { toolCallId: c.toolCallId, toolName: c.toolName, input: c.input, valid: false, error: 'unknown tool' };
       const parsed = spec.schema.safeParse(c.input);
       if (invalid || !parsed.success) {
-        return { toolCallId: c.toolCallId, toolName: c.toolName, input: c.input, valid: false, error: parsed.success ? 'invalid tool call' : parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ') };
+        return {
+          toolCallId: c.toolCallId,
+          toolName: c.toolName,
+          input: c.input,
+          valid: false,
+          error: parsed.success
+            ? 'invalid tool call'
+            : parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '),
+        };
       }
       return { toolCallId: c.toolCallId, toolName: c.toolName, input: parsed.data, valid: true };
     });
     if (result.finishReason === 'tool-calls' && calls.length === 0) {
       throw new PartialOutputError('finish reason was tool-calls but no tool calls were returned', usage);
     }
-    return { finishReason: result.finishReason, text: result.text, calls, responseMessages: result.response.messages as ModelMessage[], usage };
+    return {
+      finishReason: result.finishReason,
+      text: result.text,
+      calls,
+      responseMessages: result.response.messages as ModelMessage[],
+      usage,
+    };
   }
 }
 
@@ -137,9 +156,11 @@ type GenResult = Awaited<ReturnType<typeof generateText>>;
 export function extractUsage(result: Pick<GenResult, 'usage' | 'providerMetadata' | 'response'>): DecisionUsage {
   const gw = (result.providerMetadata?.gateway ?? {}) as Record<string, unknown>;
   const routing = (gw.routing ?? {}) as Record<string, unknown>;
-  const attempts = (routing.modelAttempts as Array<{ providerAttempts?: Array<{ providerRequestId?: string }> }> | undefined) ?? [];
+  const attempts =
+    (routing.modelAttempts as Array<{ providerAttempts?: Array<{ providerRequestId?: string }> }> | undefined) ?? [];
   const lastProviderAttempt = attempts.at(-1)?.providerAttempts?.at(-1);
-  const totalCost = typeof gw.gatewayCost === 'string' ? gw.gatewayCost : typeof gw.cost === 'string' ? gw.cost : undefined;
+  const totalCost =
+    typeof gw.gatewayCost === 'string' ? gw.gatewayCost : typeof gw.cost === 'string' ? gw.cost : undefined;
   let costNanos: bigint | null;
   try {
     costNanos = totalCost !== undefined ? usdToNanos(totalCost) : null;
@@ -166,9 +187,18 @@ export function extractUsage(result: Pick<GenResult, 'usage' | 'providerMetadata
  * Upper-bound estimate for budget reservation: all input at the uncached input rate plus the full
  * output allowance. Not a vendor invoice ceiling.
  */
-export function estimateMaxCostNanos(entry: CatalogEntry, approxInputTokens: number, maxOutputTokens: number, perRequestSurchargeUsd = '0'): bigint {
+export function estimateMaxCostNanos(
+  entry: CatalogEntry,
+  approxInputTokens: number,
+  maxOutputTokens: number,
+  perRequestSurchargeUsd = '0',
+): bigint {
   if (!entry.pricing) throw new Error(`no pricing for ${entry.id}`);
-  return priceTimes(entry.pricing.input, approxInputTokens) + priceTimes(entry.pricing.output, maxOutputTokens) + usdToNanos(perRequestSurchargeUsd);
+  return (
+    priceTimes(entry.pricing.input, approxInputTokens) +
+    priceTimes(entry.pricing.output, maxOutputTokens) +
+    usdToNanos(perRequestSurchargeUsd)
+  );
 }
 
 /** Cheap, conservative token estimate (~3 chars/token) for reservation sizing only. */

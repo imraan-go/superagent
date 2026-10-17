@@ -103,7 +103,11 @@ let store: ArtifactStore | undefined;
 export function getArtifactStore(): ArtifactStore {
   if (store) return store;
   const env = getEnv();
-  const k = requireKeys('storage', ['S3_ENDPOINT', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'], 'Run `pnpm setup:env` and `pnpm infra:up`.');
+  const k = requireKeys(
+    'storage',
+    ['S3_ENDPOINT', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'],
+    'Run `pnpm setup:env` and `pnpm infra:up`.',
+  );
   store = new S3ArtifactStore(env.S3_BUCKET, {
     endpoint: k.S3_ENDPOINT,
     region: env.S3_REGION,

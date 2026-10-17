@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { memo, useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { Check, Copy, FileText, Image as ImageIcon } from "@phosphor-icons/react/dist/ssr";
-import { IconButton } from "@/components/ui";
-import styles from "./markdown.module.css";
+import { memo, useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Check, Copy, FileText, Image as ImageIcon } from '@phosphor-icons/react/dist/ssr';
+import { IconButton } from '@/components/ui';
+import styles from './markdown.module.css';
 
 /**
  * Assistant prose. Memoised on `content` because a streaming turn re-renders on
@@ -40,10 +40,10 @@ export const Markdown = memo(function Markdown({ content }: { content: string })
             </div>
           ),
           img: ({ src, alt }) =>
-            typeof src === "string" ? (
+            typeof src === 'string' ? (
               <a href={src} target="_blank" rel="noreferrer" className={styles.figure}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt={alt ?? ""} loading="lazy" />
+                <img src={src} alt={alt ?? ''} loading="lazy" />
               </a>
             ) : null,
         }}
@@ -55,7 +55,7 @@ export const Markdown = memo(function Markdown({ content }: { content: string })
 });
 
 function isPanelFile(href: string): boolean {
-  return href.startsWith("/api/uploads/") || href.startsWith("/api/files/");
+  return href.startsWith('/api/uploads/') || href.startsWith('/api/files/');
 }
 
 interface CodeProps {
@@ -64,19 +64,19 @@ interface CodeProps {
 }
 
 function CodeBlock({ className, children }: CodeProps) {
-  const text = String(children ?? "").replace(/\n$/, "");
-  const language = /language-(\w+)/.exec(className ?? "")?.[1];
+  const text = String(children ?? '').replace(/\n$/, '');
+  const language = /language-(\w+)/.exec(className ?? '')?.[1];
 
   // react-markdown routes inline code here too; only fenced blocks get a
   // language class, which is the reliable way to tell them apart.
-  if (!language && !text.includes("\n")) {
+  if (!language && !text.includes('\n')) {
     return <code className={styles.inline}>{text}</code>;
   }
 
   return (
     <figure className={styles.block}>
       <figcaption className={styles.blockHead}>
-        <span className={styles.lang}>{language ?? "text"}</span>
+        <span className={styles.lang}>{language ?? 'text'}</span>
         <CopyButton text={text} />
       </figcaption>
       <Highlighted code={text} language={language} />
@@ -97,10 +97,10 @@ function Highlighted({ code, language }: { code: string; language?: string }) {
 
     void (async () => {
       try {
-        const { codeToHtml } = await import("shiki");
+        const { codeToHtml } = await import('shiki');
         const result = await codeToHtml(code, {
-          lang: language ?? "text",
-          themes: { dark: "github-dark-default", light: "github-light" },
+          lang: language ?? 'text',
+          themes: { dark: 'github-dark-default', light: 'github-light' },
           defaultColor: false,
         });
         if (!cancelled) setHtml(result);
@@ -116,9 +116,7 @@ function Highlighted({ code, language }: { code: string; language?: string }) {
   }, [code, language]);
 
   if (html) {
-    return (
-      <div className={styles.shiki} dangerouslySetInnerHTML={{ __html: html }} />
-    );
+    return <div className={styles.shiki} dangerouslySetInnerHTML={{ __html: html }} />;
   }
 
   return (
@@ -139,7 +137,7 @@ function CopyButton({ text }: { text: string }) {
 
   return (
     <IconButton
-      label={copied ? "Copied" : "Copy code"}
+      label={copied ? 'Copied' : 'Copy code'}
       size="sm"
       icon={copied ? <Check size={13} weight="bold" /> : <Copy size={13} />}
       onClick={() => {

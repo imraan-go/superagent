@@ -1,7 +1,7 @@
-import type { ChatSummary } from "./api";
+import type { ChatSummary } from './api';
 
 export interface ChatGroup {
-  key: "pinned" | "today" | "yesterday" | "week" | "older";
+  key: 'pinned' | 'today' | 'yesterday' | 'week' | 'older';
   label: string;
   chats: ChatSummary[];
 }
@@ -18,7 +18,7 @@ export function groupChats(chats: ChatSummary[], now: Date = new Date()): ChatGr
   startOfWeek.setDate(startOfWeek.getDate() - 7);
 
   const pinned: ChatSummary[] = [];
-  const buckets: Record<Exclude<ChatGroup["key"], "pinned">, ChatSummary[]> = {
+  const buckets: Record<Exclude<ChatGroup['key'], 'pinned'>, ChatSummary[]> = {
     today: [],
     yesterday: [],
     week: [],
@@ -38,12 +38,12 @@ export function groupChats(chats: ChatSummary[], now: Date = new Date()): ChatGr
   }
 
   const groups: ChatGroup[] = [];
-  if (pinned.length) groups.push({ key: "pinned", label: "Pinned", chats: pinned });
-  if (buckets.today.length) groups.push({ key: "today", label: "Today", chats: buckets.today });
+  if (pinned.length) groups.push({ key: 'pinned', label: 'Pinned', chats: pinned });
+  if (buckets.today.length) groups.push({ key: 'today', label: 'Today', chats: buckets.today });
   if (buckets.yesterday.length) {
-    groups.push({ key: "yesterday", label: "Yesterday", chats: buckets.yesterday });
+    groups.push({ key: 'yesterday', label: 'Yesterday', chats: buckets.yesterday });
   }
-  if (buckets.week.length) groups.push({ key: "week", label: "Previous 7 days", chats: buckets.week });
-  if (buckets.older.length) groups.push({ key: "older", label: "Older", chats: buckets.older });
+  if (buckets.week.length) groups.push({ key: 'week', label: 'Previous 7 days', chats: buckets.week });
+  if (buckets.older.length) groups.push({ key: 'older', label: 'Older', chats: buckets.older });
   return groups;
 }

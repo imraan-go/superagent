@@ -19,7 +19,12 @@ export function createAuth(db: Db, env: AppEnv) {
     trustedOrigins: [env.WEB_ORIGIN],
     database: drizzleAdapter(db, {
       provider: 'pg',
-      schema: { user: schema.user, session: schema.session, account: schema.account, verification: schema.verification },
+      schema: {
+        user: schema.user,
+        session: schema.session,
+        account: schema.account,
+        verification: schema.verification,
+      },
     }),
     emailAndPassword: {
       enabled: true,

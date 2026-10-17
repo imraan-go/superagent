@@ -29,7 +29,14 @@ export function capabilityOfTool(t: AnyToolSpec): 'computer' | 'browser' | 'conn
 
 export function exposedTools(
   reg: Map<string, AnyToolSpec>,
-  opts: { configured: Set<string>; activeToolkits: Set<string>; readOnly: boolean; allowedDomains: string[]; scheduled?: boolean; capabilities?: string[] | null },
+  opts: {
+    configured: Set<string>;
+    activeToolkits: Set<string>;
+    readOnly: boolean;
+    allowedDomains: string[];
+    scheduled?: boolean;
+    capabilities?: string[] | null;
+  },
 ): AnyToolSpec[] {
   const chips = opts.capabilities?.length ? new Set(opts.capabilities) : null;
   return [...reg.values()].filter((t) => {

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { cn } from "@/lib/cn";
-import styles from "./settings-tabs.module.css";
+import { useState } from 'react';
+import { cn } from '@/lib/cn';
+import styles from './settings-tabs.module.css';
 
 /**
  * Small form controls shared by the Settings tabs. They live here rather than
@@ -71,7 +71,7 @@ export function NumberField({
 
   const commit = () => {
     const next = Number(draft);
-    if (!Number.isFinite(next) || draft.trim() === "") return setDraft(String(value));
+    if (!Number.isFinite(next) || draft.trim() === '') return setDraft(String(value));
     const clamped = Math.min(max ?? Infinity, Math.max(min ?? -Infinity, next));
     setDraft(String(clamped));
     if (clamped !== value) onCommit(clamped);
@@ -93,7 +93,7 @@ export function NumberField({
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
-          if (e.key === "Enter") commit();
+          if (e.key === 'Enter') commit();
         }}
       />
       {suffix && <span className={styles.affix}>{suffix}</span>}
@@ -113,12 +113,7 @@ export function Select<T extends string>({
   label: string;
 }) {
   return (
-    <select
-      aria-label={label}
-      className={styles.select}
-      value={value}
-      onChange={(e) => onChange(e.target.value as T)}
-    >
+    <select aria-label={label} className={styles.select} value={value} onChange={(e) => onChange(e.target.value as T)}>
       {options.map((o) => (
         <option key={o.value} value={o.value} disabled={o.disabled}>
           {o.label}
@@ -130,7 +125,7 @@ export function Select<T extends string>({
 
 export function InlineError({ error }: { error: unknown }) {
   if (!error) return null;
-  const message = error instanceof Error ? error.message : "Something went wrong.";
+  const message = error instanceof Error ? error.message : 'Something went wrong.';
   return (
     <p role="alert" className={styles.error}>
       {message}

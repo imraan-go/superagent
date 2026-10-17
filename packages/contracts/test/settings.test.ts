@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { SETTINGS_SECTIONS, isSection, mergeSection, parseStored, sectionDefaults, validateSection } from '../src/settings';
+import {
+  SETTINGS_SECTIONS,
+  isSection,
+  mergeSection,
+  parseStored,
+  sectionDefaults,
+  validateSection,
+} from '../src/settings';
 
 describe('settings sections', () => {
   it('lists every section and recognises only those names', () => {
@@ -11,7 +18,11 @@ describe('settings sections', () => {
 
   it('produces complete defaults for every section', () => {
     expect(sectionDefaults('agent')).toEqual({ systemPrompt: '', browsingDomains: [] });
-    expect(sectionDefaults('sound')).toEqual({ master: true, volume: 0.3, events: { send: true, done: true, approval: true, error: true, takeover: true } });
+    expect(sectionDefaults('sound')).toEqual({
+      master: true,
+      volume: 0.3,
+      events: { send: true, done: true, approval: true, error: true, takeover: true },
+    });
     expect(sectionDefaults('notifications')).toEqual({ chrome: false, events: ['approval', 'runDone', 'question'] });
     for (const s of SETTINGS_SECTIONS) expect(() => sectionDefaults(s)).not.toThrow();
   });
@@ -26,7 +37,11 @@ describe('parseStored', () => {
   });
 
   it('keeps valid fields and drops invalid ones from an older row', () => {
-    expect(parseStored('appearance', { theme: 'light', density: 'tiny', legacy: 1 })).toEqual({ theme: 'light', reducedMotion: 'system', density: 'comfortable' });
+    expect(parseStored('appearance', { theme: 'light', density: 'tiny', legacy: 1 })).toEqual({
+      theme: 'light',
+      reducedMotion: 'system',
+      density: 'comfortable',
+    });
   });
 
   it('salvages a nested object only when it is valid as a whole', () => {
@@ -41,8 +56,13 @@ describe('parseStored', () => {
 describe('mergeSection', () => {
   it('merges plain objects one level deep, replaces arrays and scalars, and clears nulls', () => {
     const current = { master: true, volume: 0.3, events: { send: true, done: true } };
-    expect(mergeSection(current, { volume: 0.5, events: { send: false }, master: null })).toEqual({ volume: 0.5, events: { send: false, done: true } });
-    expect(mergeSection({ events: ['approval', 'runDone'] }, { events: ['question'] })).toEqual({ events: ['question'] });
+    expect(mergeSection(current, { volume: 0.5, events: { send: false }, master: null })).toEqual({
+      volume: 0.5,
+      events: { send: false, done: true },
+    });
+    expect(mergeSection({ events: ['approval', 'runDone'] }, { events: ['question'] })).toEqual({
+      events: ['question'],
+    });
   });
 
   it('does not mutate the current value and ignores non-object patches', () => {

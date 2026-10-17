@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useQuery } from "@tanstack/react-query";
-import { pendingPollMs } from "@/lib/hitl";
-import type { PendingResponse } from "@/lib/hitl";
+import { useQuery } from '@tanstack/react-query';
+import { pendingPollMs } from '@/lib/hitl';
+import type { PendingResponse } from '@/lib/hitl';
 
-export const PENDING_KEY = ["approvals", "pending"] as const;
+export const PENDING_KEY = ['approvals', 'pending'] as const;
 
 /**
  * Everything waiting on the owner. One shared query — the topbar badge, the
@@ -15,7 +15,7 @@ export function usePending() {
   return useQuery<PendingResponse>({
     queryKey: PENDING_KEY,
     queryFn: async () => {
-      const res = await fetch("/api/inbox", { cache: "no-store" });
+      const res = await fetch('/api/inbox', { cache: 'no-store' });
       if (!res.ok) throw new Error(`inbox ${res.status}`);
       return (await res.json()) as PendingResponse;
     },

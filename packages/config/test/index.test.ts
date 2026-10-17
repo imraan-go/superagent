@@ -2,7 +2,17 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { EnvSchema, SetupRequiredError, capabilityStatus, composioAuthConfigs, getEnv, loadLocalEnv, modelAllowlist, requireKeys, resetEnvCache } from '../src';
+import {
+  EnvSchema,
+  SetupRequiredError,
+  capabilityStatus,
+  composioAuthConfigs,
+  getEnv,
+  loadLocalEnv,
+  modelAllowlist,
+  requireKeys,
+  resetEnvCache,
+} from '../src';
 
 /** Clears every schema key so the developer's shell environment cannot leak into getEnv(). */
 function clearSchemaEnv() {
@@ -73,12 +83,29 @@ describe('EnvSchema', () => {
   it('requires a real endpoint, namespace and one credential kind in cloud mode', () => {
     const bare = EnvSchema.safeParse({ TEMPORAL_MODE: 'cloud' });
     expect(bare.success).toBe(false);
-    expect(bare.error?.issues.map((i) => i.path[0]).sort()).toEqual(['TEMPORAL_ADDRESS', 'TEMPORAL_API_KEY', 'TEMPORAL_NAMESPACE']);
+    expect(bare.error?.issues.map((i) => i.path[0]).sort()).toEqual([
+      'TEMPORAL_ADDRESS',
+      'TEMPORAL_API_KEY',
+      'TEMPORAL_NAMESPACE',
+    ]);
 
-    const cloud = { TEMPORAL_MODE: 'cloud', TEMPORAL_ADDRESS: 'ns.acct.tmprl.cloud:7233', TEMPORAL_NAMESPACE: 'ns.acct' };
+    const cloud = {
+      TEMPORAL_MODE: 'cloud',
+      TEMPORAL_ADDRESS: 'ns.acct.tmprl.cloud:7233',
+      TEMPORAL_NAMESPACE: 'ns.acct',
+    };
     expect(EnvSchema.safeParse({ ...cloud, TEMPORAL_API_KEY: 'k' }).success).toBe(true);
-    expect(EnvSchema.safeParse({ ...cloud, TEMPORAL_TLS_CERT_PATH: '/c', TEMPORAL_TLS_KEY_PATH: '/k' }).success).toBe(true);
-    expect(EnvSchema.safeParse({ ...cloud, TEMPORAL_API_KEY: 'k', TEMPORAL_TLS_CERT_PATH: '/c', TEMPORAL_TLS_KEY_PATH: '/k' }).success).toBe(false);
+    expect(EnvSchema.safeParse({ ...cloud, TEMPORAL_TLS_CERT_PATH: '/c', TEMPORAL_TLS_KEY_PATH: '/k' }).success).toBe(
+      true,
+    );
+    expect(
+      EnvSchema.safeParse({
+        ...cloud,
+        TEMPORAL_API_KEY: 'k',
+        TEMPORAL_TLS_CERT_PATH: '/c',
+        TEMPORAL_TLS_KEY_PATH: '/k',
+      }).success,
+    ).toBe(false);
   });
 
   it('forbids dev seed credentials in production', () => {
@@ -114,7 +141,10 @@ describe('getEnv / requireKeys', () => {
   it('returns the requested keys when present', () => {
     vi.stubEnv('COMPOSIO_API_KEY', 'test-key');
     vi.stubEnv('DATABASE_URL', 'postgres://localhost/test');
-    expect(requireKeys('x', ['COMPOSIO_API_KEY', 'DATABASE_URL'])).toEqual({ COMPOSIO_API_KEY: 'test-key', DATABASE_URL: 'postgres://localhost/test' });
+    expect(requireKeys('x', ['COMPOSIO_API_KEY', 'DATABASE_URL'])).toEqual({
+      COMPOSIO_API_KEY: 'test-key',
+      DATABASE_URL: 'postgres://localhost/test',
+    });
   });
 
   it('throws SetupRequiredError listing the missing keys', () => {
@@ -129,7 +159,9 @@ describe('getEnv / requireKeys', () => {
     const setup = err as SetupRequiredError;
     expect(setup.capability).toBe('storage');
     expect(setup.missing).toEqual(['S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY']);
-    expect(setup.message).toBe('storage is not configured. Missing: S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY. Run setup.');
+    expect(setup.message).toBe(
+      'storage is not configured. Missing: S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY. Run setup.',
+    );
     expect(setup.name).toBe('SetupRequiredError');
   });
 });
@@ -187,7 +219,11 @@ describe('composioAuthConfigs', () => {
 
 describe('modelAllowlist', () => {
   it('splits the list and appends the primary and browser models once', () => {
-    const env = EnvSchema.parse({ AI_MODEL_ALLOWLIST: ' a/one , ,b/two', AI_MODEL_PRIMARY: 'b/two', AI_MODEL_BROWSER: 'c/three' });
+    const env = EnvSchema.parse({
+      AI_MODEL_ALLOWLIST: ' a/one , ,b/two',
+      AI_MODEL_PRIMARY: 'b/two',
+      AI_MODEL_BROWSER: 'c/three',
+    });
     expect(modelAllowlist(env)).toEqual(['a/one', 'b/two', 'c/three']);
   });
 

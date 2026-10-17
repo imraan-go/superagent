@@ -1,31 +1,33 @@
-"use client";
+'use client';
 
-import { Fragment, useState } from "react";
-import type { ReactNode } from "react";
-import { CaretRight, ChatCenteredDots, Monitor, ShieldWarning } from "@phosphor-icons/react/dist/ssr";
-import { CategoryTile, Dot, LiveGlyph } from "@/components/ui";
-import { AppLogo } from "@/components/apps/app-logo";
-import { openApps } from "@/lib/app-events";
-import { composioToolkitOf, titleCase } from "@/lib/apps";
-import type { LiveGlyphState } from "@/components/ui";
-import { cn } from "@/lib/cn";
-import type { TraceItem } from "./exchanges";
-import { formatMs, toolCategory, toolTitle, traceSummary } from "./tool-meta";
-import type { ToolCategory } from "./tool-meta";
-import styles from "./run-trace.module.css";
+import { Fragment, useState } from 'react';
+import type { ReactNode } from 'react';
+import { CaretRight, ChatCenteredDots, Monitor, ShieldWarning } from '@phosphor-icons/react/dist/ssr';
+import { CategoryTile, Dot, LiveGlyph } from '@/components/ui';
+import { AppLogo } from '@/components/apps/app-logo';
+import { openApps } from '@/lib/app-events';
+import { composioToolkitOf, titleCase } from '@/lib/apps';
+import type { LiveGlyphState } from '@/components/ui';
+import { cn } from '@/lib/cn';
+import type { TraceItem } from './exchanges';
+import { formatMs, toolCategory, toolTitle, traceSummary } from './tool-meta';
+import type { ToolCategory } from './tool-meta';
+import styles from './run-trace.module.css';
 
 /** The rail listens for this and brings its "Waiting on you" card into view. */
-export const FOCUS_WAITING_EVENT = "fd:focus-waiting";
+export const FOCUS_WAITING_EVENT = 'fd:focus-waiting';
 
 /** Backtick spans in a title become inline code. */
 function renderTitle(title: string): ReactNode {
-  return title.split(/(`[^`]+`)/g).map((chunk, i) =>
-    chunk.startsWith("`") && chunk.endsWith("`") && chunk.length > 1 ? (
-      <code key={i}>{chunk.slice(1, -1)}</code>
-    ) : (
-      <Fragment key={i}>{chunk}</Fragment>
-    ),
-  );
+  return title
+    .split(/(`[^`]+`)/g)
+    .map((chunk, i) =>
+      chunk.startsWith('`') && chunk.endsWith('`') && chunk.length > 1 ? (
+        <code key={i}>{chunk.slice(1, -1)}</code>
+      ) : (
+        <Fragment key={i}>{chunk}</Fragment>
+      ),
+    );
 }
 
 export interface RunTraceProps {
@@ -48,25 +50,33 @@ export interface RunTraceProps {
  * activity line (DESIGN_SYSTEM §Signature elements) — the polite live region
  * in ChatView already announces transitions, so nothing here is aria-live.
  */
-export function RunTrace({ items, live, activity, phase, approval, keepOpen = false, expandSteps = false }: RunTraceProps) {
+export function RunTrace({
+  items,
+  live,
+  activity,
+  phase,
+  approval,
+  keepOpen = false,
+  expandSteps = false,
+}: RunTraceProps) {
   const [override, setOverride] = useState<boolean | null>(null);
   const open = override ?? (live || Boolean(approval) || keepOpen);
-  const tools = items.filter((i) => i.kind !== "thought");
+  const tools = items.filter((i) => i.kind !== 'thought');
   if (!live && items.length === 0) return null;
 
   const glyph: LiveGlyphState = approval
-    ? "approval"
+    ? 'approval'
     : !live
       ? tools.some((t) => t.ok === false)
-        ? "error"
-        : "done"
-      : phase === "tool" || phase === "waiting"
-        ? "tool"
-        : "thinking";
+        ? 'error'
+        : 'done'
+      : phase === 'tool' || phase === 'waiting'
+        ? 'tool'
+        : 'thinking';
 
   const totalMs = tools.reduce((n, t) => n + (t.ms ?? 0), 0);
   const headline = live
-    ? (activity ?? "Working")
+    ? (activity ?? 'Working')
     : traceSummary(tools.map((t) => ({ toolName: t.toolName, ms: t.ms })));
   const expandable = items.length > 0 || Boolean(approval);
   // Distinct categories in first-use order — the folded summary shows them as a tile stack.
@@ -98,9 +108,19 @@ export function RunTrace({ items, live, activity, phase, approval, keepOpen = fa
           </span>
         )}
         <span className={styles.headline}>{headline}</span>
-        {live && <span className={styles.dots} aria-hidden><i /><i /><i /></span>}
+        {live && (
+          <span className={styles.dots} aria-hidden>
+            <i />
+            <i />
+            <i />
+          </span>
+        )}
         <span className={styles.meta}>
-          {live && tools.length > 0 && <span>{tools.length} step{tools.length === 1 ? "" : "s"}</span>}
+          {live && tools.length > 0 && (
+            <span>
+              {tools.length} step{tools.length === 1 ? '' : 's'}
+            </span>
+          )}
           {live && totalMs > 0 && <span>{formatMs(totalMs)}</span>}
         </span>
         {expandable && <CaretRight size={11} weight="bold" className={styles.caret} aria-hidden />}
@@ -118,52 +138,45 @@ export function RunTrace({ items, live, activity, phase, approval, keepOpen = fa
   );
 }
 
-function Step({
-  item,
-  index,
-  defaultOpen = false,
-}: {
-  item: TraceItem;
-  index: number;
-  defaultOpen?: boolean;
-}) {
+function Step({ item, index, defaultOpen = false }: { item: TraceItem; index: number; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
 
-  if (item.kind === "thought") {
+  if (item.kind === 'thought') {
     return (
-      <li className={cn(styles.step, styles.thought)} style={{ "--i": index } as React.CSSProperties}>
+      <li className={cn(styles.step, styles.thought)} style={{ '--i': index } as React.CSSProperties}>
         <span className={styles.rail} aria-hidden>
           <CategoryTile cat="think" size="sm" icon={ChatCenteredDots} />
         </span>
-        <p className={styles.thoughtText}>{renderTitle(item.detail ?? "")}</p>
+        <p className={styles.thoughtText}>{renderTitle(item.detail ?? '')}</p>
       </li>
     );
   }
 
-  if (item.kind === "approval") {
-    return <ApprovalCard tool={item.toolName ?? "a tool"} reason={item.detail ?? "needs your approval"} />;
+  if (item.kind === 'approval') {
+    return <ApprovalCard tool={item.toolName ?? 'a tool'} reason={item.detail ?? 'needs your approval'} />;
   }
 
   const cat = toolCategory(item.toolName);
   const hasArgs = item.args && Object.keys(item.args).length > 0;
   const expandable = Boolean(hasArgs || item.detail?.trim());
-  const status = item.ok === null ? "pending" : item.ok ? "ok" : "error";
+  const status = item.ok === null ? 'pending' : item.ok ? 'ok' : 'error';
   const app = composioToolkitOf(item.toolName);
 
   return (
-    <li
-      className={styles.step}
-      data-cat={cat}
-      data-status={status}
-      style={{ "--i": index } as React.CSSProperties}
-    >
+    <li className={styles.step} data-cat={cat} data-status={status} style={{ '--i': index } as React.CSSProperties}>
       <span className={styles.rail} aria-hidden={app ? undefined : true}>
         {app ? (
-          <button type="button" className={styles.appLogoBtn} onClick={() => openApps({ app })} aria-label={`Open ${titleCase(app)} in Connect apps`} title={`Open ${titleCase(app)}`}>
+          <button
+            type="button"
+            className={styles.appLogoBtn}
+            onClick={() => openApps({ app })}
+            aria-label={`Open ${titleCase(app)} in Connect apps`}
+            title={`Open ${titleCase(app)}`}
+          >
             <AppLogo slug={app} name={titleCase(app)} size={28} />
           </button>
         ) : (
-          <CategoryTile cat={status === "error" ? "error" : cat} size="sm" active={item.ok === null} />
+          <CategoryTile cat={status === 'error' ? 'error' : cat} size="sm" active={item.ok === null} />
         )}
       </span>
       <div className={styles.card}>
@@ -177,7 +190,12 @@ function Step({
           <span className={styles.title}>{renderTitle(toolTitle(item.toolName, item.args))}</span>
           <span className={styles.cardMeta}>
             {item.ms !== null && <span className={styles.ms}>{formatMs(item.ms)}</span>}
-            <Dot status={status} size="sm" pulse={item.ok === null} label={status === "pending" ? "Running" : status === "ok" ? "Succeeded" : "Failed"} />
+            <Dot
+              status={status}
+              size="sm"
+              pulse={item.ok === null}
+              label={status === 'pending' ? 'Running' : status === 'ok' ? 'Succeeded' : 'Failed'}
+            />
             {expandable && <CaretRight size={10} weight="bold" className={styles.caret} aria-hidden />}
           </span>
         </button>

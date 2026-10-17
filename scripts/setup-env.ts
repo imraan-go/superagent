@@ -67,6 +67,8 @@ if (extras.length) out.push('', '# --- Additional keys ---', ...extras.map((k) =
 writeFileSync(envPath, out.join('\n'), { mode: 0o600 });
 chmodSync(envPath, 0o600);
 
-const blanks = ['AI_GATEWAY_API_KEY', 'COMPOSIO_API_KEY', 'E2B_API_KEY', 'E2B_BROWSER_TEMPLATE_ID'].filter((k) => !values.get(k) && !process.env[k]);
+const blanks = ['AI_GATEWAY_API_KEY', 'COMPOSIO_API_KEY', 'E2B_API_KEY', 'E2B_BROWSER_TEMPLATE_ID'].filter(
+  (k) => !values.get(k) && !process.env[k],
+);
 console.log(`.env ready (mode 600). Generated: ${created.length ? created.join(', ') : 'nothing new'}.`);
 if (blanks.length) console.log(`Not set yet (add with \`pnpm setup:secret KEY\`): ${blanks.join(', ')}`);

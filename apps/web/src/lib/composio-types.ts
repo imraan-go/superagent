@@ -1,6 +1,6 @@
 /** Client-side shapes of the /api/connectors/composio/* responses. Keep in step with the server modules. */
-import type { CatalogSections, CatalogToolkit, Facet, ToolkitDetail } from "@/lib/shared/composio-catalog";
-import type { InstalledApp } from "@/lib/shared/composio-installed-pure";
+import type { CatalogSections, CatalogToolkit, Facet, ToolkitDetail } from '@/lib/shared/composio-catalog';
+import type { InstalledApp } from '@/lib/shared/composio-installed-pure';
 
 export type { CatalogSections, CatalogToolkit, Facet, ToolkitDetail, InstalledApp };
 
@@ -15,7 +15,15 @@ export interface ComposioAccount {
 
 export type ComposioStatus =
   | { configured: false }
-  | { configured: true; source: "settings" | "env"; last4: string | null; accounts: ComposioAccount[]; mcp: { serverId: string } | null; triggers: number; error: string | null };
+  | {
+      configured: true;
+      source: 'settings' | 'env';
+      last4: string | null;
+      accounts: ComposioAccount[];
+      mcp: { serverId: string } | null;
+      triggers: number;
+      error: string | null;
+    };
 
 export interface CatalogPage {
   items: CatalogToolkit[];
@@ -35,10 +43,10 @@ export type CatalogSectionsResponse = CatalogSections & {
 };
 
 export type ConnectResult =
-  | { kind: "redirect"; redirectUrl: string; accountId?: string }
-  | { kind: "connected" }
-  | { kind: "needs_credentials"; scheme: string; fields: CredentialField[] }
-  | { kind: "unsupported"; reason: string; guideUrl: string | null };
+  | { kind: 'redirect'; redirectUrl: string; accountId?: string }
+  | { kind: 'connected' }
+  | { kind: 'needs_credentials'; scheme: string; fields: CredentialField[] }
+  | { kind: 'unsupported'; reason: string; guideUrl: string | null };
 
 export interface CredentialField {
   name: string;
@@ -47,4 +55,4 @@ export interface CredentialField {
   secret: boolean;
 }
 
-export const COMPOSIO_STATUS_KEY = ["connectors", "composio"] as const;
+export const COMPOSIO_STATUS_KEY = ['connectors', 'composio'] as const;

@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useParams, usePathname, useRouter } from "next/navigation";
-import { Command, List } from "@phosphor-icons/react/dist/ssr";
-import Link from "next/link";
-import { Drawer, IconButton, LiveGlyph } from "@/components/ui";
-import { ConnectionDot } from "@/components/status/connection-dot";
-import { ChatSidebar } from "@/components/chat/chat-sidebar";
-import { SettingsModal } from "@/components/settings/settings-modal";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { HitlWatcher, PendingBadge } from "@/components/hitl/hitl-watcher";
-import { AppsModal } from "@/components/apps/apps-modal";
-import type { AppsRequest } from "@/components/apps/apps-modal";
-import { CommandPalette } from "@/components/command/command-palette";
-import { ShortcutSheet } from "@/components/command/shortcut-sheet";
-import { useHotkeys } from "@/hooks/use-hotkeys";
-import { WIDE_QUERY, useMedia } from "@/hooks/use-media";
-import { PREF_LEFT_COLLAPSED, usePref } from "@/lib/ui-prefs";
-import { useNewChat } from "@/hooks/use-new-chat";
-import { OPEN_APPS_EVENT, OPEN_SETTINGS_EVENT, focusPrompt, focusWaitingCard } from "@/lib/app-events";
-import type { OpenAppsDetail, OpenSettingsDetail } from "@/lib/app-events";
-import { ModeSwitch } from "./mode-switch";
-import { SignOutButton } from "./sign-out-button";
-import { cn } from "@/lib/cn";
-import styles from "./shell.module.css";
+import { useEffect, useState } from 'react';
+import { useParams, usePathname, useRouter } from 'next/navigation';
+import { Command, List } from '@phosphor-icons/react/dist/ssr';
+import Link from 'next/link';
+import { Drawer, IconButton, LiveGlyph } from '@/components/ui';
+import { ConnectionDot } from '@/components/status/connection-dot';
+import { ChatSidebar } from '@/components/chat/chat-sidebar';
+import { SettingsModal } from '@/components/settings/settings-modal';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { HitlWatcher, PendingBadge } from '@/components/hitl/hitl-watcher';
+import { AppsModal } from '@/components/apps/apps-modal';
+import type { AppsRequest } from '@/components/apps/apps-modal';
+import { CommandPalette } from '@/components/command/command-palette';
+import { ShortcutSheet } from '@/components/command/shortcut-sheet';
+import { useHotkeys } from '@/hooks/use-hotkeys';
+import { WIDE_QUERY, useMedia } from '@/hooks/use-media';
+import { PREF_LEFT_COLLAPSED, usePref } from '@/lib/ui-prefs';
+import { useNewChat } from '@/hooks/use-new-chat';
+import { OPEN_APPS_EVENT, OPEN_SETTINGS_EVENT, focusPrompt, focusWaitingCard } from '@/lib/app-events';
+import type { OpenAppsDetail, OpenSettingsDetail } from '@/lib/app-events';
+import { ModeSwitch } from './mode-switch';
+import { SignOutButton } from './sign-out-button';
+import { cn } from '@/lib/cn';
+import styles from './shell.module.css';
 
 /**
  * The persistent frame (DESIGN_SYSTEM §Layout): a full-height left rail, a
@@ -33,16 +33,10 @@ import styles from "./shell.module.css";
  * and the Mission rail change per route, so switching chats never re-renders
  * the history list.
  */
-export function AppShell({
-  email,
-  children,
-}: {
-  email: string;
-  children: React.ReactNode;
-}) {
+export function AppShell({ email, children }: { email: string; children: React.ReactNode }) {
   const params = useParams<{ id?: string }>();
   const pathname = usePathname();
-  const manage = pathname.startsWith("/manage");
+  const manage = pathname.startsWith('/manage');
   const router = useRouter();
   const newChat = useNewChat();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -77,7 +71,7 @@ export function AppShell({
     };
     const onOpen = (e: Event) => request((e as CustomEvent<OpenAppsDetail>).detail ?? {});
     window.addEventListener(OPEN_APPS_EVENT, onOpen);
-    const app = new URLSearchParams(window.location.search).get("app");
+    const app = new URLSearchParams(window.location.search).get('app');
     if (app && /^[a-z0-9_-]{1,64}$/i.test(app)) request({ app });
     return () => window.removeEventListener(OPEN_APPS_EVENT, onOpen);
   }, []);
@@ -85,17 +79,17 @@ export function AppShell({
   // Bare-key shortcuts stand down while any dialog owns the screen. Esc is
   // handled by the native <dialog>, which always closes the topmost one.
   const free = (fn: () => void) => () => {
-    if (!document.querySelector("dialog[open]")) fn();
+    if (!document.querySelector('dialog[open]')) fn();
   };
   useHotkeys([
-    { keys: "mod+k", allowInInput: true, handler: () => setPaletteOpen((o) => !o) },
-    { keys: "mod+j", allowInInput: true, handler: free(() => newChat.mutate()) },
-    { keys: "mod+/", allowInInput: true, handler: free(() => void focusPrompt()) },
-    { keys: "mod+b", allowInInput: true, handler: () => setLeftCollapsed((v) => !v) },
-    { keys: "?", handler: free(() => setShortcutsOpen(true)) },
-    { keys: "g m", handler: free(() => router.push("/manage")) },
-    { keys: "g a", handler: free(() => router.push("/")) },
-    { keys: "g w", handler: free(() => void focusWaitingCard()) },
+    { keys: 'mod+k', allowInInput: true, handler: () => setPaletteOpen((o) => !o) },
+    { keys: 'mod+j', allowInInput: true, handler: free(() => newChat.mutate()) },
+    { keys: 'mod+/', allowInInput: true, handler: free(() => void focusPrompt()) },
+    { keys: 'mod+b', allowInInput: true, handler: () => setLeftCollapsed((v) => !v) },
+    { keys: '?', handler: free(() => setShortcutsOpen(true)) },
+    { keys: 'g m', handler: free(() => router.push('/manage')) },
+    { keys: 'g a', handler: free(() => router.push('/')) },
+    { keys: 'g w', handler: free(() => void focusWaitingCard()) },
   ]);
 
   // Picking a chat (or changing mode) dismisses the history drawer.
@@ -114,7 +108,7 @@ export function AppShell({
   return (
     <div
       className={cn(styles.app, manage && styles.appManage)}
-      data-left={manage ? undefined : leftCollapsed ? "rail" : "full"}
+      data-left={manage ? undefined : leftCollapsed ? 'rail' : 'full'}
     >
       <span className={styles.aurora} aria-hidden />
       <a href="#main" className="skip-link">
@@ -183,11 +177,7 @@ export function AppShell({
       )}
 
       <HitlWatcher />
-      <SettingsModal
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        requestedTab={settingsTab}
-      />
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} requestedTab={settingsTab} />
       <AppsModal open={appsOpen} onClose={() => setAppsOpen(false)} request={appsRequest} />
       <CommandPalette
         open={paletteOpen}

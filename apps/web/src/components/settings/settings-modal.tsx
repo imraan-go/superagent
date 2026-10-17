@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import type { ComponentType } from "react";
+import { useState } from 'react';
+import type { ComponentType } from 'react';
 import {
   ChartBar,
   Brain,
@@ -13,13 +13,13 @@ import {
   SpeakerHigh,
   Sparkle,
   Warning,
-} from "@phosphor-icons/react/dist/ssr";
-import dynamic from "next/dynamic";
-import { Modal, SkeletonText } from "@/components/ui";
-import { cn } from "@/lib/cn";
-import styles from "./settings-modal.module.css";
+} from '@phosphor-icons/react/dist/ssr';
+import dynamic from 'next/dynamic';
+import { Modal, SkeletonText } from '@/components/ui';
+import { cn } from '@/lib/cn';
+import styles from './settings-modal.module.css';
 // Appearance stays static: AppearanceSync must run on every page load.
-import { AppearanceSync, AppearanceTab } from "./tabs/appearance-tab";
+import { AppearanceSync, AppearanceTab } from './tabs/appearance-tab';
 
 /** Each tab is its own chunk: opening Settings loads only the tab being read. */
 function lazyTab(load: () => Promise<ComponentType>) {
@@ -33,14 +33,14 @@ function lazyTab(load: () => Promise<ComponentType>) {
   });
 }
 
-const AgentTab = lazyTab(() => import("./tabs/agent-tab").then((m) => m.AgentTab));
-const DangerTab = lazyTab(() => import("./tabs/danger-tab").then((m) => m.DangerTab));
-const DataTab = lazyTab(() => import("./tabs/data-tab").then((m) => m.DataTab));
-const ModelsTab = lazyTab(() => import("./tabs/models-tab").then((m) => m.ModelsTab));
-const NotificationsTab = lazyTab(() => import("./tabs/notifications-tab").then((m) => m.NotificationsTab));
-const UsageTab = lazyTab(() => import("./tabs/usage-tab").then((m) => m.UsageTab));
-const SchedulesTab = lazyTab(() => import("./tabs/schedules-tab").then((m) => m.SchedulesTab));
-const MemoriesTab = lazyTab(() => import("./tabs/memories-tab").then((m) => m.MemoriesTab));
+const AgentTab = lazyTab(() => import('./tabs/agent-tab').then((m) => m.AgentTab));
+const DangerTab = lazyTab(() => import('./tabs/danger-tab').then((m) => m.DangerTab));
+const DataTab = lazyTab(() => import('./tabs/data-tab').then((m) => m.DataTab));
+const ModelsTab = lazyTab(() => import('./tabs/models-tab').then((m) => m.ModelsTab));
+const NotificationsTab = lazyTab(() => import('./tabs/notifications-tab').then((m) => m.NotificationsTab));
+const UsageTab = lazyTab(() => import('./tabs/usage-tab').then((m) => m.UsageTab));
+const SchedulesTab = lazyTab(() => import('./tabs/schedules-tab').then((m) => m.SchedulesTab));
+const MemoriesTab = lazyTab(() => import('./tabs/memories-tab').then((m) => m.MemoriesTab));
 
 /**
  * Settings: left rail + one component per tab. Each tab owns its data
@@ -55,15 +55,15 @@ interface SettingsTab {
 }
 
 const TABS: SettingsTab[] = [
-  { id: "agent", label: "Agent", icon: Robot, Component: AgentTab },
-  { id: "usage", label: "Usage & budget", icon: ChartBar, Component: UsageTab },
-  { id: "models", label: "Models & setup", icon: Sparkle, Component: ModelsTab },
-  { id: "schedules", label: "Routines", icon: CalendarDots, Component: SchedulesTab },
-  { id: "memories", label: "Memories", icon: Brain, Component: MemoriesTab },
-  { id: "appearance", label: "Appearance", icon: Palette, Component: AppearanceTab },
-  { id: "notifications", label: "Notifications & Sound", icon: SpeakerHigh, Component: NotificationsTab },
-  { id: "data", label: "Data", icon: HardDrives, Component: DataTab },
-  { id: "danger", label: "Danger zone", icon: Warning, Component: DangerTab },
+  { id: 'agent', label: 'Agent', icon: Robot, Component: AgentTab },
+  { id: 'usage', label: 'Usage & budget', icon: ChartBar, Component: UsageTab },
+  { id: 'models', label: 'Models & setup', icon: Sparkle, Component: ModelsTab },
+  { id: 'schedules', label: 'Routines', icon: CalendarDots, Component: SchedulesTab },
+  { id: 'memories', label: 'Memories', icon: Brain, Component: MemoriesTab },
+  { id: 'appearance', label: 'Appearance', icon: Palette, Component: AppearanceTab },
+  { id: 'notifications', label: 'Notifications & Sound', icon: SpeakerHigh, Component: NotificationsTab },
+  { id: 'data', label: 'Data', icon: HardDrives, Component: DataTab },
+  { id: 'danger', label: 'Danger zone', icon: Warning, Component: DangerTab },
 ];
 
 /** Tab ids + labels for the command palette ("Settings: Models"). */
@@ -117,12 +117,12 @@ export function SettingsModal({
                   className={cn(
                     styles.navItem,
                     selected && styles.navItemActive,
-                    item.id === "danger" && styles.navItemDanger,
+                    item.id === 'danger' && styles.navItemDanger,
                   )}
-                  aria-current={selected ? "page" : undefined}
+                  aria-current={selected ? 'page' : undefined}
                   onClick={() => setTab(item.id)}
                 >
-                  <Icon size={16} weight={selected ? "fill" : "regular"} aria-hidden />
+                  <Icon size={16} weight={selected ? 'fill' : 'regular'} aria-hidden />
                   {item.label}
                 </button>
               );

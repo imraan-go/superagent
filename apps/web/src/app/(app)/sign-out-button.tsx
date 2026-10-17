@@ -1,19 +1,23 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { SignOut } from "@phosphor-icons/react/dist/ssr";
-import { IconButton } from "@/components/ui";
+import { useRouter } from 'next/navigation';
+import { SignOut } from '@phosphor-icons/react/dist/ssr';
+import { IconButton } from '@/components/ui';
 
 export function SignOutButton({ email }: { email: string }) {
   const router = useRouter();
 
   return (
     <IconButton
-      label={email ? `Sign out ${email}` : "Sign out"}
+      label={email ? `Sign out ${email}` : 'Sign out'}
       icon={<SignOut size={16} />}
       onClick={async () => {
-        await fetch("/api/auth/sign-out", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
-        router.replace("/login");
+        await fetch('/api/auth/sign-out', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: '{}',
+        });
+        router.replace('/login');
         router.refresh();
       }}
     />

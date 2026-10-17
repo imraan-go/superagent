@@ -1,6 +1,15 @@
 import { and, eq, inArray, isNull, lt } from 'drizzle-orm';
 import type { TaskContextResult, TaskFinalization, TaskRef, ScheduledTaskInput } from '@superagent/contracts/workflow';
-import { appendChatMessage, createTaskWithOutbox, getScheduleForOwner, getTaskForOwner, runParts, schema, setTaskStatus, NotFoundError } from '@superagent/db';
+import {
+  appendChatMessage,
+  createTaskWithOutbox,
+  getScheduleForOwner,
+  getTaskForOwner,
+  runParts,
+  schema,
+  setTaskStatus,
+  NotFoundError,
+} from '@superagent/db';
 import { emit, taskScope, type Deps } from './deps';
 
 const TERMINAL = new Set(['completed', 'failed', 'cancelled']);
@@ -20,8 +29,15 @@ export async function loadTaskContext(d: Deps, ref: TaskRef): Promise<TaskContex
 }
 
 export async function finalizeTask(d: Deps, f: TaskFinalization) {
-  const changed = await setTaskStatus(d.db, f.ownerId, f.taskId, f.status, f.reason ? { error: f.reason.slice(0, 2000) } : {});
-  if (changed) await emit(d, f.ownerId, f.taskId, `task.${f.status}`, `task.${f.status}`, f.reason ? { reason: f.reason } : {});
+  const changed = await setTaskStatus(
+    d.db,
+    f.ownerId,
+    f.taskId,
+    f.status,
+    f.reason ? { error: f.reason.slice(0, 2000) } : {},
+  );
+  if (changed)
+    await emit(d, f.ownerId, f.taskId, `task.${f.status}`, `task.${f.status}`, f.reason ? { reason: f.reason } : {});
   await postRunToChat(d, f);
 }
 
@@ -51,7 +67,13 @@ async function workspaceRows(d: Deps, ownerId: string, taskId: string) {
   return d.db
     .select()
     .from(schema.workspaces)
-    .where(and(eq(schema.workspaces.ownerId, ownerId), inArray(schema.workspaces.scope, ['user', taskId]), inArray(schema.workspaces.state, ['running'])));
+    .where(
+      and(
+        eq(schema.workspaces.ownerId, ownerId),
+        inArray(schema.workspaces.scope, ['user', taskId]),
+        inArray(schema.workspaces.state, ['running']),
+      ),
+    );
 }
 
 /** Pauses (not kills) live sandboxes before a long wait: files persist, no idle compute is billed. */
@@ -78,16 +100,24 @@ export async function releaseTaskResources(d: Deps, ref: TaskRef) {
   await taskScope.run(ref, async () => {
     for (const r of rows) {
       try {
-        if (r.kind === 'browser' && r.scope === ref.taskId && r.sandboxId) await d.workspaces().kill(ref.ownerId, 'browser', ref.taskId);
+        if (r.kind === 'browser' && r.scope === ref.taskId && r.sandboxId)
+          await d.workspaces().kill(ref.ownerId, 'browser', ref.taskId);
         else if (r.kind === 'code' && r.state === 'running') await d.workspaces().pause(ref.ownerId, 'code', 'user');
       } catch (err) {
-        d.log.warn('release.failed', { taskId: ref.taskId, workspaceId: r.id, error: err instanceof Error ? err.message : String(err) });
+        d.log.warn('release.failed', {
+          taskId: ref.taskId,
+          workspaceId: r.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
   });
 }
 
-export async function createScheduledTask(d: Deps, input: ScheduledTaskInput & { runKey: string }): Promise<{ taskId: string | null }> {
+export async function createScheduledTask(
+  d: Deps,
+  input: ScheduledTaskInput & { runKey: string },
+): Promise<{ taskId: string | null }> {
   let sched;
   try {
     sched = await getScheduleForOwner(d.db, input.ownerId, input.scheduleId);
@@ -130,14 +160,21 @@ export async function createScheduledTask(d: Deps, input: ScheduledTaskInput & {
 export async function runRetention(d: Deps): Promise<{ tasks: number; artifacts: number }> {
   const now = new Date();
   let artifactCount = 0;
-  const expiredArtifacts = await d.db.select().from(schema.artifacts).where(and(lt(schema.artifacts.expiresAt, now), isNull(schema.artifacts.deletedAt))).limit(500);
+  const expiredArtifacts = await d.db
+    .select()
+    .from(schema.artifacts)
+    .where(and(lt(schema.artifacts.expiresAt, now), isNull(schema.artifacts.deletedAt)))
+    .limit(500);
   for (const a of expiredArtifacts) {
     try {
       await d.store().delete(a.objectKey);
       await d.db.update(schema.artifacts).set({ deletedAt: now }).where(eq(schema.artifacts.id, a.id));
       artifactCount++;
     } catch (err) {
-      d.log.warn('retention.artifact_failed', { artifactId: a.id, error: err instanceof Error ? err.message : String(err) });
+      d.log.warn('retention.artifact_failed', {
+        artifactId: a.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
   const expiredTasks = await d.db
@@ -147,11 +184,28 @@ export async function runRetention(d: Deps): Promise<{ tasks: number; artifacts:
     .limit(200);
   let taskCount = 0;
   for (const t of expiredTasks) {
-    const remaining = await d.db.select({ id: schema.artifacts.id }).from(schema.artifacts).where(and(eq(schema.artifacts.taskId, t.id), isNull(schema.artifacts.deletedAt))).limit(1);
+    const remaining = await d.db
+      .select({ id: schema.artifacts.id })
+      .from(schema.artifacts)
+      .where(and(eq(schema.artifacts.taskId, t.id), isNull(schema.artifacts.deletedAt)))
+      .limit(1);
     if (remaining.length) continue;
-    const deleted = await d.db.delete(schema.tasks).where(and(eq(schema.tasks.id, t.id), eq(schema.tasks.ownerId, t.ownerId))).returning({ id: schema.tasks.id });
+    const deleted = await d.db
+      .delete(schema.tasks)
+      .where(and(eq(schema.tasks.id, t.id), eq(schema.tasks.ownerId, t.ownerId)))
+      .returning({ id: schema.tasks.id });
     taskCount += deleted.length;
   }
-  await d.db.delete(schema.workflowOutbox).where(and(eq(schema.workflowOutbox.status, 'done'), lt(schema.workflowOutbox.processedAt, new Date(now.getTime() - d.env.OPERATIONAL_LOG_RETENTION_DAYS * 86_400_000))));
+  await d.db
+    .delete(schema.workflowOutbox)
+    .where(
+      and(
+        eq(schema.workflowOutbox.status, 'done'),
+        lt(
+          schema.workflowOutbox.processedAt,
+          new Date(now.getTime() - d.env.OPERATIONAL_LOG_RETENTION_DAYS * 86_400_000),
+        ),
+      ),
+    );
   return { tasks: taskCount, artifacts: artifactCount };
 }

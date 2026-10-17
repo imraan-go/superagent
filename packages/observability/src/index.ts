@@ -1,6 +1,7 @@
 export * from './money';
 
-const SENSITIVE_KEY = /(api[_-]?key|token|secret|password|passwd|authorization|cookie|set-cookie|private[_-]?key|session[_-]?url|mcp[_-]?url|cdp|vnc|credential|access[_-]?key)/i;
+const SENSITIVE_KEY =
+  /(api[_-]?key|token|secret|password|passwd|authorization|cookie|set-cookie|private[_-]?key|session[_-]?url|mcp[_-]?url|cdp|vnc|credential|access[_-]?key)/i;
 
 const SECRET_PATTERNS: Array<[RegExp, string]> = [
   [/\bBearer\s+[A-Za-z0-9._~+/=-]{8,}/g, 'Bearer [REDACTED]'],
@@ -51,7 +52,13 @@ const ORDER: Record<Level, number> = { debug: 10, info: 20, warn: 30, error: 40 
 export function createLogger(component: string, minLevel: Level = (process.env.LOG_LEVEL as Level) || 'info') {
   const emit = (level: Level, msg: string, fields?: Record<string, unknown>) => {
     if (ORDER[level] < ORDER[minLevel]) return;
-    const line = JSON.stringify({ t: new Date().toISOString(), level, component, msg: redactString(msg, 1000), ...(fields ? (redact(fields) as object) : {}) });
+    const line = JSON.stringify({
+      t: new Date().toISOString(),
+      level,
+      component,
+      msg: redactString(msg, 1000),
+      ...(fields ? (redact(fields) as object) : {}),
+    });
     (level === 'error' || level === 'warn' ? process.stderr : process.stdout).write(`${line}\n`);
   };
   return {

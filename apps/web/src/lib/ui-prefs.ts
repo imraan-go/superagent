@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from 'react';
 
 /**
  * Tiny persisted boolean layout preferences (left rail collapsed, right rail
@@ -8,14 +8,14 @@ import { useCallback, useSyncExternalStore } from "react";
  * in-memory event, and read via useSyncExternalStore so there is no
  * setState-in-effect and no hydration mismatch (the server renders `false`).
  */
-const EVENT = "fd:ui-pref";
+const EVENT = 'fd:ui-pref';
 
-export const PREF_LEFT_COLLAPSED = "fd.layout.leftCollapsed";
-export const PREF_RIGHT_MINIMIZED = "fd.layout.rightMinimized";
+export const PREF_LEFT_COLLAPSED = 'fd.layout.leftCollapsed';
+export const PREF_RIGHT_MINIMIZED = 'fd.layout.rightMinimized';
 
 function read(key: string): boolean {
   try {
-    return localStorage.getItem(key) === "1";
+    return localStorage.getItem(key) === '1';
   } catch {
     return false;
   }
@@ -23,7 +23,7 @@ function read(key: string): boolean {
 
 export function setPref(key: string, value: boolean): void {
   try {
-    localStorage.setItem(key, value ? "1" : "0");
+    localStorage.setItem(key, value ? '1' : '0');
   } catch {
     // private mode / blocked storage — the toggle still works for this page view
   }
@@ -35,10 +35,10 @@ const memory = new Map<string, boolean>();
 
 function subscribe(onChange: () => void): () => void {
   window.addEventListener(EVENT, onChange);
-  window.addEventListener("storage", onChange);
+  window.addEventListener('storage', onChange);
   return () => {
     window.removeEventListener(EVENT, onChange);
-    window.removeEventListener("storage", onChange);
+    window.removeEventListener('storage', onChange);
   };
 }
 
@@ -51,7 +51,7 @@ export function usePref(key: string): [boolean, (next: boolean | ((v: boolean) =
   const set = useCallback(
     (next: boolean | ((v: boolean) => boolean)) => {
       const current = memory.get(key) ?? read(key);
-      setPref(key, typeof next === "function" ? next(current) : next);
+      setPref(key, typeof next === 'function' ? next(current) : next);
     },
     [key],
   );

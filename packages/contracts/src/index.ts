@@ -17,7 +17,12 @@ export const CreateTaskRequest = z.object({
   title: z.string().trim().max(200).optional(),
   allowedDomains: z.array(domain).max(20).default([]),
   idempotencyKey: z.string().trim().min(8).max(128).optional(),
-  timezone: z.string().trim().max(64).refine((tz) => isIanaTimezone(tz), 'must be an IANA timezone such as America/Toronto').optional(),
+  timezone: z
+    .string()
+    .trim()
+    .max(64)
+    .refine((tz) => isIanaTimezone(tz), 'must be an IANA timezone such as America/Toronto')
+    .optional(),
 });
 export type CreateTaskRequest = z.infer<typeof CreateTaskRequest>;
 
@@ -40,7 +45,14 @@ export function isIanaTimezone(tz: string): boolean {
 
 export const ScheduleSpecInput = z.union([
   z.object({ kind: z.literal('cron'), cron: z.string().trim().min(9).max(120) }),
-  z.object({ kind: z.literal('interval'), everyMinutes: z.number().int().min(5).max(60 * 24 * 7) }),
+  z.object({
+    kind: z.literal('interval'),
+    everyMinutes: z
+      .number()
+      .int()
+      .min(5)
+      .max(60 * 24 * 7),
+  }),
 ]);
 
 export type ScheduleSpecInput = z.infer<typeof ScheduleSpecInput>;
@@ -51,7 +63,12 @@ export const CreateScheduleRequest = z.object({
   spec: ScheduleSpecInput,
   timezone: z.string().trim().min(1).max(64).refine(isIanaTimezone, 'must be an IANA timezone such as America/Toronto'),
   allowedDomains: z.array(domain).max(20).default([]),
-  catchupWindowMinutes: z.number().int().min(1).max(24 * 60).default(10),
+  catchupWindowMinutes: z
+    .number()
+    .int()
+    .min(1)
+    .max(24 * 60)
+    .default(10),
 });
 export type CreateScheduleRequest = z.infer<typeof CreateScheduleRequest>;
 
@@ -60,7 +77,10 @@ export type CreateScheduleRequest = z.infer<typeof CreateScheduleRequest>;
 export const QuestionKind = z.enum(['single', 'multi', 'text', 'confirm']);
 export type QuestionKind = z.infer<typeof QuestionKind>;
 
-export const QuestionOption = z.object({ id: z.string().trim().min(1).max(40), label: z.string().trim().min(1).max(200) });
+export const QuestionOption = z.object({
+  id: z.string().trim().min(1).max(40),
+  label: z.string().trim().min(1).max(200),
+});
 export type QuestionOption = z.infer<typeof QuestionOption>;
 
 export const CreateChatRequest = z.object({ title: z.string().trim().max(200).optional() }).strict();
@@ -84,7 +104,12 @@ export const SendChatMessageRequest = z.object({
   mode: z.string().trim().max(40).optional(),
   capabilitiesAuto: z.boolean().optional(),
   allowedDomains: z.array(domain).max(20).optional(),
-  timezone: z.string().trim().max(64).refine((tz) => isIanaTimezone(tz), 'must be an IANA timezone such as America/Toronto').optional(),
+  timezone: z
+    .string()
+    .trim()
+    .max(64)
+    .refine((tz) => isIanaTimezone(tz), 'must be an IANA timezone such as America/Toronto')
+    .optional(),
 });
 export type SendChatMessageRequest = z.infer<typeof SendChatMessageRequest>;
 
@@ -103,7 +128,17 @@ export const MemoryUpsertRequest = z.object({
 });
 
 /** Composio toolkits the agent has curated tools for (packages/policy connector-catalog.ts). */
-export const ConnectorToolkit = z.enum(['github', 'googlecalendar', 'googledrive', 'gmail', 'notion', 'slack', 'googlesheets', 'googledocs', 'outlook']);
+export const ConnectorToolkit = z.enum([
+  'github',
+  'googlecalendar',
+  'googledrive',
+  'gmail',
+  'notion',
+  'slack',
+  'googlesheets',
+  'googledocs',
+  'outlook',
+]);
 export type ConnectorToolkit = z.infer<typeof ConnectorToolkit>;
 
 export const ConnectRequest = z.object({

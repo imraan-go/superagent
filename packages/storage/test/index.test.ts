@@ -2,12 +2,25 @@ import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
-import { CreateBucketCommand, DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  CreateBucketCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadBucketCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { EnvSchema, SetupRequiredError, loadLocalEnv, resetEnvCache } from '@superagent/config';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryArtifactStore, S3ArtifactStore, artifactKey, getArtifactStore, setArtifactStore } from '../src';
 
-const OPTS = { endpoint: 'http://localhost:9000', region: 'us-east-1', accessKeyId: 'test', secretAccessKey: 'test', forcePathStyle: true };
+const OPTS = {
+  endpoint: 'http://localhost:9000',
+  region: 'us-east-1',
+  accessKeyId: 'test',
+  secretAccessKey: 'test',
+  forcePathStyle: true,
+};
 
 async function readAll(stream: Readable): Promise<string> {
   const chunks: Buffer[] = [];
@@ -31,7 +44,9 @@ afterEach(() => {
 
 describe('artifactKey', () => {
   it('scopes keys by owner and task', () => {
-    expect(artifactKey('owner_1', 'task-9', 'art-1', 'report.pdf')).toBe('owners/owner_1/tasks/task-9/art-1/report.pdf');
+    expect(artifactKey('owner_1', 'task-9', 'art-1', 'report.pdf')).toBe(
+      'owners/owner_1/tasks/task-9/art-1/report.pdf',
+    );
     expect(artifactKey('owner_1', null, 'art-1', 'report.pdf')).toBe('owners/owner_1/misc/art-1/report.pdf');
   });
 
@@ -44,7 +59,8 @@ describe('S3ArtifactStore', () => {
   it('creates the bucket when HeadBucket fails, only once, and puts with a SHA-256 checksum', async () => {
     let bucketExists = false;
     const send = stubS3((cmd) => {
-      if (cmd instanceof HeadBucketCommand && !bucketExists) throw Object.assign(new Error('NotFound'), { name: 'NotFound' });
+      if (cmd instanceof HeadBucketCommand && !bucketExists)
+        throw Object.assign(new Error('NotFound'), { name: 'NotFound' });
       if (cmd instanceof CreateBucketCommand) bucketExists = true;
       return {};
     });

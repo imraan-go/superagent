@@ -1,9 +1,9 @@
 /**
  * Shared shapes for human-in-the-loop items (server route ↔ Mission panel).
  */
-import type { QuestionPart } from "./messages";
+import type { QuestionPart } from './messages';
 
-export type HitlKind = "confirm" | "ask";
+export type HitlKind = 'confirm' | 'ask';
 
 export interface ApprovalDetail {
   tool: string;
@@ -18,7 +18,7 @@ export interface ApprovalDetail {
 
 export interface PendingItem {
   id: string;
-  source: "approval" | "question";
+  source: 'approval' | 'question';
   kind: HitlKind;
   prompt: string;
   createdAt: string;
@@ -35,7 +35,10 @@ export interface PendingResponse {
 }
 
 /** Polling cadence (skill-approvals-hitl §Gotchas): fast while anything is live. */
-export function pendingPollMs(data: Pick<PendingResponse, "count" | "running"> | undefined, localRunActive = false): number {
+export function pendingPollMs(
+  data: Pick<PendingResponse, 'count' | 'running'> | undefined,
+  localRunActive = false,
+): number {
   return localRunActive || (data?.count ?? 0) > 0 || (data?.running ?? 0) > 0 ? 5_000 : 60_000;
 }
 
@@ -49,16 +52,16 @@ export function newItems(previous: readonly PendingItem[] | undefined, current: 
 /** "just now", "4m", "2h", "3d" — compact age for a pending item. */
 export function formatAge(iso: string, now = Date.now()): string {
   const s = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
-  if (s < 45) return "just now";
+  if (s < 45) return 'just now';
   if (s < 3_600) return `${Math.round(s / 60)}m`;
   if (s < 86_400) return `${Math.round(s / 3_600)}h`;
   return `${Math.round(s / 86_400)}d`;
 }
 
 /** Window event the Computer panel listens for (open the screen view). */
-export const OPEN_COMPUTER_EVENT = "sa:open-computer";
+export const OPEN_COMPUTER_EVENT = 'sa:open-computer';
 /** Fired after a decision so the chat re-attaches to the run. */
-export const RUN_RESUMED_EVENT = "sa:run-resumed";
+export const RUN_RESUMED_EVENT = 'sa:run-resumed';
 export interface RunResumedDetail {
   runId: string;
   chatId: string;

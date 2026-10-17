@@ -1,10 +1,11 @@
 /* Glassy elevated panel: translucent ink, a top highlight, a fine border. */
 .panel {
   background:
-    linear-gradient(180deg, var(--glass-hi), transparent 42%),
-    color-mix(in srgb, var(--ink-1) 88%, transparent);
+    linear-gradient(180deg, var(--glass-hi), transparent 42%), color-mix(in srgb, var(--ink-1) 88%, transparent);
   border: var(--border) solid var(--glass-line);
-  transition: border-color var(--dur-std) var(--ease-out), box-shadow var(--dur-std) var(--ease-out);
+  transition:
+    border-color var(--dur-std) var(--ease-out),
+    box-shadow var(--dur-std) var(--ease-out);
   border-radius: var(--radius-panel);
   /* Elevation is border + subtle glow, never a heavy shadow. */
   box-shadow: var(--elev-1);

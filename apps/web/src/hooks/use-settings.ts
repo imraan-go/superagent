@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ApiError } from "@/lib/api";
-import { readApiError } from "@/lib/api-error";
-import { sectionDefaults } from "@/lib/settings";
-import type { SectionValue, SettingsSection } from "@/lib/settings";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ApiError } from '@/lib/api';
+import { readApiError } from '@/lib/api-error';
+import { sectionDefaults } from '@/lib/settings';
+import type { SectionValue, SettingsSection } from '@/lib/settings';
 
 /**
  * Settings client. One react-query entry per section (`["settings", s]`), so
@@ -14,8 +14,8 @@ import type { SectionValue, SettingsSection } from "@/lib/settings";
 export async function settingsFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
-    headers: init?.body ? { "content-type": "application/json" } : undefined,
-    cache: "no-store",
+    headers: init?.body ? { 'content-type': 'application/json' } : undefined,
+    cache: 'no-store',
   });
   const text = await response.text();
   const body: unknown = text ? JSON.parse(text) : null;
@@ -28,7 +28,7 @@ export async function settingsFetch<T>(path: string, init?: RequestInit): Promis
 
 export function useSettingsSection<S extends SettingsSection>(section: S, enabled = true) {
   const qc = useQueryClient();
-  const key = ["settings", section] as const;
+  const key = ['settings', section] as const;
 
   const query = useQuery({
     queryKey: key,
@@ -39,7 +39,7 @@ export function useSettingsSection<S extends SettingsSection>(section: S, enable
   const mutation = useMutation({
     mutationFn: (patch: Partial<Record<keyof SectionValue<S>, unknown>>) =>
       settingsFetch<SectionValue<S>>(`/api/settings/${section}`, {
-        method: "PUT",
+        method: 'PUT',
         body: JSON.stringify(patch),
       }),
     onMutate: async (patch) => {

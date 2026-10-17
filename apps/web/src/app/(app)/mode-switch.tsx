@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useLayoutEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { Gauge, Robot } from "@phosphor-icons/react/dist/ssr";
-import { SegmentedSwitch } from "@/components/ui";
+import { useLayoutEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Gauge, Robot } from '@phosphor-icons/react/dist/ssr';
+import { SegmentedSwitch } from '@/components/ui';
 
-type Mode = "agent" | "manage";
+type Mode = 'agent' | 'manage';
 
 /**
  * Agent ⇄ Manage. The switch is the route: Manage is `/manage`, Agent is the
@@ -14,7 +14,7 @@ type Mode = "agent" | "manage";
 export function ModeSwitch() {
   const pathname = usePathname();
   const router = useRouter();
-  const mode: Mode = pathname.startsWith("/manage") ? "manage" : "agent";
+  const mode: Mode = pathname.startsWith('/manage') ? 'manage' : 'agent';
 
   useLayoutEffect(() => {
     document.documentElement.dataset.mode = mode;
@@ -26,11 +26,11 @@ export function ModeSwitch() {
       value={mode}
       onChange={(next) => {
         document.documentElement.dataset.mode = next;
-        router.push(next === "manage" ? "/manage" : "/");
+        router.push(next === 'manage' ? '/manage' : '/');
       }}
       options={[
-        { value: "agent", label: "Agent", icon: <Robot size={14} weight="duotone" /> },
-        { value: "manage", label: "Workspaces", icon: <Gauge size={14} weight="duotone" /> },
+        { value: 'agent', label: 'Agent', icon: <Robot size={14} weight="duotone" /> },
+        { value: 'manage', label: 'Workspaces', icon: <Gauge size={14} weight="duotone" /> },
       ]}
     />
   );

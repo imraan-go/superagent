@@ -24,7 +24,10 @@ const optionalString = z
 
 const usd = z.preprocess(
   (v) => (typeof v === 'string' && v.trim() === '' ? undefined : typeof v === 'string' ? v.trim() : v),
-  z.string().regex(/^\d+(\.\d{1,9})?$/, 'must be a non-negative decimal USD amount').optional(),
+  z
+    .string()
+    .regex(/^\d+(\.\d{1,9})?$/, 'must be a non-negative decimal USD amount')
+    .optional(),
 );
 
 const intWithDefault = (d: number) =>
@@ -113,23 +116,47 @@ export const EnvSchema = z
   .superRefine((env, ctx) => {
     if (env.TEMPORAL_MODE === 'cloud') {
       if (env.TEMPORAL_ADDRESS.startsWith('localhost') || env.TEMPORAL_ADDRESS.startsWith('127.')) {
-        ctx.addIssue({ code: 'custom', path: ['TEMPORAL_ADDRESS'], message: 'cloud mode requires a Temporal Cloud endpoint, not localhost' });
+        ctx.addIssue({
+          code: 'custom',
+          path: ['TEMPORAL_ADDRESS'],
+          message: 'cloud mode requires a Temporal Cloud endpoint, not localhost',
+        });
       }
       if (env.TEMPORAL_NAMESPACE === 'default') {
-        ctx.addIssue({ code: 'custom', path: ['TEMPORAL_NAMESPACE'], message: 'cloud mode requires your <namespace>.<account-id> namespace' });
+        ctx.addIssue({
+          code: 'custom',
+          path: ['TEMPORAL_NAMESPACE'],
+          message: 'cloud mode requires your <namespace>.<account-id> namespace',
+        });
       }
       const mtls = Boolean(env.TEMPORAL_TLS_CERT_PATH && env.TEMPORAL_TLS_KEY_PATH);
       if (!env.TEMPORAL_API_KEY && !mtls) {
-        ctx.addIssue({ code: 'custom', path: ['TEMPORAL_API_KEY'], message: 'cloud mode requires TEMPORAL_API_KEY or TEMPORAL_TLS_CERT_PATH + TEMPORAL_TLS_KEY_PATH' });
+        ctx.addIssue({
+          code: 'custom',
+          path: ['TEMPORAL_API_KEY'],
+          message: 'cloud mode requires TEMPORAL_API_KEY or TEMPORAL_TLS_CERT_PATH + TEMPORAL_TLS_KEY_PATH',
+        });
       }
       if (env.TEMPORAL_API_KEY && mtls) {
-        ctx.addIssue({ code: 'custom', path: ['TEMPORAL_API_KEY'], message: 'choose either API key or mTLS for Temporal Cloud, not both' });
+        ctx.addIssue({
+          code: 'custom',
+          path: ['TEMPORAL_API_KEY'],
+          message: 'choose either API key or mTLS for Temporal Cloud, not both',
+        });
       }
     } else if (env.TEMPORAL_API_KEY || env.TEMPORAL_TLS_CERT_PATH) {
-      ctx.addIssue({ code: 'custom', path: ['TEMPORAL_MODE'], message: 'local mode must not carry Temporal Cloud credentials; set TEMPORAL_MODE=cloud or remove them' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['TEMPORAL_MODE'],
+        message: 'local mode must not carry Temporal Cloud credentials; set TEMPORAL_MODE=cloud or remove them',
+      });
     }
     if (env.APP_ENV === 'production' && (env.DEV_SEED_PASSWORD || env.DEV_SEED_EMAIL)) {
-      ctx.addIssue({ code: 'custom', path: ['DEV_SEED_PASSWORD'], message: 'development seed credentials are not allowed in production' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['DEV_SEED_PASSWORD'],
+        message: 'development seed credentials are not allowed in production',
+      });
     }
   });
 
@@ -165,16 +192,31 @@ export class SetupRequiredError extends Error {
   }
 }
 
-export function requireKeys<K extends keyof AppEnv>(capability: string, keys: K[], hint = 'See docs/credentials-checklist.md.'): { [P in K]: NonNullable<AppEnv[P]> } {
+export function requireKeys<K extends keyof AppEnv>(
+  capability: string,
+  keys: K[],
+  hint = 'See docs/credentials-checklist.md.',
+): { [P in K]: NonNullable<AppEnv[P]> } {
   const env = getEnv();
   const missing = keys.filter((k) => env[k] === undefined || env[k] === '');
   if (missing.length) throw new SetupRequiredError(capability, missing as string[], hint);
   return Object.fromEntries(keys.map((k) => [k, env[k]])) as { [P in K]: NonNullable<AppEnv[P]> };
 }
 
-export type Capability = 'database' | 'auth' | 'storage' | 'gateway' | 'composio' | 'e2b_code' | 'e2b_browser' | 'temporal' | 'budget';
+export type Capability =
+  | 'database'
+  | 'auth'
+  | 'storage'
+  | 'gateway'
+  | 'composio'
+  | 'e2b_code'
+  | 'e2b_browser'
+  | 'temporal'
+  | 'budget';
 
-export function capabilityStatus(env: AppEnv = getEnv()): Record<Capability, { configured: boolean; missing: string[] }> {
+export function capabilityStatus(
+  env: AppEnv = getEnv(),
+): Record<Capability, { configured: boolean; missing: string[] }> {
   const check = (keys: (keyof AppEnv)[]) => {
     const missing = keys.filter((k) => env[k] === undefined || env[k] === '') as string[];
     return { configured: missing.length === 0, missing };
@@ -187,7 +229,10 @@ export function capabilityStatus(env: AppEnv = getEnv()): Record<Capability, { c
     composio: check(['COMPOSIO_API_KEY']),
     e2b_code: check(['E2B_API_KEY', 'E2B_CODE_TEMPLATE_ID']),
     e2b_browser: check(['E2B_API_KEY', 'E2B_BROWSER_TEMPLATE_ID', 'AI_MODEL_BROWSER']),
-    temporal: env.TEMPORAL_MODE === 'cloud' ? check(['TEMPORAL_ADDRESS', 'TEMPORAL_NAMESPACE']) : { configured: true, missing: [] },
+    temporal:
+      env.TEMPORAL_MODE === 'cloud'
+        ? check(['TEMPORAL_ADDRESS', 'TEMPORAL_NAMESPACE'])
+        : { configured: true, missing: [] },
     budget: check(['MAX_COST_PER_RUN', 'MONTHLY_COST_LIMIT']),
   };
 }
@@ -207,7 +252,8 @@ export function composioAuthConfigs(env: AppEnv = getEnv()): Record<string, stri
   };
   for (const [k, v] of Object.entries(map)) {
     if (v) {
-      if (!/^ac_[A-Za-z0-9_-]+$/.test(v)) throw new Error(`COMPOSIO_AUTH_CONFIG_${k.toUpperCase()} must look like ac_...`);
+      if (!/^ac_[A-Za-z0-9_-]+$/.test(v))
+        throw new Error(`COMPOSIO_AUTH_CONFIG_${k.toUpperCase()} must look like ac_...`);
       out[k] = v;
     }
   }
@@ -215,7 +261,10 @@ export function composioAuthConfigs(env: AppEnv = getEnv()): Record<string, stri
 }
 
 export function modelAllowlist(env: AppEnv = getEnv()): string[] {
-  const list = (env.AI_MODEL_ALLOWLIST ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  const list = (env.AI_MODEL_ALLOWLIST ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
   for (const m of [env.AI_MODEL_PRIMARY, env.AI_MODEL_BROWSER]) if (m && !list.includes(m)) list.push(m);
   return list;
 }

@@ -31,19 +31,29 @@ export interface ToolRow {
 
 let catalogCache: Cached<CatalogData> | undefined;
 const toolsCache = new Map<string, Cached<ToolRow[]>>();
-const triggersCache = new Map<string, Cached<Array<{ slug: string; name?: string | undefined; description?: string | undefined; type?: string | undefined }>>>();
+const triggersCache = new Map<
+  string,
+  Cached<
+    Array<{ slug: string; name?: string | undefined; description?: string | undefined; type?: string | undefined }>
+  >
+>();
 
 /**
  * Toolkits the agent can actually use on this installation: those with at least one curated tool
  * that `pnpm composio:discover` verified (packages/policy connector-catalog.lock.json).
  */
 export function supportedToolkits(): Set<string> {
-  return new Set(verifiedConnectorTools().map((t) => t.toolkit!).filter(Boolean));
+  return new Set(
+    verifiedConnectorTools()
+      .map((t) => t.toolkit!)
+      .filter(Boolean),
+  );
 }
 
 export async function getCatalog(client: ComposioClient, force = false): Promise<CatalogData> {
   if (!force && catalogCache && Date.now() - catalogCache.at < TTL_MS) return catalogCache.value;
-  const { items: raw, total }: { items: ComposioToolkit[]; total: number | null } = await client.listAllToolkitsWithTotal();
+  const { items: raw, total }: { items: ComposioToolkit[]; total: number | null } =
+    await client.listAllToolkitsWithTotal();
   const seen = new Set<string>();
   const supported = supportedToolkits();
   // Apps the agent can use sort first ("pinned"), then Composio's own usage order.
@@ -54,7 +64,10 @@ export async function getCatalog(client: ComposioClient, force = false): Promise
       .map((t) => ({ ...t, pinned: supported.has(t.slug) })),
   );
   const facets = facetsOf(toolkits);
-  catalogCache = { at: Date.now(), value: { toolkits, categories: facets.map((f) => f.name), facets, upstreamTotal: total } };
+  catalogCache = {
+    at: Date.now(),
+    value: { toolkits, categories: facets.map((f) => f.name), facets, upstreamTotal: total },
+  };
   return catalogCache.value;
 }
 
@@ -88,7 +101,10 @@ export async function getToolkitDetail(client: ComposioClient, slug: string): Pr
   if (!toolkit) return null;
   let triggers = triggersCache.get(toolkit.slug);
   if (!triggers || Date.now() - triggers.at >= TTL_MS) {
-    triggers = { at: Date.now(), value: toolkit.triggersCount > 0 ? await client.listTriggerTypes([toolkit.slug]).catch(() => []) : [] };
+    triggers = {
+      at: Date.now(),
+      value: toolkit.triggersCount > 0 ? await client.listTriggerTypes([toolkit.slug]).catch(() => []) : [],
+    };
     triggersCache.set(toolkit.slug, triggers);
   }
   const rows = await getToolkitTools(client, toolkit.slug);
@@ -97,5 +113,10 @@ export async function getToolkitDetail(client: ComposioClient, slug: string): Pr
   const detail = buildDetail(toolkit, rows, triggers.value, enabled, true);
   // Approval comes from the application's classification, not from the tool's name.
   const writes = new Set(verified.filter((t) => t.classification === 'external_write').map((t) => t.composioSlug!));
-  return { ...detail, tools: detail.tools.map((t) => (enabled.has(t.slug) ? { ...t, needsApproval: writes.has(t.slug), readOnly: !writes.has(t.slug) } : t)) };
+  return {
+    ...detail,
+    tools: detail.tools.map((t) =>
+      enabled.has(t.slug) ? { ...t, needsApproval: writes.has(t.slug), readOnly: !writes.has(t.slug) } : t,
+    ),
+  };
 }

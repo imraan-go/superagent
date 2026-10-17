@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "../styles/tokens.css";
+@import 'tailwindcss';
+@import '../styles/tokens.css';
 
 /* Expose the design tokens to Tailwind's utility generator so `bg-ink-1`,
    `text-signal`, `rounded-panel` etc. resolve to the same variables the
@@ -210,9 +210,9 @@
 /* One guard for every animation and transition in the app: the OS setting
    (unless the owner forced motion on) and Settings › Reduce motion. */
 @media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion="full"]) *,
-  :root:not([data-motion="full"]) *::before,
-  :root:not([data-motion="full"]) *::after {
+  :root:not([data-motion='full']) *,
+  :root:not([data-motion='full']) *::before,
+  :root:not([data-motion='full']) *::after {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
     animation-delay: 0ms !important;
@@ -220,9 +220,9 @@
   }
 }
 
-:root[data-motion="reduce"] *,
-:root[data-motion="reduce"] *::before,
-:root[data-motion="reduce"] *::after {
+:root[data-motion='reduce'] *,
+:root[data-motion='reduce'] *::before,
+:root[data-motion='reduce'] *::after {
   animation-duration: 1ms !important;
   animation-iteration-count: 1 !important;
   animation-delay: 0ms !important;

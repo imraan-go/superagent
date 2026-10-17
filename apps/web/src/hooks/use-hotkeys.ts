@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
-import { resolveBinding } from "@/lib/hotkeys";
-import type { Binding, MatchState } from "@/lib/hotkeys";
+import { useEffect, useRef } from 'react';
+import { resolveBinding } from '@/lib/hotkeys';
+import type { Binding, MatchState } from '@/lib/hotkeys';
 
 /**
  * Register global shortcuts. Bare keys and `g x` sequences are ignored while a
@@ -23,7 +23,7 @@ export function useHotkeys(bindings: readonly Binding[]): void {
       e.preventDefault();
       hit.handler(e);
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 }

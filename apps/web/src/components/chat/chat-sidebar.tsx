@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CaretDoubleLeft,
   CaretDoubleRight,
@@ -14,19 +14,19 @@ import {
   SignOut,
   SquaresFour,
   Trash,
-} from "@phosphor-icons/react/dist/ssr";
-import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
-import type { ChatSummary } from "@/lib/api";
-import { groupChats } from "@/lib/chat-groups";
-import { CategoryTile, Dot, IconButton, LiveGlyph, SkeletonText } from "@/components/ui";
-import type { TileCategory } from "@/components/ui";
-import { STATE_LABEL, useCapabilities } from "@/hooks/use-capabilities";
-import { LogoStack } from "@/components/apps/app-logo";
-import { useConnectedApps } from "@/components/apps/use-composio";
-import { openApps } from "@/lib/app-events";
-import { cn } from "@/lib/cn";
-import styles from "./chat-sidebar.module.css";
+} from '@phosphor-icons/react/dist/ssr';
+import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api';
+import type { ChatSummary } from '@/lib/api';
+import { groupChats } from '@/lib/chat-groups';
+import { CategoryTile, Dot, IconButton, LiveGlyph, SkeletonText } from '@/components/ui';
+import type { TileCategory } from '@/components/ui';
+import { STATE_LABEL, useCapabilities } from '@/hooks/use-capabilities';
+import { LogoStack } from '@/components/apps/app-logo';
+import { useConnectedApps } from '@/components/apps/use-composio';
+import { openApps } from '@/lib/app-events';
+import { cn } from '@/lib/cn';
+import styles from './chat-sidebar.module.css';
 
 /**
  * The left rail (DESIGN_SYSTEM §Layout → Left rail). Fixed full height:
@@ -50,20 +50,19 @@ export function ChatSidebar({
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
 
   const { data, isPending } = useQuery({
-    queryKey: ["chats"],
+    queryKey: ['chats'],
     queryFn: api.listChats,
     // Status lines are only interesting while something is running.
-    refetchInterval: (q) =>
-      q.state.data?.chats.some((c) => c.status === "running") ? 4_000 : 30_000,
+    refetchInterval: (q) => (q.state.data?.chats.some((c) => c.status === 'running') ? 4_000 : 30_000),
   });
 
   const createChat = useMutation({
     mutationFn: api.createChat,
     onSuccess: async ({ chat }) => {
-      await queryClient.invalidateQueries({ queryKey: ["chats"] });
+      await queryClient.invalidateQueries({ queryKey: ['chats'] });
       router.push(`/chat/${chat.id}`);
     },
   });
@@ -93,7 +92,7 @@ export function ChatSidebar({
           </Link>
           {onToggleCollapsed && (
             <IconButton
-              label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               size="sm"
               aria-keyshortcuts="Control+B Meta+B"
               icon={collapsed ? <CaretDoubleRight size={14} /> : <CaretDoubleLeft size={14} />}
@@ -146,25 +145,21 @@ export function ChatSidebar({
           </div>
         ) : filtered.length === 0 ? (
           !collapsed && (
-            <p className={styles.empty}>
-              {query ? "No chats match that." : "No chats yet. Start one above."}
-            </p>
+            <p className={styles.empty}>{query ? 'No chats match that.' : 'No chats yet. Start one above.'}</p>
           )
         ) : collapsed ? (
           <ul className={styles.mini}>
             {filtered.slice(0, 14).map((chat, i) => (
-              <li key={chat.id} className="rise-in" style={{ "--i": i } as React.CSSProperties}>
+              <li key={chat.id} className="rise-in" style={{ '--i': i } as React.CSSProperties}>
                 <Link
                   href={`/chat/${chat.id}`}
                   className={cn(styles.miniLink, chat.id === activeId && styles.miniActive)}
-                  aria-current={chat.id === activeId ? "page" : undefined}
+                  aria-current={chat.id === activeId ? 'page' : undefined}
                   aria-label={chat.title}
                   title={chat.title}
                 >
-                  <CategoryTile cat={chatCategory(chat)} size="sm" active={chat.status === "running"} />
-                  {statusOf(chat) !== "idle" && (
-                    <Dot status={statusOf(chat)} size="sm" className={styles.miniDot} />
-                  )}
+                  <CategoryTile cat={chatCategory(chat)} size="sm" active={chat.status === 'running'} />
+                  {statusOf(chat) !== 'idle' && <Dot status={statusOf(chat)} size="sm" className={styles.miniDot} />}
                 </Link>
               </li>
             ))}
@@ -173,12 +168,7 @@ export function ChatSidebar({
           groups.map((group, g) => (
             <Section key={group.key} label={group.label} count={group.chats.length}>
               {group.chats.map((chat, i) => (
-                <ChatRow
-                  key={chat.id}
-                  chat={chat}
-                  active={chat.id === activeId}
-                  index={g * 3 + i}
-                />
+                <ChatRow key={chat.id} chat={chat} active={chat.id === activeId} index={g * 3 + i} />
               ))}
             </Section>
           ))
@@ -218,7 +208,7 @@ function Section({ label, count, children }: { label: string; count: number; chi
 function ComputerCard({ collapsed }: { collapsed: boolean }) {
   const { state, dot, workspace } = useCapabilities();
   const label = STATE_LABEL[state];
-  const pulse = state === "working";
+  const pulse = state === 'working';
   if (collapsed) {
     return (
       <span className={styles.computerMini} title={`Agent: ${label}`}>
@@ -233,7 +223,9 @@ function ComputerCard({ collapsed }: { collapsed: boolean }) {
       <span className={styles.computerText}>
         <span className={styles.computerName}>Cloud workspace</span>
         <span className={styles.computerSub}>
-          {workspace ? `${workspace.state}${workspace.sandboxId ? ` · ${workspace.sandboxId.slice(0, 10)}` : ""}` : "starts on first use"}
+          {workspace
+            ? `${workspace.state}${workspace.sandboxId ? ` · ${workspace.sandboxId.slice(0, 10)}` : ''}`
+            : 'starts on first use'}
         </span>
       </span>
       <span className={styles.computerState}>
@@ -248,7 +240,13 @@ function ComputerCard({ collapsed }: { collapsed: boolean }) {
 function ConnectAppsButton({ collapsed }: { collapsed: boolean }) {
   const { slugs, count } = useConnectedApps();
   if (collapsed) {
-    return <IconButton label={count ? `Connect apps (${count} connected)` : "Connect apps"} icon={<SquaresFour size={18} weight="duotone" />} onClick={() => openApps()} />;
+    return (
+      <IconButton
+        label={count ? `Connect apps (${count} connected)` : 'Connect apps'}
+        icon={<SquaresFour size={18} weight="duotone" />}
+        onClick={() => openApps()}
+      />
+    );
   }
   return (
     <button type="button" className={styles.dockBtn} onClick={() => openApps()} data-apps-btn>
@@ -267,14 +265,14 @@ function ConnectAppsButton({ collapsed }: { collapsed: boolean }) {
 function Owner({ email, collapsed }: { email: string; collapsed: boolean }) {
   const router = useRouter();
   const signOut = async () => {
-    await fetch("/api/auth/sign-out", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
-    router.replace("/login");
+    await fetch('/api/auth/sign-out', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+    router.replace('/login');
     router.refresh();
   };
-  const initial = (email.trim()[0] ?? "O").toUpperCase();
+  const initial = (email.trim()[0] ?? 'O').toUpperCase();
   if (collapsed) {
     return (
-      <IconButton label={email ? `Sign out ${email}` : "Sign out"} icon={<SignOut size={16} />} onClick={signOut} />
+      <IconButton label={email ? `Sign out ${email}` : 'Sign out'} icon={<SignOut size={16} />} onClick={signOut} />
     );
   }
   return (
@@ -285,11 +283,11 @@ function Owner({ email, collapsed }: { email: string; collapsed: boolean }) {
       <span className={styles.ownerText}>
         <span className={styles.ownerName}>Owner</span>
         <span className={styles.ownerMail} title={email}>
-          {email || "signed in"}
+          {email || 'signed in'}
         </span>
       </span>
       <IconButton
-        label={email ? `Sign out ${email}` : "Sign out"}
+        label={email ? `Sign out ${email}` : 'Sign out'}
         size="sm"
         icon={<SignOut size={14} />}
         onClick={signOut}
@@ -301,7 +299,7 @@ function Owner({ email, collapsed }: { email: string; collapsed: boolean }) {
 function ChatRow({ chat, active, index }: { chat: ChatSummary; active: boolean; index: number }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["chats"] });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['chats'] });
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState(chat.title);
 
@@ -319,7 +317,7 @@ function ChatRow({ chat, active, index }: { chat: ChatSummary; active: boolean; 
     mutationFn: () => api.deleteChat(chat.id),
     onSuccess: async () => {
       await invalidate();
-      if (active) router.push("/");
+      if (active) router.push('/');
     },
   });
 
@@ -332,9 +330,9 @@ function ChatRow({ chat, active, index }: { chat: ChatSummary; active: boolean; 
 
   return (
     <div
-      className={cn(styles.row, active && styles.rowActive, "rise-in")}
+      className={cn(styles.row, active && styles.rowActive, 'rise-in')}
       data-status={status}
-      style={{ "--i": index } as React.CSSProperties}
+      style={{ '--i': index } as React.CSSProperties}
     >
       {renaming ? (
         <div className={styles.renameBox}>
@@ -348,8 +346,8 @@ function ChatRow({ chat, active, index }: { chat: ChatSummary; active: boolean; 
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commit}
             onKeyDown={(e) => {
-              if (e.key === "Enter") commit();
-              if (e.key === "Escape") {
+              if (e.key === 'Enter') commit();
+              if (e.key === 'Escape') {
                 e.stopPropagation();
                 setDraft(chat.title);
                 setRenaming(false);
@@ -358,10 +356,12 @@ function ChatRow({ chat, active, index }: { chat: ChatSummary; active: boolean; 
           />
         </div>
       ) : (
-        <Link href={`/chat/${chat.id}`} className={styles.rowLink} aria-current={active ? "page" : undefined}>
+        <Link href={`/chat/${chat.id}`} className={styles.rowLink} aria-current={active ? 'page' : undefined}>
           <span className={styles.tileWrap}>
-            <CategoryTile cat={chatCategory(chat)} size="sm" active={chat.status === "running"} />
-            {status !== "idle" && <Dot status={status} size="sm" pulse={status === "live"} className={styles.tileDot} />}
+            <CategoryTile cat={chatCategory(chat)} size="sm" active={chat.status === 'running'} />
+            {status !== 'idle' && (
+              <Dot status={status} size="sm" pulse={status === 'live'} className={styles.tileDot} />
+            )}
           </span>
           <span className={styles.rowText}>
             <span className={styles.rowTitle}>{chat.title}</span>
@@ -380,9 +380,9 @@ function ChatRow({ chat, active, index }: { chat: ChatSummary; active: boolean; 
       {!renaming && (
         <span className={styles.rowActions}>
           <IconButton
-            label={chat.pinned ? "Unpin chat" : "Pin chat"}
+            label={chat.pinned ? 'Unpin chat' : 'Pin chat'}
             size="sm"
-            icon={<PushPin size={13} weight={chat.pinned ? "fill" : "regular"} />}
+            icon={<PushPin size={13} weight={chat.pinned ? 'fill' : 'regular'} />}
             onClick={() => pin.mutate()}
           />
           <IconButton
@@ -410,15 +410,15 @@ function ChatRow({ chat, active, index }: { chat: ChatSummary; active: boolean; 
 
 function statusOf(chat: ChatSummary) {
   switch (chat.status) {
-    case "running":
-      return "live" as const;
-    case "paused_approval":
-    case "paused_question":
-      return "warn" as const;
-    case "error":
-      return "error" as const;
+    case 'running':
+      return 'live' as const;
+    case 'paused_approval':
+    case 'paused_question':
+      return 'warn' as const;
+    case 'error':
+      return 'error' as const;
     default:
-      return "idle" as const;
+      return 'idle' as const;
   }
 }
 
@@ -426,27 +426,27 @@ function statusOf(chat: ChatSummary) {
  * The chat list carries no per-run tool data, so the tile is inferred from the
  * live status line and the title — what the chat is visibly about.
  */
-export function chatCategory(chat: Pick<ChatSummary, "title" | "statusLine" | "status">): TileCategory {
-  if (chat.status === "error") return "error";
-  if (chat.status === "paused_approval" || chat.status === "paused_question") return "human";
-  const t = `${chat.statusLine ?? ""} ${chat.title}`.toLowerCase();
-  if (/windows|\brdp\b|\bpc\b/.test(t)) return "rdp";
-  if (/brows|linkedin|website|\bweb\b|\bpage\b|https?:|\burl\b|google/.test(t)) return "browser";
-  if (/\bmcp\b/.test(t)) return "mcp";
-  if (/connector|gmail|slack|notion|e-?mail|inbox|\bapi\b/.test(t)) return "connector";
-  if (/schedul|daily|weekly|cron|remind/.test(t)) return "schedule";
-  if (/memory|remember/.test(t)) return "memory";
-  if (/\bfiles?\b|csv|upload|download|folder/.test(t)) return "files";
-  if (/shell|command|terminal|python|script/.test(t)) return "shell";
-  if (/screen|desktop|computer|click|look/.test(t)) return "screen";
-  return "think";
+export function chatCategory(chat: Pick<ChatSummary, 'title' | 'statusLine' | 'status'>): TileCategory {
+  if (chat.status === 'error') return 'error';
+  if (chat.status === 'paused_approval' || chat.status === 'paused_question') return 'human';
+  const t = `${chat.statusLine ?? ''} ${chat.title}`.toLowerCase();
+  if (/windows|\brdp\b|\bpc\b/.test(t)) return 'rdp';
+  if (/brows|linkedin|website|\bweb\b|\bpage\b|https?:|\burl\b|google/.test(t)) return 'browser';
+  if (/\bmcp\b/.test(t)) return 'mcp';
+  if (/connector|gmail|slack|notion|e-?mail|inbox|\bapi\b/.test(t)) return 'connector';
+  if (/schedul|daily|weekly|cron|remind/.test(t)) return 'schedule';
+  if (/memory|remember/.test(t)) return 'memory';
+  if (/\bfiles?\b|csv|upload|download|folder/.test(t)) return 'files';
+  if (/shell|command|terminal|python|script/.test(t)) return 'shell';
+  if (/screen|desktop|computer|click|look/.test(t)) return 'screen';
+  return 'think';
 }
 
 /** Short, non-ticking relative time — the row re-renders on refetch anyway. */
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.round(diff / 60_000);
-  if (minutes < 1) return "just now";
+  if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.round(minutes / 60);
   if (hours < 24) return `${hours}h ago`;

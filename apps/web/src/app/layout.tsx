@@ -1,22 +1,22 @@
-import type { Metadata, Viewport } from "next";
-import { connection } from "next/server";
-import { fontVariables } from "./fonts";
-import { ThemeScript } from "@/components/theme/theme-script";
-import { getAppearanceTheme } from "@/server/api";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next';
+import { connection } from 'next/server';
+import { fontVariables } from './fonts';
+import { ThemeScript } from '@/components/theme/theme-script';
+import { getAppearanceTheme } from '@/server/api';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "Superagent",
-  description: "Personal agentic assistant",
+  title: 'Superagent',
+  description: 'Personal agentic assistant',
   robots: { index: false, follow: false },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0b0d10" },
-    { media: "(prefers-color-scheme: light)", color: "#f6f8fa" },
+    { media: '(prefers-color-scheme: dark)', color: '#0b0d10' },
+    { media: '(prefers-color-scheme: light)', color: '#f6f8fa' },
   ],
-  width: "device-width",
+  width: 'device-width',
   initialScale: 1,
 };
 

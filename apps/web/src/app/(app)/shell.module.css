@@ -15,7 +15,7 @@
   transition: grid-template-columns var(--dur-panel) var(--ease-spring);
 }
 
-.app[data-left="rail"] {
+.app[data-left='rail'] {
   grid-template-columns: var(--sidebar-l-rail) minmax(0, 1fr) auto;
 }
 
@@ -44,8 +44,7 @@
   overflow: hidden;
   border-right: var(--border) solid var(--glass-line);
   background:
-    linear-gradient(180deg, var(--glass-hi), transparent 40%),
-    color-mix(in srgb, var(--ink-1) 82%, transparent);
+    linear-gradient(180deg, var(--glass-hi), transparent 40%), color-mix(in srgb, var(--ink-1) 82%, transparent);
 }
 
 /* ---- topbar (centre column only) ---------------------------------------- */
@@ -213,7 +212,7 @@
 /* Below 820px the left rail goes too; the topbar menu opens the drawer. */
 @media (max-width: 820px) {
   .app,
-  .app[data-left="rail"] {
+  .app[data-left='rail'] {
     grid-template-columns: 0 minmax(0, 1fr) 0;
   }
 

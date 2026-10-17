@@ -12,11 +12,11 @@ services:
       POSTGRES_DB: superagent
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run pnpm setup:env first}
     ports:
-      - "127.0.0.1:5432:5432"
+      - '127.0.0.1:5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U superagent -d superagent"]
+      test: ['CMD-SHELL', 'pg_isready -U superagent -d superagent']
       interval: 3s
       timeout: 3s
       retries: 20
@@ -25,14 +25,14 @@ services:
   minio:
     image: cgr.dev/chainguard/minio@sha256:2136d593beacf4461187035eca949fe49abd589d5079735025c711ca58fee0c8
     restart: unless-stopped
-    command: ["server", "/data", "--address", ":9000", "--console-address", ":9001"]
+    command: ['server', '/data', '--address', ':9000', '--console-address', ':9001']
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:?run pnpm setup:env first}
       MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:?run pnpm setup:env first}
-      MINIO_BROWSER_REDIRECT: "off"
+      MINIO_BROWSER_REDIRECT: 'off'
     ports:
-      - "127.0.0.1:9000:9000"
-      - "127.0.0.1:9001:9001"
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
     volumes:
       - miniodata:/data
 

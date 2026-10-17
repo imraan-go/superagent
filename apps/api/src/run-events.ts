@@ -27,10 +27,32 @@ export type RunWireEvent =
   | { type: 'debug'; kind: string; data: Record<string, unknown> }
   | { type: 'step'; step: StepView }
   | { type: 'step_done'; step: StepView }
-  | { type: 'approval_required'; approvalId?: string; stepIdx: number; tool: string; reason: string; args: Record<string, unknown> }
+  | {
+      type: 'approval_required';
+      approvalId?: string;
+      stepIdx: number;
+      tool: string;
+      reason: string;
+      args: Record<string, unknown>;
+    }
   | { type: 'approval_decided'; approvalId: string; tool: string; decision: 'approve' | 'reject' }
-  | { type: 'question'; question: { questionId: string; kind: string; prompt: string; options: Array<{ id: string; label: string }>; gate: boolean; expiresAt: string } }
-  | { type: 'question_resolved'; questionId: string; status: 'answered' | 'expired'; answer: { choices: string[]; text?: string } | null }
+  | {
+      type: 'question';
+      question: {
+        questionId: string;
+        kind: string;
+        prompt: string;
+        options: Array<{ id: string; label: string }>;
+        gate: boolean;
+        expiresAt: string;
+      };
+    }
+  | {
+      type: 'question_resolved';
+      questionId: string;
+      status: 'answered' | 'expired';
+      answer: { choices: string[]; text?: string } | null;
+    }
   | { type: 'usage'; tokensIn: number; tokensOut: number; cached: number; costUsd: number }
   | { type: 'message'; message: Record<string, unknown> }
   | { type: 'done'; status: 'done' | 'cancelled' | 'paused_approval' }
@@ -45,7 +67,13 @@ export interface TranslatorState {
 }
 
 export function newTranslatorState(): TranslatorState {
-  return { steps: new Map(), stepStarted: new Map(), usage: { tokensIn: 0, tokensOut: 0, cached: 0, costUsd: 0 }, approvals: new Map(), nextIdx: 0 };
+  return {
+    steps: new Map(),
+    stepStarted: new Map(),
+    usage: { tokensIn: 0, tokensOut: 0, cached: 0, costUsd: 0 },
+    approvals: new Map(),
+    nextIdx: 0,
+  };
 }
 
 const TOOL_LABELS: Record<string, string> = {
@@ -71,7 +99,10 @@ const TOOL_LABELS: Record<string, string> = {
 
 export function toolLabel(tool: string): string {
   if (TOOL_LABELS[tool]) return TOOL_LABELS[tool];
-  const pretty = tool.replace(/^[a-z]+__/, '').replace(/_/g, ' ').toLowerCase();
+  const pretty = tool
+    .replace(/^[a-z]+__/, '')
+    .replace(/_/g, ' ')
+    .toLowerCase();
   return pretty.charAt(0).toUpperCase() + pretty.slice(1);
 }
 
@@ -91,7 +122,11 @@ function stepFor(s: TranslatorState, key: string, tool: string): StepView {
  * `finalMessage` is the chat's persisted assistant turn for this run, supplied by the route once
  * the run is terminal so the client can swap streamed state for the stored message.
  */
-export function translate(s: TranslatorState, e: TaskEventRow, ctx: { runId: string; chatId: string; model: string; finalMessage?: Record<string, unknown> | null }): RunWireEvent[] {
+export function translate(
+  s: TranslatorState,
+  e: TaskEventRow,
+  ctx: { runId: string; chatId: string; model: string; finalMessage?: Record<string, unknown> | null },
+): RunWireEvent[] {
   const d = e.data ?? {};
   const at = new Date(e.createdAt).getTime();
   switch (e.type) {
@@ -105,7 +140,10 @@ export function translate(s: TranslatorState, e: TaskEventRow, ctx: { runId: str
         cached: s.usage.cached + num(d.cacheReadTokens),
         costUsd: s.usage.costUsd + Number(d.costUsd ?? 0),
       };
-      return [{ type: 'debug', kind: 'model', data: d }, { type: 'usage', ...s.usage }];
+      return [
+        { type: 'debug', kind: 'model', data: d },
+        { type: 'usage', ...s.usage },
+      ];
     }
     case 'tool.started': {
       const tool = str(d.tool);
@@ -149,7 +187,9 @@ export function translate(s: TranslatorState, e: TaskEventRow, ctx: { runId: str
     case 'approval.expired': {
       const id = str(d.intentId);
       const tool = s.approvals.get(id) ?? '';
-      return [{ type: 'approval_decided', approvalId: id, tool, decision: d.decision === 'approved' ? 'approve' : 'reject' }];
+      return [
+        { type: 'approval_decided', approvalId: id, tool, decision: d.decision === 'approved' ? 'approve' : 'reject' },
+      ];
     }
     case 'action.confirmed':
     case 'action.failed':
@@ -157,7 +197,8 @@ export function translate(s: TranslatorState, e: TaskEventRow, ctx: { runId: str
       const step = s.steps.get(`approval:${str(d.intentId)}`);
       if (!step) return [];
       step.ok = e.type === 'action.confirmed';
-      step.preview = e.type === 'action.unknown_outcome' ? 'Outcome unknown — check your account' : str(d.reason) || undefined;
+      step.preview =
+        e.type === 'action.unknown_outcome' ? 'Outcome unknown — check your account' : str(d.reason) || undefined;
       return [{ type: 'step_done', step: { ...step } }];
     }
     case 'question.asked':
@@ -187,13 +228,23 @@ export function translate(s: TranslatorState, e: TaskEventRow, ctx: { runId: str
     case 'budget.blocked':
       return [{ type: 'debug', kind: 'budget', data: d }];
     case 'task.completed':
-      return [...(ctx.finalMessage ? [{ type: 'message', message: ctx.finalMessage } as RunWireEvent] : []), { type: 'done', status: 'done' }];
+      return [
+        ...(ctx.finalMessage ? [{ type: 'message', message: ctx.finalMessage } as RunWireEvent] : []),
+        { type: 'done', status: 'done' },
+      ];
     case 'task.cancelled':
-      return [...(ctx.finalMessage ? [{ type: 'message', message: ctx.finalMessage } as RunWireEvent] : []), { type: 'done', status: 'cancelled' }];
+      return [
+        ...(ctx.finalMessage ? [{ type: 'message', message: ctx.finalMessage } as RunWireEvent] : []),
+        { type: 'done', status: 'cancelled' },
+      ];
     case 'task.failed':
       return [
         ...(ctx.finalMessage ? [{ type: 'message', message: ctx.finalMessage } as RunWireEvent] : []),
-        { type: 'error', code: /limit/i.test(str(d.reason)) ? 'step_limit' : /budget/i.test(str(d.reason)) ? 'budget' : 'failed', message: str(d.reason) || 'The run failed.' },
+        {
+          type: 'error',
+          code: /limit/i.test(str(d.reason)) ? 'step_limit' : /budget/i.test(str(d.reason)) ? 'budget' : 'failed',
+          message: str(d.reason) || 'The run failed.',
+        },
       ];
     default:
       // Workspace/browser lifecycle and artifacts: visible in Debug mode only.

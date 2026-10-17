@@ -26,7 +26,9 @@ describe('isIanaTimezone', () => {
 describe('CreateTaskRequest', () => {
   it('trims the prompt, lowercases domains and defaults allowedDomains', () => {
     expect(CreateTaskRequest.parse({ prompt: '  do it  ' })).toEqual({ prompt: 'do it', allowedDomains: [] });
-    expect(CreateTaskRequest.parse({ prompt: 'x', allowedDomains: [' Example.COM ', '*.wikipedia.org'] }).allowedDomains).toEqual(['example.com', '*.wikipedia.org']);
+    expect(
+      CreateTaskRequest.parse({ prompt: 'x', allowedDomains: [' Example.COM ', '*.wikipedia.org'] }).allowedDomains,
+    ).toEqual(['example.com', '*.wikipedia.org']);
   });
 
   it('rejects blank or oversized prompts', () => {
@@ -34,15 +36,23 @@ describe('CreateTaskRequest', () => {
     expect(CreateTaskRequest.safeParse({ prompt: 'a'.repeat(8001) }).success).toBe(false);
   });
 
-  it.each(['localhost', 'http://example.com', 'example.com/path', '*example.com', 'exa mple.com'])('rejects domain %j', (d) => {
-    expect(CreateTaskRequest.safeParse({ prompt: 'x', allowedDomains: [d] }).success).toBe(false);
-  });
+  it.each(['localhost', 'http://example.com', 'example.com/path', '*example.com', 'exa mple.com'])(
+    'rejects domain %j',
+    (d) => {
+      expect(CreateTaskRequest.safeParse({ prompt: 'x', allowedDomains: [d] }).success).toBe(false);
+    },
+  );
 
   it('caps allowedDomains at 20 and validates timezone and idempotency key', () => {
-    expect(CreateTaskRequest.safeParse({ prompt: 'x', allowedDomains: Array.from({ length: 21 }, (_, i) => `d${i}.com`) }).success).toBe(false);
+    expect(
+      CreateTaskRequest.safeParse({ prompt: 'x', allowedDomains: Array.from({ length: 21 }, (_, i) => `d${i}.com`) })
+        .success,
+    ).toBe(false);
     expect(CreateTaskRequest.safeParse({ prompt: 'x', timezone: 'Not/AZone' }).success).toBe(false);
     expect(CreateTaskRequest.safeParse({ prompt: 'x', idempotencyKey: 'short' }).success).toBe(false);
-    expect(CreateTaskRequest.safeParse({ prompt: 'x', timezone: 'America/Toronto', idempotencyKey: 'abcdefgh' }).success).toBe(true);
+    expect(
+      CreateTaskRequest.safeParse({ prompt: 'x', timezone: 'America/Toronto', idempotencyKey: 'abcdefgh' }).success,
+    ).toBe(true);
   });
 });
 
@@ -67,13 +77,19 @@ describe('CreateScheduleRequest', () => {
     const cron = CreateScheduleRequest.parse({ ...base, spec: { kind: 'cron', cron: '0 9 * * 1-5' } });
     expect(cron.catchupWindowMinutes).toBe(10);
     expect(cron.allowedDomains).toEqual([]);
-    expect(CreateScheduleRequest.safeParse({ ...base, spec: { kind: 'interval', everyMinutes: 60 } }).success).toBe(true);
+    expect(CreateScheduleRequest.safeParse({ ...base, spec: { kind: 'interval', everyMinutes: 60 } }).success).toBe(
+      true,
+    );
   });
   it('rejects too-frequent intervals, short crons, unknown kinds and missing timezones', () => {
-    expect(CreateScheduleRequest.safeParse({ ...base, spec: { kind: 'interval', everyMinutes: 4 } }).success).toBe(false);
+    expect(CreateScheduleRequest.safeParse({ ...base, spec: { kind: 'interval', everyMinutes: 4 } }).success).toBe(
+      false,
+    );
     expect(CreateScheduleRequest.safeParse({ ...base, spec: { kind: 'cron', cron: '* * * *' } }).success).toBe(false);
     expect(CreateScheduleRequest.safeParse({ ...base, spec: { kind: 'once' } }).success).toBe(false);
-    expect(CreateScheduleRequest.safeParse({ ...base, timezone: '', spec: { kind: 'interval', everyMinutes: 60 } }).success).toBe(false);
+    expect(
+      CreateScheduleRequest.safeParse({ ...base, timezone: '', spec: { kind: 'interval', everyMinutes: 60 } }).success,
+    ).toBe(false);
   });
 });
 
@@ -111,6 +127,8 @@ describe('ConnectRequest / BudgetSettingsRequest', () => {
   it('accepts non-negative USD strings with up to 6 decimals', () => {
     expect(BudgetSettingsRequest.safeParse({ maxCostPerRunUsd: '0.5', monthlyLimitUsd: '20' }).success).toBe(true);
     expect(BudgetSettingsRequest.safeParse({ maxCostPerRunUsd: '-1', monthlyLimitUsd: '20' }).success).toBe(false);
-    expect(BudgetSettingsRequest.safeParse({ maxCostPerRunUsd: '0.1234567', monthlyLimitUsd: '20' }).success).toBe(false);
+    expect(BudgetSettingsRequest.safeParse({ maxCostPerRunUsd: '0.1234567', monthlyLimitUsd: '20' }).success).toBe(
+      false,
+    );
   });
 });

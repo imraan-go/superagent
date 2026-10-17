@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Moon, Sun } from "@phosphor-icons/react/dist/ssr";
-import { IconButton } from "@/components/ui";
-import { setTheme } from "@/lib/theme";
-import styles from "./theme-toggle.module.css";
+import { Moon, Sun } from '@phosphor-icons/react/dist/ssr';
+import { IconButton } from '@/components/ui';
+import { setTheme } from '@/lib/theme';
+import styles from './theme-toggle.module.css';
 
 /**
  * Compact topbar control. The icon is CSS-swapped from `data-theme` so the
@@ -20,8 +20,7 @@ export function ThemeToggle() {
         </span>
       }
       onClick={() => {
-        const next =
-          document.documentElement.dataset.theme === "light" ? "dark" : "light";
+        const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
         setTheme(next);
       }}
     />

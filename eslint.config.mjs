@@ -52,21 +52,29 @@ const boundaryBlocks = workspaceDirs.flatMap((dir) => {
 
 export default tseslint.config(
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/.next/**', '.local/**', '**/test-results/**', '**/next-env.d.ts', 'packages/db/migrations/**'],
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.next/**',
+      '.local/**',
+      '**/test-results/**',
+      '**/next-env.d.ts',
+      'packages/db/migrations/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
     languageOptions: { ecmaVersion: 2023, sourceType: 'module' },
     rules: {
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' },
+      ],
       '@typescript-eslint/no-explicit-any': 'error',
       'no-console': 'off',
       eqeqeq: ['error', 'always', { null: 'ignore' }],
-      'no-restricted-imports': [
-        'error',
-        { paths: gatewayOnly },
-      ],
+      'no-restricted-imports': ['error', { paths: gatewayOnly }],
     },
   },
   {
@@ -90,15 +98,25 @@ export default tseslint.config(
         {
           paths: gatewayOnly,
           patterns: [
-            { group: ['node:*', 'fs', 'crypto', 'http', 'https', 'net'], message: 'Workflow code must be deterministic: no Node I/O.' },
-            { group: ['@superagent/*', '!@superagent/contracts', '!@superagent/contracts/workflow'], message: 'Workflows may only depend on contracts.' },
+            {
+              group: ['node:*', 'fs', 'crypto', 'http', 'https', 'net'],
+              message: 'Workflow code must be deterministic: no Node I/O.',
+            },
+            {
+              group: ['@superagent/*', '!@superagent/contracts', '!@superagent/contracts/workflow'],
+              message: 'Workflows may only depend on contracts.',
+            },
           ],
         },
       ],
       'no-restricted-globals': ['error', { name: 'fetch', message: 'No I/O in workflows; use an Activity.' }],
       'no-restricted-properties': [
         'error',
-        { object: 'Math', property: 'random', message: 'Non-deterministic; Temporal patches it but prefer uuid4() from the workflow API.' },
+        {
+          object: 'Math',
+          property: 'random',
+          message: 'Non-deterministic; Temporal patches it but prefer uuid4() from the workflow API.',
+        },
       ],
     },
   },

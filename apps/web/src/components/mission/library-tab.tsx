@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { DownloadSimple, FileText, Image as ImageIcon } from "@phosphor-icons/react/dist/ssr";
-import { Modal, Panel, Skeleton } from "@/components/ui";
-import { api } from "@/lib/api";
-import { formatBytes, isImageMime } from "@/lib/uploads";
-import type { FileInfo } from "@/lib/uploads";
-import styles from "./library-tab.module.css";
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { DownloadSimple, FileText, Image as ImageIcon } from '@phosphor-icons/react/dist/ssr';
+import { Modal, Panel, Skeleton } from '@/components/ui';
+import { api } from '@/lib/api';
+import { formatBytes, isImageMime } from '@/lib/uploads';
+import type { FileInfo } from '@/lib/uploads';
+import styles from './library-tab.module.css';
 
 /**
  * This chat's files: owner uploads and the screenshots the agent's tools took.
@@ -18,8 +18,8 @@ export function LibraryTab({ chatId, running }: { chatId?: string | null; runnin
   const [openId, setOpenId] = useState<string | null>(null);
 
   const { data, isPending } = useQuery({
-    queryKey: ["chat-files", chatId],
-    queryFn: () => api.listChatFiles(chatId ?? ""),
+    queryKey: ['chat-files', chatId],
+    queryFn: () => api.listChatFiles(chatId ?? ''),
     enabled: Boolean(chatId),
     refetchInterval: running ? 4000 : false,
   });
@@ -31,13 +31,13 @@ export function LibraryTab({ chatId, running }: { chatId?: string | null; runnin
   useEffect(() => {
     if (!current) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
       const i = images.findIndex((f) => f.id === current.id);
-      const next = images[(i + (e.key === "ArrowRight" ? 1 : -1) + images.length) % images.length];
+      const next = images[(i + (e.key === 'ArrowRight' ? 1 : -1) + images.length) % images.length];
       if (next) setOpenId(next.id);
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [current, images]);
 
   return (
@@ -50,9 +50,7 @@ export function LibraryTab({ chatId, running }: { chatId?: string | null; runnin
           <Skeleton height={88} />
         </div>
       ) : files.length === 0 ? (
-        <p className={styles.muted}>
-          Nothing yet. Attach a file to a message, or let the agent take a screenshot.
-        </p>
+        <p className={styles.muted}>Nothing yet. Attach a file to a message, or let the agent take a screenshot.</p>
       ) : (
         <ul className={styles.grid}>
           {files.map((file) => (
@@ -66,8 +64,12 @@ export function LibraryTab({ chatId, running }: { chatId?: string | null; runnin
       <Modal
         open={current !== null}
         onClose={() => setOpenId(null)}
-        title={current?.name ?? ""}
-        description={current ? `${current.origin === "tool" ? "Agent screenshot" : "Upload"} · ${formatBytes(current.bytes)}` : undefined}
+        title={current?.name ?? ''}
+        description={
+          current
+            ? `${current.origin === 'tool' ? 'Agent screenshot' : 'Upload'} · ${formatBytes(current.bytes)}`
+            : undefined
+        }
         footer={
           current && (
             <a className={styles.download} href={`/api/uploads/${current.id}`} download={current.name}>
@@ -93,14 +95,16 @@ function Tile({ file, onOpen }: { file: FileInfo; onOpen: () => void }) {
     return (
       <button type="button" className={styles.tile} onClick={onOpen} aria-label={`Open ${file.name}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/api/uploads/${file.id}`} alt=""
+        <img
+          src={`/api/uploads/${file.id}`}
+          alt=""
           loading="lazy"
           decoding="async"
           className={styles.thumb}
           onError={() => setBroken(true)}
         />
         <span className={styles.badge}>
-          <ImageIcon size={11} /> {file.origin === "tool" ? "screen" : "upload"}
+          <ImageIcon size={11} /> {file.origin === 'tool' ? 'screen' : 'upload'}
         </span>
       </button>
     );

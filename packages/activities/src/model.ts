@@ -1,7 +1,17 @@
 import { and, asc, eq } from 'drizzle-orm';
 import type { ModelMessage } from 'ai';
 import { Context } from '@temporalio/activity';
-import { PartialOutputError, SYSTEM_PROMPT, approxTokens, buildContext, checkModel, estimateMaxCostNanos, toModelMessages, toolResultMessage, type DecisionUsage } from '@superagent/agent';
+import {
+  PartialOutputError,
+  SYSTEM_PROMPT,
+  approxTokens,
+  buildContext,
+  checkModel,
+  estimateMaxCostNanos,
+  toModelMessages,
+  toolResultMessage,
+  type DecisionUsage,
+} from '@superagent/agent';
 import type { DecisionResult, TaskRef } from '@superagent/contracts/workflow';
 import {
   BudgetExceededError,
@@ -62,10 +72,20 @@ async function replayDecision(d: Deps, ref: TaskRef, step: number): Promise<Deci
   const rows = await d.db
     .select()
     .from(schema.toolCalls)
-    .where(and(eq(schema.toolCalls.taskId, ref.taskId), eq(schema.toolCalls.ownerId, ref.ownerId), eq(schema.toolCalls.step, step)))
+    .where(
+      and(
+        eq(schema.toolCalls.taskId, ref.taskId),
+        eq(schema.toolCalls.ownerId, ref.ownerId),
+        eq(schema.toolCalls.step, step),
+      ),
+    )
     .orderBy(asc(schema.toolCalls.createdAt));
   if (!rows.length) return { kind: 'final', step };
-  return { kind: 'tools', step, proposals: rows.filter((r) => r.status !== 'invalid').map((r) => ({ toolCallId: r.id, toolName: r.toolName })) };
+  return {
+    kind: 'tools',
+    step,
+    proposals: rows.filter((r) => r.status !== 'invalid').map((r) => ({ toolCallId: r.id, toolName: r.toolName })),
+  };
 }
 
 export async function modelDecision(d: Deps, ref: TaskRef & { step: number }): Promise<DecisionResult> {
@@ -79,7 +99,14 @@ export async function modelDecision(d: Deps, ref: TaskRef & { step: number }): P
   const reg = toolRegistry(d);
   const conns = await listConnections(d.db, ownerId);
   const activeToolkits = new Set(conns.filter((c) => c.status === 'active').map((c) => c.toolkit));
-  const tools = exposedTools(reg, { configured: d.configured(), activeToolkits, readOnly: task.readOnly, allowedDomains: task.allowedDomains, scheduled: task.origin === 'schedule', capabilities: task.capabilities });
+  const tools = exposedTools(reg, {
+    configured: d.configured(),
+    activeToolkits,
+    readOnly: task.readOnly,
+    allowedDomains: task.allowedDomains,
+    scheduled: task.origin === 'schedule',
+    capabilities: task.capabilities,
+  });
 
   const rows = await listMessages(d.db, ownerId, taskId);
   const hasImages = rows.some((r) => JSON.stringify(r.content).includes('"artifact-image"'));
@@ -89,8 +116,14 @@ export async function modelDecision(d: Deps, ref: TaskRef & { step: number }): P
   const picked = task.model && d.allowlist().includes(task.model) ? task.model : null;
   const modelId = picked ?? (usesBrowser && env.AI_MODEL_BROWSER ? env.AI_MODEL_BROWSER : env.AI_MODEL_PRIMARY);
   const catalog = await d.catalog();
-  const check = checkModel(catalog, modelId, d.allowlist(), usesBrowser || hasImages ? ['tool-use', 'vision'] : ['tool-use']);
-  if (!check.ok || !check.entry) throw new ModelConfigError(`model ${check.modelId} rejected: ${check.problems.join('; ')}`);
+  const check = checkModel(
+    catalog,
+    modelId,
+    d.allowlist(),
+    usesBrowser || hasImages ? ['tool-use', 'vision'] : ['tool-use'],
+  );
+  if (!check.ok || !check.entry)
+    throw new ModelConfigError(`model ${check.modelId} rejected: ${check.problems.join('; ')}`);
 
   const messages = await toModelMessages(
     rows.map((r) => ({ kind: r.kind as 'user' | 'assistant' | 'tool_result', content: r.content })),
@@ -120,16 +153,30 @@ export async function modelDecision(d: Deps, ref: TaskRef & { step: number }): P
     userInstructions: typeof agentPrefs.systemPrompt === 'string' ? agentPrefs.systemPrompt : undefined,
   });
 
-  const toolSchemas = tools.map((t) => ({ n: t.name, d: t.description, s: JSON.stringify(t.schema.toJSONSchema?.() ?? {}) }));
+  const toolSchemas = tools.map((t) => ({
+    n: t.name,
+    d: t.description,
+    s: JSON.stringify(t.schema.toJSONSchema?.() ?? {}),
+  }));
   const approx = approxTokens(SYSTEM_PROMPT, context, messages, toolSchemas) + (hasImages ? IMAGE_TOKEN_ALLOWANCE : 0);
   const surcharge = env.AI_GATEWAY_REPORTING_TAGS ? '0.00015' : '0';
   const estimate = estimateMaxCostNanos(check.entry, approx, env.AI_MAX_OUTPUT_TOKENS, surcharge);
   const reservationKey = `model:${taskId}:${step}:${attemptNumber()}`;
   try {
-    await reserveBudget(d.db, { ownerId, taskId, dedupeKey: reservationKey, amountNanos: estimate, limits: await getBudgetLimits(d.db, ownerId, budgetDefaults(d)) });
+    await reserveBudget(d.db, {
+      ownerId,
+      taskId,
+      dedupeKey: reservationKey,
+      amountNanos: estimate,
+      limits: await getBudgetLimits(d.db, ownerId, budgetDefaults(d)),
+    });
   } catch (err) {
     if (err instanceof BudgetExceededError) {
-      await emit(d, ownerId, taskId, 'budget.blocked', `budget.blocked:${step}`, { step, estimateUsd: nanosToUsd(estimate), reason: err.message });
+      await emit(d, ownerId, taskId, 'budget.blocked', `budget.blocked:${step}`, {
+        step,
+        estimateUsd: nanosToUsd(estimate),
+        reason: err.message,
+      });
       return { kind: 'error', step, reason: `Budget limit: ${err.message}` };
     }
     throw err;
@@ -165,11 +212,26 @@ export async function modelDecision(d: Deps, ref: TaskRef & { step: number }): P
 
   let out;
   try {
-    out = await d.model().decide({ modelId: modelId!, system: SYSTEM_PROMPT, context, messages, tools, maxOutputTokens: env.AI_MAX_OUTPUT_TOKENS, endUserId: ownerId, abortSignal: abortSignal() });
+    out = await d
+      .model()
+      .decide({
+        modelId: modelId!,
+        system: SYSTEM_PROMPT,
+        context,
+        messages,
+        tools,
+        maxOutputTokens: env.AI_MAX_OUTPUT_TOKENS,
+        endUserId: ownerId,
+        abortSignal: abortSignal(),
+      });
   } catch (err) {
     if (err instanceof PartialOutputError) {
       await record(err.usage, 'partial');
-      await emit(d, ownerId, taskId, 'model.decision', `model.decision:${step}`, { step, outcome: 'rejected_partial', reason: err.message });
+      await emit(d, ownerId, taskId, 'model.decision', `model.decision:${step}`, {
+        step,
+        outcome: 'rejected_partial',
+        reason: err.message,
+      });
       return { kind: 'error', step, reason: `Model output rejected: ${err.message}` };
     }
     // The request may or may not have been billed: keep the reservation charged at its estimate.
@@ -179,10 +241,24 @@ export async function modelDecision(d: Deps, ref: TaskRef & { step: number }): P
   await record(out.usage, out.finishReason);
 
   for (const [i, m] of out.responseMessages.entries()) {
-    await appendMessage(d.db, { ownerId, taskId, step, kind: 'assistant', dedupeKey: i === 0 ? `assistant:${step}` : `assistant:${step}:${i}`, content: m });
+    await appendMessage(d.db, {
+      ownerId,
+      taskId,
+      step,
+      kind: 'assistant',
+      dedupeKey: i === 0 ? `assistant:${step}` : `assistant:${step}:${i}`,
+      content: m,
+    });
   }
   if (out.responseMessages.length === 0) {
-    await appendMessage(d.db, { ownerId, taskId, step, kind: 'assistant', dedupeKey: `assistant:${step}`, content: { role: 'assistant', content: out.text } satisfies ModelMessage });
+    await appendMessage(d.db, {
+      ownerId,
+      taskId,
+      step,
+      kind: 'assistant',
+      dedupeKey: `assistant:${step}`,
+      content: { role: 'assistant', content: out.text } satisfies ModelMessage,
+    });
   }
 
   await upsertToolCalls(
@@ -206,7 +282,10 @@ export async function modelDecision(d: Deps, ref: TaskRef & { step: number }): P
       step,
       kind: 'tool_result',
       dedupeKey: `tool:${taskId}:${c.toolCallId}`,
-      content: toolResultMessage(c.toolCallId, c.toolName, { type: 'error-text', value: `Tool call rejected by the application: ${c.error}. Fix the arguments or choose another approach.` }),
+      content: toolResultMessage(c.toolCallId, c.toolName, {
+        type: 'error-text',
+        value: `Tool call rejected by the application: ${c.error}. Fix the arguments or choose another approach.`,
+      }),
     });
   }
   await emit(d, ownerId, taskId, 'model.decision', `model.decision:${step}`, {
@@ -225,5 +304,11 @@ export async function modelDecision(d: Deps, ref: TaskRef & { step: number }): P
     await setTaskStatus(d.db, ownerId, taskId, 'running', { resultSummary: out.text.slice(0, 8000) });
     return { kind: 'final', step };
   }
-  return { kind: 'tools', step, proposals: out.calls.filter((c) => c.valid).map((c) => ({ toolCallId: `${taskId}:${c.toolCallId}`, toolName: c.toolName })) };
+  return {
+    kind: 'tools',
+    step,
+    proposals: out.calls
+      .filter((c) => c.valid)
+      .map((c) => ({ toolCallId: `${taskId}:${c.toolCallId}`, toolName: c.toolName })),
+  };
 }

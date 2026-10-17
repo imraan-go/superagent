@@ -1,9 +1,8 @@
-"use client";
+'use client';
 
-
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { ClipboardEvent } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ClipboardEvent } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowUp,
   CalendarPlus,
@@ -14,12 +13,12 @@ import {
   SquaresFour,
   Square,
   X,
-} from "@phosphor-icons/react/dist/ssr";
-import { api } from "@/lib/api";
-import { pickModel } from "@/lib/model-pick";
-import { Button, IconButton } from "@/components/ui";
-import { openApps } from "@/lib/app-events";
-import { cn } from "@/lib/cn";
+} from '@phosphor-icons/react/dist/ssr';
+import { api } from '@/lib/api';
+import { pickModel } from '@/lib/model-pick';
+import { Button, IconButton } from '@/components/ui';
+import { openApps } from '@/lib/app-events';
+import { cn } from '@/lib/cn';
 import {
   ACCEPT_ATTRIBUTE,
   ALLOWED_EXTENSIONS,
@@ -28,15 +27,15 @@ import {
   extensionOf,
   formatBytes,
   isImageMime,
-} from "@/lib/uploads";
-import type { FileInfo } from "@/lib/uploads";
-import { CAPABILITIES, PROMPT_PREFILL_EVENT, SLASH_COMMANDS, matchSlash } from "./parts/composer";
-import type { CapabilityId, PromptPrefillDetail, SlashCommand } from "./parts/composer";
-import styles from "./prompt-bar.module.css";
-import { CapabilityChips } from "./parts/capability-chips";
-import { ModeSelect } from "./parts/mode-select";
-import { DEFAULT_CHAT_PREFS } from "@/lib/chat-mode";
-import type { ChatMode, ChatPrefs } from "@/lib/chat-mode";
+} from '@/lib/uploads';
+import type { FileInfo } from '@/lib/uploads';
+import { CAPABILITIES, PROMPT_PREFILL_EVENT, SLASH_COMMANDS, matchSlash } from './parts/composer';
+import type { CapabilityId, PromptPrefillDetail, SlashCommand } from './parts/composer';
+import styles from './prompt-bar.module.css';
+import { CapabilityChips } from './parts/capability-chips';
+import { ModeSelect } from './parts/mode-select';
+import { DEFAULT_CHAT_PREFS } from '@/lib/chat-mode';
+import type { ChatMode, ChatPrefs } from '@/lib/chat-mode';
 
 /**
  * The pill prompt bar: `+` menu on the left, model picker and send on the
@@ -52,13 +51,7 @@ export interface SendOptions {
 }
 
 export interface PromptBarProps {
-  onSend: (
-    text: string,
-    model: string,
-    fileIds: string[],
-    capabilities: CapabilityId[],
-    options: SendOptions,
-  ) => void;
+  onSend: (text: string, model: string, fileIds: string[], capabilities: CapabilityId[], options: SendOptions) => void;
   /** The chat's stored composer prefs (mode + Auto/manual chips). */
   initialPrefs?: ChatPrefs | null;
   /** Called when the owner changes mode or chips, to persist on the chat. */
@@ -81,7 +74,7 @@ const MAX_ROWS = 10;
 interface Attachment {
   key: string;
   name: string;
-  status: "uploading" | "done" | "error";
+  status: 'uploading' | 'done' | 'error';
   file?: FileInfo;
   error?: string;
 }
@@ -101,7 +94,7 @@ export function PromptBar({
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [text, setText] = useState("");
+  const [text, setText] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [model, setModel] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -120,13 +113,11 @@ export function PromptBar({
     setCapsAuto(p.capsAuto);
     setCaps(p.caps as CapabilityId[]);
   }
-  const savePrefs = (next: Partial<ChatPrefs>) =>
-    onPrefsChange?.({ mode, capsAuto, caps, ...next });
+  const savePrefs = (next: Partial<ChatPrefs>) => onPrefsChange?.({ mode, capsAuto, caps, ...next });
   const [slashIdx, setSlashIdx] = useState(0);
   const slash = matchSlash(text);
   const slashOpen = slash.length > 0;
   const slashSel = slashOpen ? slashIdx % slash.length : 0;
-
 
   // Landing suggestions (and anything else) can prefill the composer.
   useEffect(() => {
@@ -178,7 +169,7 @@ export function PromptBar({
     textareaRef.current?.focus();
   };
 
-  const { data } = useQuery({ queryKey: ["models"], queryFn: api.listModels });
+  const { data } = useQuery({ queryKey: ['models'], queryFn: api.listModels });
   const models = data?.models.filter((m) => m.ready) ?? [];
   const selected = pickModel({
     chosen: model,
@@ -191,7 +182,7 @@ export function PromptBar({
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = "auto";
+    el.style.height = 'auto';
     const max = MAX_ROWS * 22;
     el.style.height = `${Math.min(el.scrollHeight, max)}px`;
   }, [text]);
@@ -202,18 +193,18 @@ export function PromptBar({
       if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
     };
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuOpen(false);
+      if (e.key === 'Escape') setMenuOpen(false);
     };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
     };
   }, [menuOpen]);
 
-  const uploading = attachments.some((a) => a.status === "uploading");
-  const ready = attachments.flatMap((a) => (a.status === "done" && a.file ? [a.file] : []));
+  const uploading = attachments.some((a) => a.status === 'uploading');
+  const ready = attachments.flatMap((a) => (a.status === 'done' && a.file ? [a.file] : []));
   const canSend = (text.trim().length > 0 || ready.length > 0) && !uploading && !disabled;
 
   const addFiles = useCallback(
@@ -226,39 +217,34 @@ export function PromptBar({
           ...prev,
           {
             key: crypto.randomUUID(),
-            name: "Too many files",
-            status: "error",
+            name: 'Too many files',
+            status: 'error',
             error: `Only ${MAX_ATTACHMENTS} files per message.`,
           },
         ]);
       }
       for (const file of batch) {
         const key = crypto.randomUUID();
-        const ext = extensionOf(file.name || "");
+        const ext = extensionOf(file.name || '');
         // Fast local feedback; the server re-checks everything.
         const localError = !ALLOWED_EXTENSIONS[ext]
-          ? `.${ext || "?"} files are not accepted.`
+          ? `.${ext || '?'} files are not accepted.`
           : file.size > MAX_UPLOAD_BYTES
             ? `Over the ${formatBytes(MAX_UPLOAD_BYTES)} limit.`
             : null;
         if (localError) {
-          setAttachments((prev) => [
-            ...prev,
-            { key, name: file.name || "file", status: "error", error: localError },
-          ]);
+          setAttachments((prev) => [...prev, { key, name: file.name || 'file', status: 'error', error: localError }]);
           continue;
         }
-        setAttachments((prev) => [...prev, { key, name: file.name, status: "uploading" }]);
+        setAttachments((prev) => [...prev, { key, name: file.name, status: 'uploading' }]);
         api
           .uploadFile(file, chatId)
           .then(({ file: saved }) =>
-            setAttachments((prev) =>
-              prev.map((a) => (a.key === key ? { ...a, status: "done", file: saved } : a)),
-            ),
+            setAttachments((prev) => prev.map((a) => (a.key === key ? { ...a, status: 'done', file: saved } : a))),
           )
           .catch((err: Error) =>
             setAttachments((prev) =>
-              prev.map((a) => (a.key === key ? { ...a, status: "error", error: err.message } : a)),
+              prev.map((a) => (a.key === key ? { ...a, status: 'error', error: err.message } : a)),
             ),
           );
       }
@@ -270,7 +256,7 @@ export function PromptBar({
   useEffect(() => {
     if (disabled) return;
     let depth = 0;
-    const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes("Files");
+    const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes('Files');
     const enter = (e: DragEvent) => {
       if (!hasFiles(e)) return;
       depth += 1;
@@ -291,15 +277,15 @@ export function PromptBar({
       setDragging(false);
       addFiles(Array.from(e.dataTransfer?.files ?? []));
     };
-    window.addEventListener("dragenter", enter);
-    window.addEventListener("dragleave", leave);
-    window.addEventListener("dragover", over);
-    window.addEventListener("drop", drop);
+    window.addEventListener('dragenter', enter);
+    window.addEventListener('dragleave', leave);
+    window.addEventListener('dragover', over);
+    window.addEventListener('drop', drop);
     return () => {
-      window.removeEventListener("dragenter", enter);
-      window.removeEventListener("dragleave", leave);
-      window.removeEventListener("dragover", over);
-      window.removeEventListener("drop", drop);
+      window.removeEventListener('dragenter', enter);
+      window.removeEventListener('dragleave', leave);
+      window.removeEventListener('dragover', over);
+      window.removeEventListener('drop', drop);
     };
   }, [addFiles, disabled]);
 
@@ -310,9 +296,7 @@ export function PromptBar({
     addFiles(
       pasted.map((f) =>
         // Screenshots paste as "image.png"; keep names distinct.
-        f.name && f.name !== "image.png"
-          ? f
-          : new File([f], `pasted-${Date.now()}.png`, { type: f.type }),
+        f.name && f.name !== 'image.png' ? f : new File([f], `pasted-${Date.now()}.png`, { type: f.type }),
       ),
     );
   };
@@ -320,8 +304,14 @@ export function PromptBar({
   const submit = () => {
     const value = text.trim();
     if (!canSend || busy) return;
-    onSend(value, selected, ready.map((f) => f.id), capsAuto ? [] : caps, { mode, capabilitiesAuto: capsAuto });
-    setText("");
+    onSend(
+      value,
+      selected,
+      ready.map((f) => f.id),
+      capsAuto ? [] : caps,
+      { mode, capabilitiesAuto: capsAuto },
+    );
+    setText('');
     setAttachments([]);
   };
 
@@ -336,11 +326,7 @@ export function PromptBar({
       {attachments.length > 0 && (
         <ul className={styles.chips} aria-label="Attachments">
           {attachments.map((a) => (
-            <li
-              key={a.key}
-              className={cn(styles.chip, a.status === "error" && styles.chipError)}
-              title={a.error}
-            >
+            <li key={a.key} className={cn(styles.chip, a.status === 'error' && styles.chipError)} title={a.error}>
               {a.file && isImageMime(a.file.mime) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={`/api/uploads/${a.file.id}`} alt="" className={styles.chipThumb} />
@@ -349,9 +335,9 @@ export function PromptBar({
               )}
               <span className={styles.chipName}>{a.name}</span>
               <span className={styles.chipMeta}>
-                {a.status === "uploading"
-                  ? "uploading..."
-                  : a.status === "error"
+                {a.status === 'uploading'
+                  ? 'uploading...'
+                  : a.status === 'error'
                     ? a.error
                     : formatBytes(a.file?.bytes ?? 0)}
               </span>
@@ -376,7 +362,7 @@ export function PromptBar({
         accept={ACCEPT_ATTRIBUTE}
         onChange={(e) => {
           addFiles(Array.from(e.target.files ?? []));
-          e.target.value = "";
+          e.target.value = '';
         }}
       />
 
@@ -384,12 +370,7 @@ export function PromptBar({
         <ul className={styles.slash} id="fd-slash" role="listbox" aria-label="Commands">
           {slash.map((c, i) => (
             <li key={c.cmd} role="option" aria-selected={i === slashSel}>
-              <button
-                type="button"
-                tabIndex={-1}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => applySlash(c)}
-              >
+              <button type="button" tabIndex={-1} onMouseDown={(e) => e.preventDefault()} onClick={() => applySlash(c)}>
                 <span className={styles.slashCmd}>{c.cmd}</span>
                 <span className={styles.slashLabel}>{c.label}</span>
               </button>
@@ -405,9 +386,11 @@ export function PromptBar({
           className={styles.input}
           value={text}
           rows={1}
-          placeholder={disabled ? "Open or start a chat first" : (placeholder ?? "Tell the agent what to do — / for commands")}
+          placeholder={
+            disabled ? 'Open or start a chat first' : (placeholder ?? 'Tell the agent what to do — / for commands')
+          }
           aria-label="Message the agent"
-          aria-controls={slashOpen ? "fd-slash" : undefined}
+          aria-controls={slashOpen ? 'fd-slash' : undefined}
           disabled={disabled}
           onChange={(e) => {
             setText(e.target.value);
@@ -416,27 +399,25 @@ export function PromptBar({
           onPaste={onPaste}
           onKeyDown={(e) => {
             if (slashOpen) {
-              if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+              if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                 e.preventDefault();
-                setSlashIdx(
-                  (slashSel + (e.key === "ArrowDown" ? 1 : slash.length - 1)) % slash.length,
-                );
+                setSlashIdx((slashSel + (e.key === 'ArrowDown' ? 1 : slash.length - 1)) % slash.length);
                 return;
               }
-              if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
+              if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
                 e.preventDefault();
                 const pick = slash[slashSel];
                 if (pick) applySlash(pick);
                 return;
               }
-              if (e.key === "Escape") {
+              if (e.key === 'Escape') {
                 e.preventDefault();
-                setText("");
+                setText('');
                 return;
               }
             }
             // Enter or ⌘/Ctrl+Enter sends; Shift+Enter is a newline.
-            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
               submit();
             }
@@ -473,7 +454,7 @@ export function PromptBar({
                   role="menuitem"
                   onClick={() => {
                     setMenuOpen(false);
-                    const cmd = SLASH_COMMANDS.find((c) => c.cmd === "/schedule");
+                    const cmd = SLASH_COMMANDS.find((c) => c.cmd === '/schedule');
                     if (cmd) applySlash(cmd);
                   }}
                 >
@@ -510,7 +491,7 @@ export function PromptBar({
             <ModeSelect
               value={mode}
               onChange={changeMode}
-              thinkingSupported={models.find((m) => m.id === selected)?.vendor === "anthropic"}
+              thinkingSupported={models.find((m) => m.id === selected)?.vendor === 'anthropic'}
             />
             {models.length > 0 && (
               <select
@@ -557,15 +538,13 @@ export function PromptBar({
         </span>
         {!capsAuto && caps.length > 0 && (
           <span className={styles.capNote}>
-            Focused on {caps.map((id) => CAPABILITIES.find((c) => c.id === id)?.label).join(", ")}
+            Focused on {caps.map((id) => CAPABILITIES.find((c) => c.id === id)?.label).join(', ')}
           </span>
         )}
       </p>
 
       {data && !data.anyVendorReady && (
-        <p className={styles.hint}>
-          No model key yet — running on the mock model. Add one in Settings → Models.
-        </p>
+        <p className={styles.hint}>No model key yet — running on the mock model. Add one in Settings → Models.</p>
       )}
     </div>
   );

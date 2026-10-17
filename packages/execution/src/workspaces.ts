@@ -18,7 +18,11 @@ export interface WorkspaceStore {
   getOrCreate(ownerId: string, kind: WorkspaceKind, scope: string, templateId: string): Promise<WorkspaceRow>;
   acquireLease(ownerId: string, workspaceId: string, holder: string, ttlMs: number): Promise<boolean>;
   releaseLease(ownerId: string, workspaceId: string, holder: string): Promise<void>;
-  update(ownerId: string, workspaceId: string, patch: Partial<Pick<WorkspaceRow, 'sandboxId' | 'state'>> & { lastError?: string | null }): Promise<void>;
+  update(
+    ownerId: string,
+    workspaceId: string,
+    patch: Partial<Pick<WorkspaceRow, 'sandboxId' | 'state'>> & { lastError?: string | null },
+  ): Promise<void>;
   addActiveMs(ownerId: string, workspaceId: string, ms: number): Promise<void>;
 }
 
@@ -26,7 +30,9 @@ export interface WorkspaceStore {
 export interface SandboxApi {
   create(template: string, opts: Parameters<typeof Sandbox.create>[1]): Promise<Sandbox>;
   connect(sandboxId: string, opts: { timeoutMs: number }): Promise<Sandbox>;
-  listByMetadata(metadata: Record<string, string>): Promise<Array<{ sandboxId: string; state: string; metadata: Record<string, string> }>>;
+  listByMetadata(
+    metadata: Record<string, string>,
+  ): Promise<Array<{ sandboxId: string; state: string; metadata: Record<string, string> }>>;
   kill(sandboxId: string): Promise<boolean>;
 }
 
@@ -37,7 +43,9 @@ export function realSandboxApi(apiKey: string): SandboxApi {
     listByMetadata: async (metadata) => {
       const pager = Sandbox.list({ apiKey, query: { metadata, state: ['running', 'paused'] } });
       const out: Array<{ sandboxId: string; state: string; metadata: Record<string, string> }> = [];
-      while (pager.hasNext) for (const s of await pager.nextItems()) out.push({ sandboxId: s.sandboxId, state: s.state, metadata: s.metadata ?? {} });
+      while (pager.hasNext)
+        for (const s of await pager.nextItems())
+          out.push({ sandboxId: s.sandboxId, state: s.state, metadata: s.metadata ?? {} });
       return out;
     },
     kill: (id) => Sandbox.kill(id, { apiKey }),
@@ -58,7 +66,12 @@ export interface WorkspaceConfig {
   codeInternetAccess: boolean;
   holderId: string;
   leaseTtlMs?: number;
-  onEvent?: (e: { type: 'workspace.created' | 'workspace.resumed' | 'workspace.lost' | 'workspace.adopted' | 'workspace.paused'; workspaceId: string; sandboxId?: string; detail?: string }) => void;
+  onEvent?: (e: {
+    type: 'workspace.created' | 'workspace.resumed' | 'workspace.lost' | 'workspace.adopted' | 'workspace.paused';
+    workspaceId: string;
+    sandboxId?: string;
+    detail?: string;
+  }) => void;
 }
 
 export const APP_METADATA = 'superagent';
@@ -80,7 +93,12 @@ export class Workspaces {
     return kind === 'code' ? this.cfg.codeTemplate : this.cfg.browserTemplate;
   }
 
-  async with<T>(ownerId: string, kind: WorkspaceKind, scope: string, fn: (sbx: Sandbox, row: WorkspaceRow) => Promise<T>): Promise<T> {
+  async with<T>(
+    ownerId: string,
+    kind: WorkspaceKind,
+    scope: string,
+    fn: (sbx: Sandbox, row: WorkspaceRow) => Promise<T>,
+  ): Promise<T> {
     const row = await this.store.getOrCreate(ownerId, kind, scope, this.templateFor(kind));
     const ok = await this.store.acquireLease(ownerId, row.id, this.cfg.holderId, this.cfg.leaseTtlMs ?? 10 * 60_000);
     if (!ok) throw new WorkspaceBusyError();
@@ -103,7 +121,12 @@ export class Workspaces {
         return sbx;
       } catch (err) {
         await this.store.update(row.ownerId, row.id, { state: 'lost', sandboxId: null, lastError: errMsg(err) });
-        this.cfg.onEvent?.({ type: 'workspace.lost', workspaceId: row.id, sandboxId: row.sandboxId, detail: 'previous sandbox could not be resumed; exported artifacts remain in durable storage' });
+        this.cfg.onEvent?.({
+          type: 'workspace.lost',
+          workspaceId: row.id,
+          sandboxId: row.sandboxId,
+          detail: 'previous sandbox could not be resumed; exported artifacts remain in durable storage',
+        });
       }
     }
     // Reconcile possible orphan from an earlier crash between create and DB update.

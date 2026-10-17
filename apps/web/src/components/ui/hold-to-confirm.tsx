@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { ReactNode, RefObject } from "react";
-import { isTypingTarget } from "@/lib/hotkeys";
-import { cn } from "@/lib/cn";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import styles from "./hold-to-confirm.module.css";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ReactNode, RefObject } from 'react';
+import { isTypingTarget } from '@/lib/hotkeys';
+import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import styles from './hold-to-confirm.module.css';
 
 /**
  * Press-and-hold gate for irreversible actions: service restarts, taking
@@ -20,8 +20,8 @@ export interface HoldToConfirmProps {
   children: ReactNode;
   /** Default 600 ms, matching `manage.confirmHoldMs` in settings. */
   holdMs?: number;
-  tone?: "attention" | "danger";
-  size?: "sm" | "md";
+  tone?: 'attention' | 'danger';
+  size?: 'sm' | 'md';
   disabled?: boolean;
   icon?: ReactNode;
   /** Shown beside the label, e.g. "hold". */
@@ -42,11 +42,11 @@ export function HoldToConfirm({
   onConfirm,
   children,
   holdMs = 600,
-  tone = "attention",
-  size = "md",
+  tone = 'attention',
+  size = 'md',
   disabled = false,
   icon,
-  hint = "hold",
+  hint = 'hold',
   className,
   label,
   holdKey,
@@ -123,14 +123,14 @@ export function HoldToConfirm({
     const up = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === want) controlsRef.current.stop();
     };
-    scope.addEventListener("keydown", down);
-    scope.addEventListener("keyup", up);
+    scope.addEventListener('keydown', down);
+    scope.addEventListener('keyup', up);
     const cancel = () => controlsRef.current.stop();
-    scope.addEventListener("focusout", cancel);
+    scope.addEventListener('focusout', cancel);
     return () => {
-      scope.removeEventListener("keydown", down);
-      scope.removeEventListener("keyup", up);
-      scope.removeEventListener("focusout", cancel);
+      scope.removeEventListener('keydown', down);
+      scope.removeEventListener('keyup', up);
+      scope.removeEventListener('focusout', cancel);
     };
   }, [holdKey, keyScope]);
 
@@ -141,14 +141,8 @@ export function HoldToConfirm({
       aria-label={label}
       aria-keyshortcuts={holdKey ? holdKey.toUpperCase() : undefined}
       aria-describedby={undefined}
-      title={label ?? "Press and hold to confirm"}
-      className={cn(
-        styles.base,
-        styles[tone],
-        size === "sm" && styles.sm,
-        holding && styles.holding,
-        className,
-      )}
+      title={label ?? 'Press and hold to confirm'}
+      className={cn(styles.base, styles[tone], size === 'sm' && styles.sm, holding && styles.holding, className)}
       onPointerDown={(e) => {
         // Capture keeps the hold alive if the pointer drifts off the button; it can throw for a
         // pointer the browser no longer tracks, and the hold must start regardless.
@@ -163,13 +157,13 @@ export function HoldToConfirm({
       onPointerCancel={stop}
       onPointerLeave={stop}
       onKeyDown={(e) => {
-        if (e.key === " " || e.key === "Enter") {
+        if (e.key === ' ' || e.key === 'Enter') {
           e.preventDefault();
           if (!e.repeat) start();
         }
       }}
       onKeyUp={(e) => {
-        if (e.key === " " || e.key === "Enter") stop();
+        if (e.key === ' ' || e.key === 'Enter') stop();
       }}
       onBlur={stop}
     >

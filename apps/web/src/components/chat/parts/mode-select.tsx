@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { CHAT_MODES, CHAT_MODE_META } from "@/lib/chat-mode";
-import type { ChatMode } from "@/lib/chat-mode";
-import { cn } from "@/lib/cn";
-import styles from "./modes.module.css";
+import { CHAT_MODES, CHAT_MODE_META } from '@/lib/chat-mode';
+import type { ChatMode } from '@/lib/chat-mode';
+import { cn } from '@/lib/cn';
+import styles from './modes.module.css';
 
 /** Per-chat conversation mode (persisted on the chat by the caller). */
 export function ModeSelect({
@@ -18,7 +18,7 @@ export function ModeSelect({
 }) {
   return (
     <select
-      className={cn(styles.mode, value === "debug" && styles.modeDebug)}
+      className={cn(styles.mode, value === 'debug' && styles.modeDebug)}
       value={value}
       aria-label="Conversation mode"
       title={CHAT_MODE_META[value].hint}
@@ -27,8 +27,8 @@ export function ModeSelect({
       {CHAT_MODES.map((m) => (
         <option key={m} value={m}>
           {CHAT_MODE_META[m].label}
-          {m === "thinking" && !thinkingSupported ? " (not on this model)" : ""}
-          {m === "debug" ? " (owner)" : ""}
+          {m === 'thinking' && !thinkingSupported ? ' (not on this model)' : ''}
+          {m === 'debug' ? ' (owner)' : ''}
         </option>
       ))}
     </select>

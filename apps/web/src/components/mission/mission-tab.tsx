@@ -1,34 +1,33 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { CategoryTile, CountUp, Dot, Panel, Readout, SegmentedSwitch } from "@/components/ui";
-import type { TileCategory } from "@/components/ui";
-import { toolCategory } from "@/components/chat/parts/tool-meta";
-import { formatCost } from "@/lib/format";
-import { useUsageTicker } from "@/hooks/use-usage-ticker";
-import type { UsageTotals } from "@/hooks/use-usage-ticker";
-import type { RunState } from "@/hooks/use-run-stream";
-import type { SystemStatus } from "@/hooks/use-capabilities";
-import { WaitingPanel } from "@/components/hitl/waiting-panel";
-import { clockTime, compactNumber, filterLog, mergeLog } from "./rail-log";
-import type { ChatStepInput, LhosEventInput, LogFilter } from "./rail-log";
-import styles from "./mission-tab.module.css";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { CategoryTile, CountUp, Dot, Panel, Readout, SegmentedSwitch } from '@/components/ui';
+import type { TileCategory } from '@/components/ui';
+import { toolCategory } from '@/components/chat/parts/tool-meta';
+import { formatCost } from '@/lib/format';
+import { useUsageTicker } from '@/hooks/use-usage-ticker';
+import type { UsageTotals } from '@/hooks/use-usage-ticker';
+import type { RunState } from '@/hooks/use-run-stream';
+import type { SystemStatus } from '@/hooks/use-capabilities';
+import { WaitingPanel } from '@/components/hitl/waiting-panel';
+import { clockTime, compactNumber, filterLog, mergeLog } from './rail-log';
+import type { ChatStepInput, LhosEventInput, LogFilter } from './rail-log';
+import styles from './mission-tab.module.css';
 
-
-type Scope = "today" | "chat" | "run";
+type Scope = 'today' | 'chat' | 'run';
 
 const SCOPES = [
-  { value: "today" as const, label: "Today" },
-  { value: "chat" as const, label: "This chat" },
-  { value: "run" as const, label: "This run" },
+  { value: 'today' as const, label: 'Today' },
+  { value: 'chat' as const, label: 'This chat' },
+  { value: 'run' as const, label: 'This run' },
 ];
 
 const FILTERS: { value: LogFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "chat", label: "This run" },
-  { value: "computer", label: "All runs" },
-  { value: "errors", label: "Errors" },
+  { value: 'all', label: 'All' },
+  { value: 'chat', label: 'This run' },
+  { value: 'computer', label: 'All runs' },
+  { value: 'errors', label: 'Errors' },
 ];
 
 const EVENTS_POLL_MS = 5_000;
@@ -37,10 +36,10 @@ const EVENTS_POLL_MS = 5_000;
 function usePageVisible(): boolean {
   const [visible, setVisible] = useState(true);
   useEffect(() => {
-    const on = () => setVisible(document.visibilityState === "visible");
+    const on = () => setVisible(document.visibilityState === 'visible');
     on();
-    document.addEventListener("visibilitychange", on);
-    return () => document.removeEventListener("visibilitychange", on);
+    document.addEventListener('visibilitychange', on);
+    return () => document.removeEventListener('visibilitychange', on);
   }, []);
   return visible;
 }
@@ -48,7 +47,6 @@ function usePageVisible(): boolean {
 function stampNow(): number {
   return Date.now();
 }
-
 
 /**
  * Mission tab — a live operations console: token & cost meter, stats strip,
@@ -66,8 +64,8 @@ export function MissionTab({
   capabilities?: SystemStatus;
 }) {
   const { summary, live } = useUsageTicker(chatId, run.runId);
-  const running = run.phase === "thinking" || run.phase === "tool" || run.phase === "waiting";
-  const [scope, setScope] = useState<Scope>("today");
+  const running = run.phase === 'thinking' || run.phase === 'tool' || run.phase === 'waiting';
+  const [scope, setScope] = useState<Scope>('today');
 
   /* ---- meter ---- */
   const exactRun = summary?.run ?? null;
@@ -85,12 +83,12 @@ export function MissionTab({
           tokensCached: run.usage.cached,
           costUsd: run.usage.costUsd,
           calls: exactRun?.calls ?? 0,
-          toolCalls: Math.max(exactRun?.toolCalls ?? 0, run.steps.filter((s) => s.type === "tool").length),
+          toolCalls: Math.max(exactRun?.toolCalls ?? 0, run.steps.filter((s) => s.type === 'tool').length),
         }
       : exactRun;
   const shown: UsageTotals | null =
-    scope === "today" ? (summary?.today ?? null) : scope === "chat" ? (summary?.chat ?? null) : runTotals;
-  const estimate = scope === "run" && streamedAhead;
+    scope === 'today' ? (summary?.today ?? null) : scope === 'chat' ? (summary?.chat ?? null) : runTotals;
+  const estimate = scope === 'run' && streamedAhead;
   const budget = summary?.budget ?? null;
 
   /* ---- stats ---- */
@@ -105,12 +103,7 @@ export function MissionTab({
       <Panel
         title="Tokens & cost"
         badge={
-          <Dot
-            status={live ? "live" : "idle"}
-            size="sm"
-            pulse={live && running}
-            label={live ? "Live" : "Offline"}
-          />
+          <Dot status={live ? 'live' : 'idle'} size="sm" pulse={live && running} label={live ? 'Live' : 'Offline'} />
         }
         className={styles.meter}
       >
@@ -124,11 +117,11 @@ export function MissionTab({
         />
         {shown === null ? (
           <p className={styles.muted}>
-            {scope === "today"
-              ? "Connecting to the usage stream…"
-              : scope === "chat"
-                ? "Open a chat to see its usage."
-                : "No run yet in this chat."}
+            {scope === 'today'
+              ? 'Connecting to the usage stream…'
+              : scope === 'chat'
+                ? 'Open a chat to see its usage.'
+                : 'No run yet in this chat.'}
           </p>
         ) : (
           <>
@@ -166,7 +159,7 @@ export function MissionTab({
               <span className={styles.budgetFill} style={{ width: `${Math.min(100, budget.pct)}%` }} />
             </div>
             <span className={styles.budgetText}>
-              {formatCost(summary?.month?.costUsd ?? 0)} / {formatCost(budget.limitUsd)} this month ·{" "}
+              {formatCost(summary?.month?.costUsd ?? 0)} / {formatCost(budget.limitUsd)} this month ·{' '}
               {Math.round(budget.pct)}%
             </span>
           </div>
@@ -182,21 +175,21 @@ export function MissionTab({
           label="success"
           num={successPct}
           unit="%"
-          tone={successPct !== null && successPct < 90 ? "warn" : undefined}
+          tone={successPct !== null && successPct < 90 ? 'warn' : undefined}
         />
         <Stat cat="think" label="steps run" num={run.steps.length} />
         <Stat
           cat="screen"
           label="workspace"
-          value={capabilities ? (capabilities.workspaces.find((w) => w.kind === "code")?.state ?? "idle") : "…"}
-          tone={capabilities?.workspaces.some((w) => w.kind === "code" && w.state === "running") ? "ok" : undefined}
+          value={capabilities ? (capabilities.workspaces.find((w) => w.kind === 'code')?.state ?? 'idle') : '…'}
+          tone={capabilities?.workspaces.some((w) => w.kind === 'code' && w.state === 'running') ? 'ok' : undefined}
         />
         <Stat cat="connector" label="apps" num={capabilities ? capabilities.connectedApps : null} />
         <Stat
           cat="schedule"
           label="worker"
-          value={capabilities ? (capabilities.worker === "ok" ? "running" : "stalled") : "…"}
-          tone={capabilities?.worker === "stalled" ? "warn" : "ok"}
+          value={capabilities ? (capabilities.worker === 'ok' ? 'running' : 'stalled') : '…'}
+          tone={capabilities?.worker === 'stalled' ? 'warn' : 'ok'}
         />
       </ul>
 
@@ -224,7 +217,7 @@ function Stat({
   label,
   value,
   num,
-  unit = "",
+  unit = '',
   tone,
 }: {
   cat: TileCategory;
@@ -233,13 +226,22 @@ function Stat({
   /** Numeric stats count up; null renders a dash. */
   num?: number | null;
   unit?: string;
-  tone?: "ok" | "warn";
+  tone?: 'ok' | 'warn';
 }) {
   return (
     <li className={styles.stat} data-tone={tone}>
       <CategoryTile cat={cat} size="xs" className={styles.statIcon} />
       <span className={styles.statValue}>
-        {num === undefined ? value : num === null ? "–" : <><CountUp value={num} />{unit}</>}
+        {num === undefined ? (
+          value
+        ) : num === null ? (
+          '–'
+        ) : (
+          <>
+            <CountUp value={num} />
+            {unit}
+          </>
+        )}
       </span>
       <span className={styles.statLabel}>{label}</span>
     </li>
@@ -248,14 +250,14 @@ function Stat({
 
 function ActivityLog({ run, chatId }: { run: RunState; chatId?: string | null }) {
   const pageVisible = usePageVisible();
-  const [filter, setFilter] = useState<LogFilter>("all");
+  const [filter, setFilter] = useState<LogFilter>('all');
   const [follow, setFollow] = useState(true);
   const listRef = useRef<HTMLOListElement>(null);
 
   const { data: eventsData, isError } = useQuery<{ events: LhosEventInput[] }>({
-    queryKey: ["activity", "rail"],
+    queryKey: ['activity', 'rail'],
     queryFn: async () => {
-      const res = await fetch("/api/activity?limit=80", { cache: "no-store" });
+      const res = await fetch('/api/activity?limit=80', { cache: 'no-store' });
       if (!res.ok) throw new Error(`activity ${res.status}`);
       return (await res.json()) as { events: LhosEventInput[] };
     },
@@ -266,7 +268,7 @@ function ActivityLog({ run, chatId }: { run: RunState; chatId?: string | null })
   // The run stream carries no timestamps; stamp each step when first seen.
   // (Adjust-state-during-render pattern: stamps are set once, then stable.)
   const [seen, setSeen] = useState<Record<string, number>>({});
-  const stepKey = (idx: number) => `${run.runId ?? ""}:${idx}`;
+  const stepKey = (idx: number) => `${run.runId ?? ''}:${idx}`;
   const unseen = run.steps.filter((s) => seen[stepKey(s.idx)] === undefined);
   if (unseen.length > 0) {
     const now = stampNow();
@@ -300,7 +302,7 @@ function ActivityLog({ run, chatId }: { run: RunState; chatId?: string | null })
   return (
     <Panel
       title="Activity"
-      badge={<Dot status={run.phase === "idle" ? "idle" : "live"} size="sm" pulse={run.phase !== "idle"} />}
+      badge={<Dot status={run.phase === 'idle' ? 'idle' : 'live'} size="sm" pulse={run.phase !== 'idle'} />}
       actions={
         <label className={styles.follow}>
           <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} />
@@ -323,19 +325,19 @@ function ActivityLog({ run, chatId }: { run: RunState; chatId?: string | null })
       </div>
       {entries.length === 0 ? (
         <p className={styles.muted}>
-          {filter === "errors"
-            ? "No errors."
-            : filter === "chat" && !chatId
-              ? "Open a chat to see its steps."
-              : isError && filter === "computer"
-                ? "Could not load recent activity."
-                : "Nothing yet."}
+          {filter === 'errors'
+            ? 'No errors.'
+            : filter === 'chat' && !chatId
+              ? 'Open a chat to see its steps.'
+              : isError && filter === 'computer'
+                ? 'Could not load recent activity.'
+                : 'Nothing yet.'}
         </p>
       ) : (
         <ol
           ref={listRef}
           className={styles.log}
-          aria-live={follow ? "polite" : "off"}
+          aria-live={follow ? 'polite' : 'off'}
           aria-relevant="additions"
           onScroll={(e) => {
             if (e.currentTarget.scrollTop > 24 && follow) setFollow(false);
@@ -345,8 +347,8 @@ function ActivityLog({ run, chatId }: { run: RunState; chatId?: string | null })
             <li
               key={e.key}
               className={`${styles.entry} rise-in`}
-              data-ok={e.ok === null ? "pending" : String(e.ok)}
-              style={{ "--i": i } as React.CSSProperties}
+              data-ok={e.ok === null ? 'pending' : String(e.ok)}
+              style={{ '--i': i } as React.CSSProperties}
             >
               <time className={styles.ts} dateTime={new Date(e.ts).toISOString()}>
                 {clockTime(e.ts)}
@@ -354,22 +356,22 @@ function ActivityLog({ run, chatId }: { run: RunState; chatId?: string | null })
               <span className={styles.entryIcon}>
                 <CategoryTile cat={toolCategory(e.tool)} size="xs" active={e.ok === null} />
                 <Dot
-                  status={e.ok === null ? "pending" : e.ok ? "ok" : "error"}
+                  status={e.ok === null ? 'pending' : e.ok ? 'ok' : 'error'}
                   size="sm"
                   pulse={e.ok === null}
                   className={styles.entryDot}
                 />
               </span>
               <span className={styles.src} data-src={e.source}>
-                {e.source === "chat" ? "now" : "run"}
+                {e.source === 'chat' ? 'now' : 'run'}
               </span>
               <span className={styles.what} title={e.detail ?? e.label}>
                 <span className={styles.tool}>{e.tool}</span>
-                {e.label && e.label !== e.tool && e.label !== e.tool.replace(/_/g, " ") && (
+                {e.label && e.label !== e.tool && e.label !== e.tool.replace(/_/g, ' ') && (
                   <span className={styles.label}>{e.label}</span>
                 )}
               </span>
-              <span className={styles.ms}>{e.ms !== null ? `${e.ms}ms` : ""}</span>
+              <span className={styles.ms}>{e.ms !== null ? `${e.ms}ms` : ''}</span>
             </li>
           ))}
         </ol>

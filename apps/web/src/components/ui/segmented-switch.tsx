@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useLayoutEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
-import { cn } from "@/lib/cn";
-import styles from "./segmented-switch.module.css";
+import { useLayoutEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { cn } from '@/lib/cn';
+import styles from './segmented-switch.module.css';
 
 export interface SegmentedOption<T extends string> {
   value: T;
@@ -16,9 +16,9 @@ export interface SegmentedSwitchProps<T extends string> {
   options: readonly SegmentedOption<T>[];
   value: T;
   onChange: (value: T) => void;
-  size?: "sm" | "md";
+  size?: 'sm' | 'md';
   /** `pill`: sliding filled thumb (mode switch). `underline`: sliding bar (tab strips). */
-  variant?: "pill" | "underline";
+  variant?: 'pill' | 'underline';
   /** Accessible name for the group, e.g. "Workspace mode". */
   label: string;
   className?: string;
@@ -32,8 +32,8 @@ export function SegmentedSwitch<T extends string>({
   options,
   value,
   onChange,
-  size = "md",
-  variant = "pill",
+  size = 'md',
+  variant = 'pill',
   label,
   className,
 }: SegmentedSwitchProps<T>) {
@@ -72,12 +72,12 @@ export function SegmentedSwitch<T extends string>({
       ref={rootRef}
       role="tablist"
       aria-label={label}
-      className={cn(styles.root, size === "sm" && styles.sm, variant === "underline" && styles.underline, className)}
+      className={cn(styles.root, size === 'sm' && styles.sm, variant === 'underline' && styles.underline, className)}
       onKeyDown={(e) => {
-        if (e.key === "ArrowRight") {
+        if (e.key === 'ArrowRight') {
           e.preventDefault();
           move(1);
-        } else if (e.key === "ArrowLeft") {
+        } else if (e.key === 'ArrowLeft') {
           e.preventDefault();
           move(-1);
         }
@@ -85,11 +85,7 @@ export function SegmentedSwitch<T extends string>({
     >
       <span
         className={styles.thumb}
-        style={
-          thumb
-            ? { transform: `translateX(${thumb.left}px)`, width: thumb.width }
-            : { opacity: 0 }
-        }
+        style={thumb ? { transform: `translateX(${thumb.left}px)`, width: thumb.width } : { opacity: 0 }}
         aria-hidden
       />
       {options.map((option) => {

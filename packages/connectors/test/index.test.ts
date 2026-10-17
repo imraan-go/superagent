@@ -70,7 +70,10 @@ describe('initiate', () => {
     vi.stubEnv('COMPOSIO_AUTH_CONFIG_GITHUB', 'ac_github1');
     fake.session.authorize.mockResolvedValue({ redirectUrl: 'https://connect.example/abc', id: 'ca_new' });
     const c = new ComposioConnector('test-key', {});
-    await expect(c.initiate(USER, 'github', 'http://localhost:3000/cb')).resolves.toEqual({ redirectUrl: 'https://connect.example/abc', connectedAccountId: 'ca_new' });
+    await expect(c.initiate(USER, 'github', 'http://localhost:3000/cb')).resolves.toEqual({
+      redirectUrl: 'https://connect.example/abc',
+      connectedAccountId: 'ca_new',
+    });
     expect(fake.sessions.create).toHaveBeenCalledWith(USER, {
       sessionPreset: 'direct_tools',
       toolkits: ['github'],
@@ -89,7 +92,9 @@ describe('initiate', () => {
 
   it('fails when Composio returns no redirect URL', async () => {
     fake.session.authorize.mockResolvedValue({ redirectUrl: null, id: 'ca_new' });
-    await expect(new ComposioConnector('test-key', {}).initiate(USER, 'github', 'http://localhost/cb')).rejects.toThrow('did not return a redirect URL');
+    await expect(new ComposioConnector('test-key', {}).initiate(USER, 'github', 'http://localhost/cb')).rejects.toThrow(
+      'did not return a redirect URL',
+    );
   });
 });
 
@@ -97,7 +102,12 @@ describe('verify', () => {
   it('rejects an account the user does not own without fetching it', async () => {
     fake.connectedAccounts.list.mockResolvedValue({ items: [{ id: 'ca_other' }] });
     const v = await new ComposioConnector('test-key', {}).verify(USER, 'github', ACCOUNT);
-    expect(v).toEqual({ state: 'failed', statusReason: 'connected account is not owned by this user/toolkit', toolkit: null, authConfigId: null });
+    expect(v).toEqual({
+      state: 'failed',
+      statusReason: 'connected account is not owned by this user/toolkit',
+      toolkit: null,
+      authConfigId: null,
+    });
     expect(fake.connectedAccounts.list).toHaveBeenCalledWith({ userIds: [USER], toolkitSlugs: ['github'] });
     expect(fake.connectedAccounts.get).not.toHaveBeenCalled();
   });
@@ -121,14 +131,21 @@ describe('verify', () => {
 describe('execute', () => {
   it('refuses slugs outside the curated catalogue before calling Composio', async () => {
     const c = new ComposioConnector('test-key', {});
-    await expect(c.execute(USER, 'github', ACCOUNT, 'GITHUB_DELETE_REPO', {})).rejects.toThrow('not in the curated catalogue');
+    await expect(c.execute(USER, 'github', ACCOUNT, 'GITHUB_DELETE_REPO', {})).rejects.toThrow(
+      'not in the curated catalogue',
+    );
     await expect(c.execute(USER, 'slack', ACCOUNT, SLUG, {})).rejects.toThrow('not in the curated catalogue');
     expect(fake.sessions.create).not.toHaveBeenCalled();
   });
 
   it('pins the session to one tool and one account and maps a completed result', async () => {
     fake.session.config = { connectedAccounts: { github: ACCOUNT } };
-    fake.session.execute.mockResolvedValue({ data: { login: 'me' }, error: null, logId: 'log_1', resultType: 'completed' });
+    fake.session.execute.mockResolvedValue({
+      data: { login: 'me' },
+      error: null,
+      logId: 'log_1',
+      resultType: 'completed',
+    });
     const r = await new ComposioConnector('test-key', {}).execute(USER, 'github', ACCOUNT, SLUG, { a: 1 });
     expect(r).toEqual({ ok: true, data: { login: 'me' }, error: null, logId: 'log_1' });
     expect(fake.sessions.create).toHaveBeenCalledWith(
@@ -163,7 +180,9 @@ describe('execute', () => {
     ['several accounts', { connectedAccounts: { github: [ACCOUNT, 'ca_two'] } }],
   ])('refuses to run when the session reports %s', async (_label, config) => {
     fake.session.config = config;
-    await expect(new ComposioConnector('test-key', {}).execute(USER, 'github', ACCOUNT, SLUG, {})).rejects.toThrow('session is not bound to the requested github account');
+    await expect(new ComposioConnector('test-key', {}).execute(USER, 'github', ACCOUNT, SLUG, {})).rejects.toThrow(
+      'session is not bound to the requested github account',
+    );
     expect(fake.session.execute).not.toHaveBeenCalled();
   });
 
@@ -171,7 +190,9 @@ describe('execute', () => {
     fake.session.execute.mockReturnValue(new Promise(() => undefined));
     const controller = new AbortController();
     controller.abort();
-    await expect(new ComposioConnector('test-key', {}).execute(USER, 'github', ACCOUNT, SLUG, {}, controller.signal)).rejects.toThrow('composio execution aborted');
+    await expect(
+      new ComposioConnector('test-key', {}).execute(USER, 'github', ACCOUNT, SLUG, {}, controller.signal),
+    ).rejects.toThrow('composio execution aborted');
     expect(fake.sessions.create.mock.calls[0]![2]).toEqual({ signal: controller.signal });
   });
 

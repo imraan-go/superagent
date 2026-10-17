@@ -11,12 +11,11 @@
 /* A faint instrument grid behind the card — cockpit DNA, kept very low
    contrast so it never competes with the form. */
 .screen::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: -20%;
   background-image:
-    linear-gradient(var(--line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
   background-size: 64px 64px;
   opacity: 0.18;
   mask-image: radial-gradient(ellipse at center, black 10%, transparent 70%);

@@ -36,7 +36,9 @@ async function main() {
 
   const db = getDb();
   const client = await getTemporalClient();
-  await ensureRetentionSchedule(client, s.taskQueue).catch((err) => log.warn('retention.schedule_failed', { error: String(err) }));
+  await ensureRetentionSchedule(client, s.taskQueue).catch((err) =>
+    log.warn('retention.schedule_failed', { error: String(err) }),
+  );
 
   const caps = capabilityStatus(env);
   const e2b = caps.e2b_code.configured || caps.e2b_browser.configured ? realSandboxApi(env.E2B_API_KEY!) : undefined;
@@ -86,7 +88,13 @@ async function main() {
   process.once('SIGINT', shutdown);
   process.once('SIGTERM', shutdown);
 
-  log.info('worker.started', { mode: s.mode, address: s.address, namespace: s.namespace, taskQueue: s.taskQueue, workerId: deps.workerId });
+  log.info('worker.started', {
+    mode: s.mode,
+    address: s.address,
+    namespace: s.namespace,
+    taskQueue: s.taskQueue,
+    workerId: deps.workerId,
+  });
   await worker.run();
   stopping = true;
   await outboxLoop;

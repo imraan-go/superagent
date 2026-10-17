@@ -10,7 +10,14 @@ import { z } from 'zod';
  * - external_write: changes something outside the app (email, calendar, sharing, uploads); exact approval
  * - blocked: not available until a dedicated approval/takeover path exists
  */
-export type ToolClass = 'read' | 'app_write' | 'sandbox_exec' | 'browser_read' | 'browser_interact' | 'external_write' | 'blocked';
+export type ToolClass =
+  | 'read'
+  | 'app_write'
+  | 'sandbox_exec'
+  | 'browser_read'
+  | 'browser_interact'
+  | 'external_write'
+  | 'blocked';
 export type Executor = 'local' | 'workspace' | 'browser' | 'connector';
 
 export interface ToolSpec<S extends z.ZodType = z.ZodType> {
@@ -39,7 +46,8 @@ export const APP_TOOLS = {
   workspace_write_file: {
     name: 'workspace_write_file',
     version: '1',
-    description: 'Create a NEW text file in your private cloud workspace. Fails if the file already exists. Then call workspace_export_file to make it downloadable.',
+    description:
+      'Create a NEW text file in your private cloud workspace. Fails if the file already exists. Then call workspace_export_file to make it downloadable.',
     classification: 'app_write',
     executor: 'workspace',
     schema: z.object({ path: relPath, content: z.string().max(200_000) }).strict(),
@@ -57,7 +65,8 @@ export const APP_TOOLS = {
   workspace_run_python: {
     name: 'workspace_run_python',
     version: '1',
-    description: 'Run a short Python 3 script inside the isolated cloud workspace (cwd is the workspace root; no internet by default). Returns stdout/stderr (truncated). Use for calculations and generating files.',
+    description:
+      'Run a short Python 3 script inside the isolated cloud workspace (cwd is the workspace root; no internet by default). Returns stdout/stderr (truncated). Use for calculations and generating files.',
     classification: 'sandbox_exec',
     executor: 'workspace',
     schema: z.object({ code: z.string().min(1).max(20_000) }).strict(),
@@ -75,7 +84,8 @@ export const APP_TOOLS = {
   browser_navigate: {
     name: 'browser_navigate',
     version: '1',
-    description: "Open a URL in the task's cloud Google Chrome browser. Only the task's approved domains are reachable.",
+    description:
+      "Open a URL in the task's cloud Google Chrome browser. Only the task's approved domains are reachable.",
     classification: 'browser_read',
     executor: 'browser',
     schema: z.object({ url: z.string().url().max(2000) }).strict(),
@@ -111,7 +121,8 @@ export const APP_TOOLS = {
   browser_type: {
     name: 'browser_type',
     version: '1',
-    description: 'Type text into a search/text input by element number. Does not press Enter or submit. Never type personal data or credentials.',
+    description:
+      'Type text into a search/text input by element number. Does not press Enter or submit. Never type personal data or credentials.',
     classification: 'browser_interact',
     executor: 'browser',
     schema: z.object({ element: z.number().int().min(0).max(500), text: z.string().max(500) }).strict(),
@@ -129,7 +140,8 @@ export const APP_TOOLS = {
   browser_download: {
     name: 'browser_download',
     version: '1',
-    description: 'Download a public file (pdf/csv/txt/json/png/jpg, max 10MB) from an approved domain into durable storage.',
+    description:
+      'Download a public file (pdf/csv/txt/json/png/jpg, max 10MB) from an approved domain into durable storage.',
     classification: 'browser_read',
     executor: 'browser',
     schema: z.object({ url: z.string().url().max(2000) }).strict(),
@@ -173,9 +185,19 @@ export const APP_TOOLS = {
     schema: z
       .object({
         name: z.string().trim().min(1).max(120),
-        prompt: z.string().trim().min(1).max(4000).describe('What each run should do, written as an instruction to yourself'),
+        prompt: z
+          .string()
+          .trim()
+          .min(1)
+          .max(4000)
+          .describe('What each run should do, written as an instruction to yourself'),
         cron: z.string().trim().min(9).max(120).optional(),
-        everyMinutes: z.number().int().min(5).max(60 * 24 * 7).optional(),
+        everyMinutes: z
+          .number()
+          .int()
+          .min(5)
+          .max(60 * 24 * 7)
+          .optional(),
         timezone: z.string().trim().max(64).optional().describe('IANA timezone; defaults to the user timezone'),
       })
       .strict()
@@ -230,7 +252,8 @@ export const APP_TOOLS = {
   memory_save: {
     name: 'memory_save',
     version: '1',
-    description: 'Save a short durable note about the user\'s stated preferences. The user can view, edit and delete it.',
+    description:
+      "Save a short durable note about the user's stated preferences. The user can view, edit and delete it.",
     classification: 'app_write',
     executor: 'local',
     schema: z.object({ content: z.string().min(1).max(500) }).strict(),
@@ -249,9 +272,11 @@ export interface PolicyContext {
 export type PolicyDecision = { verdict: 'allow' } | { verdict: 'deny'; reason: string } | { verdict: 'needs_approval' };
 
 export function evaluateTool(spec: ToolSpec, ctx: PolicyContext): PolicyDecision {
-  for (const r of spec.requires) if (!ctx.configured.has(r)) return { verdict: 'deny', reason: `${r} is not configured on this installation` };
+  for (const r of spec.requires)
+    if (!ctx.configured.has(r)) return { verdict: 'deny', reason: `${r} is not configured on this installation` };
   if (spec.executor === 'connector') {
-    if (!spec.toolkit || !ctx.connectorActive(spec.toolkit)) return { verdict: 'deny', reason: `no active ${spec.toolkit} connection owned by this user` };
+    if (!spec.toolkit || !ctx.connectorActive(spec.toolkit))
+      return { verdict: 'deny', reason: `no active ${spec.toolkit} connection owned by this user` };
   }
   switch (spec.classification) {
     case 'read':
@@ -261,7 +286,8 @@ export function evaluateTool(spec: ToolSpec, ctx: PolicyContext): PolicyDecision
     case 'browser_interact':
       return { verdict: 'allow' };
     case 'external_write':
-      if (ctx.readOnly) return { verdict: 'deny', reason: 'this task is read-only; external changes are not permitted' };
+      if (ctx.readOnly)
+        return { verdict: 'deny', reason: 'this task is read-only; external changes are not permitted' };
       return { verdict: 'needs_approval' };
     case 'blocked':
     default:

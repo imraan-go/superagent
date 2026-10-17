@@ -16,7 +16,10 @@ let app: ReturnType<typeof createApp>;
 const store = new MemoryArtifactStore();
 const verifyCalls: string[] = [];
 const fakeConnections: ConnectionsPort = {
-  initiate: async (_u, toolkit) => ({ redirectUrl: `https://connect.composio.dev/link/${toolkit}`, connectedAccountId: `ca_${toolkit}_1` }),
+  initiate: async (_u, toolkit) => ({
+    redirectUrl: `https://connect.composio.dev/link/${toolkit}`,
+    connectedAccountId: `ca_${toolkit}_1`,
+  }),
   verify: async (composioUserId, toolkit, id) => {
     verifyCalls.push(`${composioUserId}:${id}`);
     return { state: 'active', statusReason: null, toolkit, authConfigId: 'ac_test' };
@@ -27,7 +30,13 @@ const fakeConnections: ConnectionsPort = {
 const cookies: Record<string, string> = {};
 const ids: Record<string, string> = {};
 
-async function req(who: string | null, method: string, path: string, body?: unknown, headers: Record<string, string> = {}) {
+async function req(
+  who: string | null,
+  method: string,
+  path: string,
+  body?: unknown,
+  headers: Record<string, string> = {},
+) {
   const h: Record<string, string> = { origin: ORIGIN, ...headers };
   if (who) h.cookie = cookies[who]!;
   if (body !== undefined) h['content-type'] = 'application/json';
@@ -41,15 +50,31 @@ async function signUp(name: string) {
     body: JSON.stringify({ email: `${name}@example.com`, password: 'correct horse battery staple', name }),
   });
   expect(res.status).toBe(200);
-  const setCookie = res.headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
+  const setCookie = res.headers
+    .getSetCookie()
+    .map((c) => c.split(';')[0])
+    .join('; ');
   cookies[name] = setCookie;
   ids[name] = ((await res.json()) as { user: { id: string } }).user.id;
 }
 
 beforeAll(async () => {
   ({ db, close } = await createTestDb());
-  const env = EnvSchema.parse({ APP_ENV: 'test', BETTER_AUTH_SECRET: 'x'.repeat(40), DATABASE_URL: 'postgres://unused', MAX_COST_PER_RUN: '0.25', MONTHLY_COST_LIMIT: '10' });
-  app = createApp({ db, env, auth: createAuth(db, env), log: createLogger('test'), store: () => store, connections: () => fakeConnections });
+  const env = EnvSchema.parse({
+    APP_ENV: 'test',
+    BETTER_AUTH_SECRET: 'x'.repeat(40),
+    DATABASE_URL: 'postgres://unused',
+    MAX_COST_PER_RUN: '0.25',
+    MONTHLY_COST_LIMIT: '10',
+  });
+  app = createApp({
+    db,
+    env,
+    auth: createAuth(db, env),
+    log: createLogger('test'),
+    store: () => store,
+    connections: () => fakeConnections,
+  });
   await signUp('alice');
   await signUp('mallory');
 });
@@ -67,9 +92,17 @@ describe('API auth and CSRF', () => {
     expect(r.status).toBe(403);
   });
   it('sign-in works with the seeded-style credentials', async () => {
-    const r = await app.request('/api/auth/sign-in/email', { method: 'POST', headers: { origin: ORIGIN, 'content-type': 'application/json' }, body: JSON.stringify({ email: 'alice@example.com', password: 'correct horse battery staple' }) });
+    const r = await app.request('/api/auth/sign-in/email', {
+      method: 'POST',
+      headers: { origin: ORIGIN, 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'alice@example.com', password: 'correct horse battery staple' }),
+    });
     expect(r.status).toBe(200);
-    const bad = await app.request('/api/auth/sign-in/email', { method: 'POST', headers: { origin: ORIGIN, 'content-type': 'application/json' }, body: JSON.stringify({ email: 'alice@example.com', password: 'wrong password!!' }) });
+    const bad = await app.request('/api/auth/sign-in/email', {
+      method: 'POST',
+      headers: { origin: ORIGIN, 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'alice@example.com', password: 'wrong password!!' }),
+    });
     expect(bad.status).toBe(401);
   });
 });
@@ -97,7 +130,9 @@ describe('tasks and ownership', () => {
   });
   it('validates input with zod', async () => {
     expect((await req('alice', 'POST', '/api/tasks', { prompt: '' })).status).toBe(400);
-    expect((await req('alice', 'POST', '/api/tasks', { prompt: 'x', allowedDomains: ['http://localhost'] })).status).toBe(400);
+    expect(
+      (await req('alice', 'POST', '/api/tasks', { prompt: 'x', allowedDomains: ['http://localhost'] })).status,
+    ).toBe(400);
   });
   it('refuses to delete a non-terminal task and to wipe data while tasks run', async () => {
     expect((await req('alice', 'DELETE', `/api/tasks/${taskId}`)).status).toBe(409);
@@ -107,9 +142,21 @@ describe('tasks and ownership', () => {
 
 describe('approvals', () => {
   it('only the owner can approve, and only the exact displayed action', async () => {
-    const created = (await (await req('alice', 'POST', '/api/tasks', { prompt: 'email Bob' })).json()) as { task: { id: string } };
+    const created = (await (await req('alice', 'POST', '/api/tasks', { prompt: 'email Bob' })).json()) as {
+      task: { id: string };
+    };
     const taskId = created.task.id;
-    await db.insert(schema.toolCalls).values({ id: `${taskId}:c1`, taskId, ownerId: ids.alice!, step: 0, providerToolCallId: 'c1', toolName: 'gmail_send_email', input: {} });
+    await db
+      .insert(schema.toolCalls)
+      .values({
+        id: `${taskId}:c1`,
+        taskId,
+        ownerId: ids.alice!,
+        step: 0,
+        providerToolCallId: 'c1',
+        toolName: 'gmail_send_email',
+        input: {},
+      });
     const intent = await createIntent(db, {
       ownerId: ids.alice!,
       taskId,
@@ -122,17 +169,49 @@ describe('approvals', () => {
       attachments: [],
       expiryMs: 3_600_000,
     });
-    const list = (await (await req('alice', 'GET', '/api/approvals')).json()) as { approvals: Array<{ id: string; argsHash: string; nonce: string; args: unknown }> };
+    const list = (await (await req('alice', 'GET', '/api/approvals')).json()) as {
+      approvals: Array<{ id: string; argsHash: string; nonce: string; args: unknown }>;
+    };
     const shown = list.approvals.find((a) => a.id === intent.id)!;
     expect(shown.args).toEqual({ recipient_email: 'bob@example.com', subject: 'hi', body: 'hello' });
-    expect(((await (await req('mallory', 'GET', '/api/approvals')).json()) as { approvals: unknown[] }).approvals).toHaveLength(0);
+    expect(
+      ((await (await req('mallory', 'GET', '/api/approvals')).json()) as { approvals: unknown[] }).approvals,
+    ).toHaveLength(0);
 
-    expect((await req('mallory', 'POST', `/api/approvals/${intent.id}`, { decision: 'approved', argsHash: shown.argsHash, nonce: shown.nonce })).status).toBe(404);
-    const wrong = await req('alice', 'POST', `/api/approvals/${intent.id}`, { decision: 'approved', argsHash: 'a'.repeat(64), nonce: shown.nonce });
+    expect(
+      (
+        await req('mallory', 'POST', `/api/approvals/${intent.id}`, {
+          decision: 'approved',
+          argsHash: shown.argsHash,
+          nonce: shown.nonce,
+        })
+      ).status,
+    ).toBe(404);
+    const wrong = await req('alice', 'POST', `/api/approvals/${intent.id}`, {
+      decision: 'approved',
+      argsHash: 'a'.repeat(64),
+      nonce: shown.nonce,
+    });
     expect(wrong.status).toBe(409);
     expect(((await wrong.json()) as { error: string }).error).toBe('hash_mismatch');
-    expect((await req('alice', 'POST', `/api/approvals/${intent.id}`, { decision: 'approved', argsHash: shown.argsHash, nonce: shown.nonce })).status).toBe(200);
-    expect((await req('alice', 'POST', `/api/approvals/${intent.id}`, { decision: 'approved', argsHash: shown.argsHash, nonce: shown.nonce })).status).toBe(409);
+    expect(
+      (
+        await req('alice', 'POST', `/api/approvals/${intent.id}`, {
+          decision: 'approved',
+          argsHash: shown.argsHash,
+          nonce: shown.nonce,
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await req('alice', 'POST', `/api/approvals/${intent.id}`, {
+          decision: 'approved',
+          argsHash: shown.argsHash,
+          nonce: shown.nonce,
+        })
+      ).status,
+    ).toBe(409);
     expect((await getIntentForOwner(db, ids.alice!, intent.id)).status).toBe('approved');
     const sig = await db.select().from(schema.workflowOutbox).where(eq(schema.workflowOutbox.refId, intent.id));
     expect(sig.map((s) => s.kind)).toEqual(['signal_approval']);
@@ -146,14 +225,20 @@ describe('connections', () => {
     const { connectionId, redirectUrl } = (await r.json()) as { connectionId: string; redirectUrl: string };
     expect(redirectUrl).toMatch(/^https:\/\/connect\.composio\.dev\//);
 
-    const spoof = await req('mallory', 'GET', `/api/connections/callback?cid=${connectionId}&status=success&connected_account_id=ca_evil`);
+    const spoof = await req(
+      'mallory',
+      'GET',
+      `/api/connections/callback?cid=${connectionId}&status=success&connected_account_id=ca_evil`,
+    );
     expect(spoof.headers.get('location')).toContain('result=not_found');
 
     const ok = await req('alice', 'GET', `/api/connections/callback?cid=${connectionId}&connected_account_id=ca_evil`);
     expect(ok.status).toBe(302);
     expect(ok.headers.get('location')).toContain('result=active');
     expect(verifyCalls.at(-1)).toBe(`sa_user_${ids.alice}:ca_github_1`);
-    const list = (await (await req('alice', 'GET', '/api/connections')).json()) as { connections: Array<Record<string, unknown>> };
+    const list = (await (await req('alice', 'GET', '/api/connections')).json()) as {
+      connections: Array<Record<string, unknown>>;
+    };
     expect(list.connections[0]).toMatchObject({ toolkit: 'github', status: 'active' });
     expect(JSON.stringify(list)).not.toContain('ca_github_1');
   });
@@ -161,16 +246,49 @@ describe('connections', () => {
 
 describe('connect apps (curated toolkits)', () => {
   it('every curated toolkit has verified tools in the lock', () => {
-    expect([...supportedToolkits()].sort()).toEqual(['github', 'gmail', 'googlecalendar', 'googledocs', 'googledrive', 'googlesheets', 'notion', 'outlook', 'slack']);
+    expect([...supportedToolkits()].sort()).toEqual([
+      'github',
+      'gmail',
+      'googlecalendar',
+      'googledocs',
+      'googledrive',
+      'googlesheets',
+      'notion',
+      'outlook',
+      'slack',
+    ]);
   });
 
   it('offers Connect for verified toolkits and refuses the rest', async () => {
-    const env = EnvSchema.parse({ APP_ENV: 'test', BETTER_AUTH_SECRET: 'x'.repeat(40), DATABASE_URL: 'postgres://unused', MAX_COST_PER_RUN: '0.25', MONTHLY_COST_LIMIT: '10', COMPOSIO_API_KEY: 'test_key' });
-    const withKey = createApp({ db, env, auth: createAuth(db, env), log: createLogger('test'), store: () => store, connections: () => fakeConnections });
+    const env = EnvSchema.parse({
+      APP_ENV: 'test',
+      BETTER_AUTH_SECRET: 'x'.repeat(40),
+      DATABASE_URL: 'postgres://unused',
+      MAX_COST_PER_RUN: '0.25',
+      MONTHLY_COST_LIMIT: '10',
+      COMPOSIO_API_KEY: 'test_key',
+    });
+    const withKey = createApp({
+      db,
+      env,
+      auth: createAuth(db, env),
+      log: createLogger('test'),
+      store: () => store,
+      connections: () => fakeConnections,
+    });
     const connect = async (toolkit: string) =>
-      (await (await withKey.request('/api/connectors/composio', { method: 'POST', headers: { origin: ORIGIN, cookie: cookies.alice!, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'connect', toolkit }) })).json()) as { kind: string; redirectUrl?: string };
+      (await (
+        await withKey.request('/api/connectors/composio', {
+          method: 'POST',
+          headers: { origin: ORIGIN, cookie: cookies.alice!, 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'connect', toolkit }),
+        })
+      ).json()) as { kind: string; redirectUrl?: string };
     for (const toolkit of ['notion', 'slack', 'googlesheets', 'googledocs', 'outlook']) {
-      expect(await connect(toolkit)).toMatchObject({ kind: 'redirect', redirectUrl: `https://connect.composio.dev/link/${toolkit}` });
+      expect(await connect(toolkit)).toMatchObject({
+        kind: 'redirect',
+        redirectUrl: `https://connect.composio.dev/link/${toolkit}`,
+      });
     }
     expect(await connect('jira')).toMatchObject({ kind: 'unsupported' });
   });
@@ -179,7 +297,17 @@ describe('connect apps (curated toolkits)', () => {
 describe('artifacts, memory, schedules, budget', () => {
   it('streams artifacts only to their owner with safe headers', async () => {
     const put = await store.put('owners/x/misc/a/report.md', new TextEncoder().encode('# hi'), 'text/markdown');
-    const a = await insertArtifact(db, { ownerId: ids.alice!, taskId: null, name: 'report.md', contentType: 'text/markdown', sizeBytes: 4, sha256: put.sha256, objectKey: 'owners/x/misc/a/report.md', source: {}, expiresAt: new Date(Date.now() + 86_400_000) });
+    const a = await insertArtifact(db, {
+      ownerId: ids.alice!,
+      taskId: null,
+      name: 'report.md',
+      contentType: 'text/markdown',
+      sizeBytes: 4,
+      sha256: put.sha256,
+      objectKey: 'owners/x/misc/a/report.md',
+      source: {},
+      expiresAt: new Date(Date.now() + 86_400_000),
+    });
     expect((await req('mallory', 'GET', `/api/artifacts/${a.id}/download`)).status).toBe(404);
     const r = await req('alice', 'GET', `/api/artifacts/${a.id}/download?inline=1`);
     expect(r.status).toBe(200);
@@ -190,31 +318,65 @@ describe('artifacts, memory, schedules, budget', () => {
   });
 
   it('memory is editable and hard-deleted', async () => {
-    const m = (await (await req('alice', 'POST', '/api/memories', { content: 'I prefer metric units' })).json()) as { memory: { id: string } };
+    const m = (await (await req('alice', 'POST', '/api/memories', { content: 'I prefer metric units' })).json()) as {
+      memory: { id: string };
+    };
     expect((await req('mallory', 'PATCH', `/api/memories/${m.memory.id}`, { content: 'pwned' })).status).toBe(404);
-    expect((await req('alice', 'PATCH', `/api/memories/${m.memory.id}`, { content: 'I prefer Celsius' })).status).toBe(200);
+    expect((await req('alice', 'PATCH', `/api/memories/${m.memory.id}`, { content: 'I prefer Celsius' })).status).toBe(
+      200,
+    );
     expect((await req('alice', 'DELETE', `/api/memories/${m.memory.id}`)).status).toBe(200);
     expect(await db.select().from(schema.memories).where(eq(schema.memories.id, m.memory.id))).toHaveLength(0);
   });
 
   it('schedules require an IANA timezone and go through the outbox', async () => {
-    expect((await req('alice', 'POST', '/api/schedules', { name: 'Daily', prompt: 'brief me', spec: { kind: 'cron', cron: '0 8 * * 1-5' }, timezone: 'Mars/Olympus' })).status).toBe(400);
-    expect((await req('alice', 'POST', '/api/schedules', { name: 'Fast', prompt: 'x', spec: { kind: 'interval', everyMinutes: 1 }, timezone: 'UTC' })).status).toBe(400);
-    const r = await req('alice', 'POST', '/api/schedules', { name: 'Daily', prompt: 'brief me', spec: { kind: 'cron', cron: '0 8 * * 1-5' }, timezone: 'America/Toronto' });
+    expect(
+      (
+        await req('alice', 'POST', '/api/schedules', {
+          name: 'Daily',
+          prompt: 'brief me',
+          spec: { kind: 'cron', cron: '0 8 * * 1-5' },
+          timezone: 'Mars/Olympus',
+        })
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await req('alice', 'POST', '/api/schedules', {
+          name: 'Fast',
+          prompt: 'x',
+          spec: { kind: 'interval', everyMinutes: 1 },
+          timezone: 'UTC',
+        })
+      ).status,
+    ).toBe(400);
+    const r = await req('alice', 'POST', '/api/schedules', {
+      name: 'Daily',
+      prompt: 'brief me',
+      spec: { kind: 'cron', cron: '0 8 * * 1-5' },
+      timezone: 'America/Toronto',
+    });
     expect(r.status).toBe(201);
-    const s = ((await r.json()) as { schedule: { id: string; readOnly: boolean; temporalScheduleId: string } }).schedule;
+    const s = ((await r.json()) as { schedule: { id: string; readOnly: boolean; temporalScheduleId: string } })
+      .schedule;
     expect(s.readOnly).toBe(true);
     expect(s.temporalScheduleId).toBe(`sched-${s.id}`);
     expect((await req('mallory', 'POST', `/api/schedules/${s.id}/pause`)).status).toBe(404);
     expect((await req('alice', 'POST', `/api/schedules/${s.id}/pause`)).status).toBe(200);
-    const kinds = (await db.select().from(schema.workflowOutbox).where(eq(schema.workflowOutbox.refId, s.id))).map((o) => o.kind).sort();
+    const kinds = (await db.select().from(schema.workflowOutbox).where(eq(schema.workflowOutbox.refId, s.id)))
+      .map((o) => o.kind)
+      .sort();
     expect(kinds).toEqual(['create_schedule', 'pause_schedule']);
   });
 
   it('user budget settings can only tighten installation caps', async () => {
-    const loose = (await (await req('alice', 'PUT', '/api/settings/budget', { maxCostPerRunUsd: '100', monthlyLimitUsd: '1000' })).json()) as { effective: { perRunUsd: string; monthlyUsd: string } };
+    const loose = (await (
+      await req('alice', 'PUT', '/api/settings/budget', { maxCostPerRunUsd: '100', monthlyLimitUsd: '1000' })
+    ).json()) as { effective: { perRunUsd: string; monthlyUsd: string } };
     expect(loose.effective).toEqual({ perRunUsd: '0.25', monthlyUsd: '10' });
-    const tight = (await (await req('alice', 'PUT', '/api/settings/budget', { maxCostPerRunUsd: '0.05', monthlyLimitUsd: '2' })).json()) as { effective: { perRunUsd: string; monthlyUsd: string } };
+    const tight = (await (
+      await req('alice', 'PUT', '/api/settings/budget', { maxCostPerRunUsd: '0.05', monthlyLimitUsd: '2' })
+    ).json()) as { effective: { perRunUsd: string; monthlyUsd: string } };
     expect(tight.effective).toEqual({ perRunUsd: '0.05', monthlyUsd: '2' });
   });
 

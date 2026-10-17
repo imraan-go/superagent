@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, HoldToConfirm, SegmentedSwitch, SettingSection, useToast } from "@/components/ui";
-import { api, fmtTime } from "./shared";
-import styles from "./automation.module.css";
+import { useState } from 'react';
+import Link from 'next/link';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Button, HoldToConfirm, SegmentedSwitch, SettingSection, useToast } from '@/components/ui';
+import { api, fmtTime } from './shared';
+import styles from './automation.module.css';
 
-type Spec = { kind: "cron"; cron: string } | { kind: "interval"; everyMinutes: number };
+type Spec = { kind: 'cron'; cron: string } | { kind: 'interval'; everyMinutes: number };
 
 export interface RoutineView {
   id: string;
@@ -15,15 +15,15 @@ export interface RoutineView {
   prompt: string;
   spec: Spec;
   timezone: string;
-  state: "pending_create" | "active" | "paused" | "deleted";
+  state: 'pending_create' | 'active' | 'paused' | 'deleted';
   chatId: string | null;
   createdAt: string;
 }
 
-export const ROUTINES_KEY = ["schedules"] as const;
+export const ROUTINES_KEY = ['schedules'] as const;
 
 export function describeSpec(spec: Spec): string {
-  return spec.kind === "cron" ? `cron ${spec.cron}` : `every ${spec.everyMinutes} min`;
+  return spec.kind === 'cron' ? `cron ${spec.cron}` : `every ${spec.everyMinutes} min`;
 }
 
 /**
@@ -35,17 +35,19 @@ export function SchedulesTab() {
   const toast = useToast();
   const { data, isPending, error } = useQuery({
     queryKey: ROUTINES_KEY,
-    queryFn: () => api<{ schedules: RoutineView[] }>("/api/schedules"),
+    queryFn: () => api<{ schedules: RoutineView[] }>('/api/schedules'),
   });
 
   const act = useMutation({
-    mutationFn: (v: { id: string; op: "pause" | "resume" | "delete" }) =>
-      v.op === "delete" ? api(`/api/schedules/${v.id}`, { method: "DELETE" }) : api(`/api/schedules/${v.id}/${v.op}`, { method: "POST" }),
+    mutationFn: (v: { id: string; op: 'pause' | 'resume' | 'delete' }) =>
+      v.op === 'delete'
+        ? api(`/api/schedules/${v.id}`, { method: 'DELETE' })
+        : api(`/api/schedules/${v.id}/${v.op}`, { method: 'POST' }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ROUTINES_KEY }),
-    onError: (e: Error) => toast.push({ title: "Routine action failed", message: e.message, tone: "error" }),
+    onError: (e: Error) => toast.push({ title: 'Routine action failed', message: e.message, tone: 'error' }),
   });
 
-  const routines = (data?.schedules ?? []).filter((s) => s.state !== "deleted");
+  const routines = (data?.schedules ?? []).filter((s) => s.state !== 'deleted');
 
   return (
     <div className={styles.stack}>
@@ -63,14 +65,15 @@ export function SchedulesTab() {
               <div>
                 <div className={styles.itemTitle}>
                   {s.name}
-                  {s.state === "paused" && <span className={styles.badge}>paused</span>}
-                  {s.state === "pending_create" && <span className={styles.badge}>starting</span>}
+                  {s.state === 'paused' && <span className={styles.badge}>paused</span>}
+                  {s.state === 'pending_create' && <span className={styles.badge}>starting</span>}
                 </div>
                 <div className={styles.meta}>
-                  <span className={styles.mono}>{describeSpec(s.spec)}</span> · {s.timezone} · created {fmtTime(s.createdAt)}
+                  <span className={styles.mono}>{describeSpec(s.spec)}</span> · {s.timezone} · created{' '}
+                  {fmtTime(s.createdAt)}
                   {s.chatId && (
                     <>
-                      {" · "}
+                      {' · '}
                       <Link href={`/chat/${s.chatId}`}>open chat</Link>
                     </>
                   )}
@@ -80,16 +83,16 @@ export function SchedulesTab() {
                 </div>
               </div>
               <div className={styles.actions}>
-                {s.state === "paused" ? (
-                  <Button size="sm" variant="outline" onClick={() => act.mutate({ id: s.id, op: "resume" })}>
+                {s.state === 'paused' ? (
+                  <Button size="sm" variant="outline" onClick={() => act.mutate({ id: s.id, op: 'resume' })}>
                     Resume
                   </Button>
                 ) : (
-                  <Button size="sm" variant="outline" onClick={() => act.mutate({ id: s.id, op: "pause" })}>
+                  <Button size="sm" variant="outline" onClick={() => act.mutate({ id: s.id, op: 'pause' })}>
                     Pause
                   </Button>
                 )}
-                <HoldToConfirm size="sm" tone="danger" onConfirm={() => act.mutate({ id: s.id, op: "delete" })}>
+                <HoldToConfirm size="sm" tone="danger" onConfirm={() => act.mutate({ id: s.id, op: 'delete' })}>
                   Delete
                 </HoldToConfirm>
               </div>
@@ -105,25 +108,25 @@ export function SchedulesTab() {
 function NewRoutine() {
   const qc = useQueryClient();
   const toast = useToast();
-  const [kind, setKind] = useState<"cron" | "interval">("cron");
-  const [name, setName] = useState("");
-  const [cron, setCron] = useState("0 8 * * 1-5");
+  const [kind, setKind] = useState<'cron' | 'interval'>('cron');
+  const [name, setName] = useState('');
+  const [cron, setCron] = useState('0 8 * * 1-5');
   const [every, setEvery] = useState(60);
-  const [prompt, setPrompt] = useState("");
-  const timezone = typeof Intl !== "undefined" ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC";
+  const [prompt, setPrompt] = useState('');
+  const timezone = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
 
   const create = useMutation({
     mutationFn: () =>
-      api("/api/schedules", {
-        method: "POST",
-        body: { name, prompt, timezone, spec: kind === "cron" ? { kind, cron } : { kind, everyMinutes: every } },
+      api('/api/schedules', {
+        method: 'POST',
+        body: { name, prompt, timezone, spec: kind === 'cron' ? { kind, cron } : { kind, everyMinutes: every } },
       }),
     onSuccess: () => {
-      setName("");
-      setPrompt("");
+      setName('');
+      setPrompt('');
       void qc.invalidateQueries({ queryKey: ROUTINES_KEY });
     },
-    onError: (e: Error) => toast.push({ title: "Could not create the routine", message: e.message, tone: "error" }),
+    onError: (e: Error) => toast.push({ title: 'Could not create the routine', message: e.message, tone: 'error' }),
   });
 
   return (
@@ -135,19 +138,31 @@ function NewRoutine() {
       }}
     >
       <div className={styles.formRow}>
-        <input className={styles.input} placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+        <input
+          className={styles.input}
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
         <SegmentedSwitch
           label="Timing"
           size="sm"
           value={kind}
           onChange={setKind}
           options={[
-            { value: "cron", label: "Cron" },
-            { value: "interval", label: "Every N min" },
+            { value: 'cron', label: 'Cron' },
+            { value: 'interval', label: 'Every N min' },
           ]}
         />
-        {kind === "cron" ? (
-          <input className={styles.input} value={cron} onChange={(e) => setCron(e.target.value)} required aria-label="Cron expression" />
+        {kind === 'cron' ? (
+          <input
+            className={styles.input}
+            value={cron}
+            onChange={(e) => setCron(e.target.value)}
+            required
+            aria-label="Cron expression"
+          />
         ) : (
           <input
             className={styles.input}

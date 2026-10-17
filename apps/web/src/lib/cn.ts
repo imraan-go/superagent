@@ -16,5 +16,5 @@ export function cn(...values: ClassValue[]): string {
       out.push(String(v));
     }
   }
-  return out.join(" ");
+  return out.join(' ');
 }

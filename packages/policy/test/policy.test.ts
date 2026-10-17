@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { APP_TOOLS, CONNECTOR_CANDIDATES, canonicalJson, checkBrowserUrl, checkWorkspacePath, evaluateTool, hostMatches, intentHash, isPrivateAddress, safeArtifactName, verifiedConnectorTools, type IntentBinding } from '../src';
+import {
+  APP_TOOLS,
+  CONNECTOR_CANDIDATES,
+  canonicalJson,
+  checkBrowserUrl,
+  checkWorkspacePath,
+  evaluateTool,
+  hostMatches,
+  intentHash,
+  isPrivateAddress,
+  safeArtifactName,
+  verifiedConnectorTools,
+  type IntentBinding,
+} from '../src';
 
 describe('browser URL policy (SSRF)', () => {
   const allowed = ['example.com', '*.wikipedia.org'];
@@ -26,7 +39,20 @@ describe('browser URL policy (SSRF)', () => {
     expect(checkBrowserUrl('https://example.com', []).ok).toBe(false);
   });
   it('classifies private addresses', () => {
-    for (const a of ['10.1.2.3', '172.16.0.1', '192.168.1.1', '127.0.0.1', '169.254.169.254', '100.64.0.1', '0.0.0.0', '::1', 'fc00::1', 'fe80::1', '::ffff:127.0.0.1']) expect(isPrivateAddress(a), a).toBe(true);
+    for (const a of [
+      '10.1.2.3',
+      '172.16.0.1',
+      '192.168.1.1',
+      '127.0.0.1',
+      '169.254.169.254',
+      '100.64.0.1',
+      '0.0.0.0',
+      '::1',
+      'fc00::1',
+      'fe80::1',
+      '::ffff:127.0.0.1',
+    ])
+      expect(isPrivateAddress(a), a).toBe(true);
     for (const a of ['8.8.8.8', '1.1.1.1', '2606:4700:4700::1111']) expect(isPrivateAddress(a), a).toBe(false);
   });
   it('wildcards do not match the apex unless listed', () => {
@@ -36,7 +62,17 @@ describe('browser URL policy (SSRF)', () => {
 });
 
 describe('workspace path policy (traversal)', () => {
-  it.each(['../etc/passwd', '/etc/passwd', 'a/../../b.txt', '.ssh/id_rsa', 'a/.env', 'x\u0000.txt', 'a\\..\\b.txt', 'report.exe', ''])('rejects %j', (p) => {
+  it.each([
+    '../etc/passwd',
+    '/etc/passwd',
+    'a/../../b.txt',
+    '.ssh/id_rsa',
+    'a/.env',
+    'x\u0000.txt',
+    'a\\..\\b.txt',
+    'report.exe',
+    '',
+  ])('rejects %j', (p) => {
     expect(checkWorkspacePath(p).ok).toBe(false);
   });
   it('accepts normal relative files and maps content types', () => {
@@ -85,13 +121,24 @@ describe('canonical intent hashing', () => {
 });
 
 describe('tool policy', () => {
-  const ctx = { readOnly: false, configured: new Set(['e2b_code', 'storage', 'composio']), connectorActive: (t: string) => t === 'gmail' };
+  const ctx = {
+    readOnly: false,
+    configured: new Set(['e2b_code', 'storage', 'composio']),
+    connectorActive: (t: string) => t === 'gmail',
+  };
   it('denies tools whose capability is not configured', () => {
     expect(evaluateTool(APP_TOOLS.browser_navigate, ctx)).toMatchObject({ verdict: 'deny' });
     expect(evaluateTool(APP_TOOLS.workspace_run_python, ctx)).toEqual({ verdict: 'allow' });
   });
   it('external writes need approval, and are denied in read-only mode or without an owned connection', () => {
-    const lock = { GMAIL_SEND_EMAIL: { toolkit: 'gmail', version: 'v1', verifiedAt: 'x', params: ['recipient_email', 'subject', 'body'] } };
+    const lock = {
+      GMAIL_SEND_EMAIL: {
+        toolkit: 'gmail',
+        version: 'v1',
+        verifiedAt: 'x',
+        params: ['recipient_email', 'subject', 'body'],
+      },
+    };
     const send = verifiedConnectorTools(lock).find((t) => t.composioSlug === 'GMAIL_SEND_EMAIL')!;
     expect(evaluateTool(send, ctx)).toEqual({ verdict: 'needs_approval' });
     expect(evaluateTool(send, { ...ctx, readOnly: true })).toMatchObject({ verdict: 'deny' });
@@ -99,12 +146,26 @@ describe('tool policy', () => {
   });
   it('connector tools are only enabled when discovery verified every curated param', () => {
     expect(verifiedConnectorTools({})).toHaveLength(0);
-    expect(verifiedConnectorTools({ GMAIL_SEND_EMAIL: { toolkit: 'gmail', version: 'v1', verifiedAt: 'x', params: ['recipient_email'] } })).toHaveLength(0);
-    expect(verifiedConnectorTools({ GMAIL_SEND_EMAIL: { toolkit: 'github', version: 'v1', verifiedAt: 'x', params: ['recipient_email', 'subject', 'body'] } })).toHaveLength(0);
+    expect(
+      verifiedConnectorTools({
+        GMAIL_SEND_EMAIL: { toolkit: 'gmail', version: 'v1', verifiedAt: 'x', params: ['recipient_email'] },
+      }),
+    ).toHaveLength(0);
+    expect(
+      verifiedConnectorTools({
+        GMAIL_SEND_EMAIL: {
+          toolkit: 'github',
+          version: 'v1',
+          verifiedAt: 'x',
+          params: ['recipient_email', 'subject', 'body'],
+        },
+      }),
+    ).toHaveLength(0);
   });
   it('curated connector writes are exact-approval external writes that name their destination', () => {
     for (const c of CONNECTOR_CANDIDATES) {
-      if (/_(SEND|CREATE|APPEND|INSERT|UPDATE|DELETE)/.test(c.slug)) expect(c.classification, c.slug).toBe('external_write');
+      if (/_(SEND|CREATE|APPEND|INSERT|UPDATE|DELETE)/.test(c.slug))
+        expect(c.classification, c.slug).toBe('external_write');
       if (c.classification === 'external_write') {
         expect(c.destinationFields?.length, c.slug).toBeGreaterThan(0);
         for (const f of c.destinationFields!) expect(Object.keys(c.schema.shape), c.slug).toContain(f);
@@ -113,6 +174,8 @@ describe('tool policy', () => {
     }
   });
   it('app tool schemas are strict (no smuggled extra fields)', () => {
-    expect(APP_TOOLS.workspace_write_file.schema.safeParse({ path: 'a.txt', content: 'x', overwrite: true }).success).toBe(false);
+    expect(
+      APP_TOOLS.workspace_write_file.schema.safeParse({ path: 'a.txt', content: 'x', overwrite: true }).success,
+    ).toBe(false);
   });
 });

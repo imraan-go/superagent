@@ -33,10 +33,17 @@ export interface CreateTaskInput {
  * between DB commit and Temporal start never loses the task, and a duplicate HTTP retry with the
  * same idempotency key returns the existing task instead of creating another.
  */
-export async function createTaskWithOutbox(db: Db, input: CreateTaskInput): Promise<{ task: typeof tasks.$inferSelect; created: boolean }> {
+export async function createTaskWithOutbox(
+  db: Db,
+  input: CreateTaskInput,
+): Promise<{ task: typeof tasks.$inferSelect; created: boolean }> {
   const idem = input.idempotencyKey ?? randomUUID();
   return db.transaction(async (tx) => {
-    const existing = await tx.select().from(tasks).where(and(eq(tasks.ownerId, input.ownerId), eq(tasks.idempotencyKey, idem))).limit(1);
+    const existing = await tx
+      .select()
+      .from(tasks)
+      .where(and(eq(tasks.ownerId, input.ownerId), eq(tasks.idempotencyKey, idem)))
+      .limit(1);
     if (existing[0]) return { task: existing[0], created: false };
     const id = randomUUID();
     const [task] = await tx
@@ -61,17 +68,51 @@ export async function createTaskWithOutbox(db: Db, input: CreateTaskInput): Prom
       .onConflictDoNothing({ target: [tasks.ownerId, tasks.idempotencyKey] })
       .returning();
     if (!task) {
-      const again = await tx.select().from(tasks).where(and(eq(tasks.ownerId, input.ownerId), eq(tasks.idempotencyKey, idem))).limit(1);
+      const again = await tx
+        .select()
+        .from(tasks)
+        .where(and(eq(tasks.ownerId, input.ownerId), eq(tasks.idempotencyKey, idem)))
+        .limit(1);
       return { task: again[0]!, created: false };
     }
     const history = input.history ?? [];
     if (history.length) {
-      await tx.insert(taskMessages).values(history.map((h, i) => ({ taskId: id, ownerId: input.ownerId, step: 0, kind: h.role, dedupeKey: `history:${i}`, content: { role: h.role, content: h.content } })));
+      await tx
+        .insert(taskMessages)
+        .values(
+          history.map((h, i) => ({
+            taskId: id,
+            ownerId: input.ownerId,
+            step: 0,
+            kind: h.role,
+            dedupeKey: `history:${i}`,
+            content: { role: h.role, content: h.content },
+          })),
+        );
     }
-    await tx.insert(taskMessages).values({ taskId: id, ownerId: input.ownerId, step: 0, kind: 'user', dedupeKey: 'user:0', content: { role: 'user', content: input.userContent ?? input.prompt } });
-    await tx.insert(taskEvents).values({ taskId: id, ownerId: input.ownerId, type: 'task.queued', dedupeKey: 'task.queued', data: { origin: input.origin ?? 'user' } });
+    await tx
+      .insert(taskMessages)
+      .values({
+        taskId: id,
+        ownerId: input.ownerId,
+        step: 0,
+        kind: 'user',
+        dedupeKey: 'user:0',
+        content: { role: 'user', content: input.userContent ?? input.prompt },
+      });
+    await tx
+      .insert(taskEvents)
+      .values({
+        taskId: id,
+        ownerId: input.ownerId,
+        type: 'task.queued',
+        dedupeKey: 'task.queued',
+        data: { origin: input.origin ?? 'user' },
+      });
     if (input.origin !== 'schedule') {
-      await tx.insert(workflowOutbox).values({ ownerId: input.ownerId, kind: 'start_task', refId: id, payload: { taskId: id } });
+      await tx
+        .insert(workflowOutbox)
+        .values({ ownerId: input.ownerId, kind: 'start_task', refId: id, payload: { taskId: id } });
     }
     return { task, created: true };
   });
@@ -79,7 +120,11 @@ export async function createTaskWithOutbox(db: Db, input: CreateTaskInput): Prom
 
 export async function getTaskForOwner(db: DbOrTx, ownerId: string, taskId: string) {
   if (!isUuid(taskId)) throw new NotFoundError('task');
-  const rows = await db.select().from(tasks).where(and(eq(tasks.id, taskId), eq(tasks.ownerId, ownerId))).limit(1);
+  const rows = await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.id, taskId), eq(tasks.ownerId, ownerId)))
+    .limit(1);
   if (!rows[0]) throw new NotFoundError('task');
   return rows[0];
 }
@@ -91,20 +136,41 @@ export async function listTasksForOwner(db: DbOrTx, ownerId: string, limit = 50)
 const TERMINAL: TaskStatus[] = ['completed', 'failed', 'cancelled'];
 
 /** Projection update. Terminal states are sticky so a late/duplicate Activity cannot revive a task. */
-export async function setTaskStatus(db: DbOrTx, ownerId: string, taskId: string, status: TaskStatus, extra: { resultSummary?: string; error?: string } = {}) {
+export async function setTaskStatus(
+  db: DbOrTx,
+  ownerId: string,
+  taskId: string,
+  status: TaskStatus,
+  extra: { resultSummary?: string; error?: string } = {},
+) {
   const terminal = TERMINAL.includes(status);
   const rows = await db
     .update(tasks)
     .set({ status, updatedAt: new Date(), ...(terminal ? { completedAt: new Date() } : {}), ...extra })
-    .where(and(eq(tasks.id, taskId), eq(tasks.ownerId, ownerId), sql`${tasks.status} not in ('completed','failed','cancelled')`))
+    .where(
+      and(
+        eq(tasks.id, taskId),
+        eq(tasks.ownerId, ownerId),
+        sql`${tasks.status} not in ('completed','failed','cancelled')`,
+      ),
+    )
     .returning({ id: tasks.id });
   return rows.length > 0;
 }
 
-export async function appendEvent(db: DbOrTx, e: { ownerId: string; taskId: string; type: TaskEventType; dedupeKey: string; data?: Record<string, unknown> }) {
+export async function appendEvent(
+  db: DbOrTx,
+  e: { ownerId: string; taskId: string; type: TaskEventType; dedupeKey: string; data?: Record<string, unknown> },
+) {
   await db
     .insert(taskEvents)
-    .values({ ownerId: e.ownerId, taskId: e.taskId, type: e.type, dedupeKey: e.dedupeKey, data: redact(e.data ?? {}) as Record<string, unknown> })
+    .values({
+      ownerId: e.ownerId,
+      taskId: e.taskId,
+      type: e.type,
+      dedupeKey: e.dedupeKey,
+      data: redact(e.data ?? {}) as Record<string, unknown>,
+    })
     .onConflictDoNothing({ target: [taskEvents.taskId, taskEvents.dedupeKey] });
 }
 
@@ -118,10 +184,27 @@ export async function listEvents(db: DbOrTx, ownerId: string, taskId: string, af
     .limit(limit);
 }
 
-export async function appendMessage(db: DbOrTx, m: { ownerId: string; taskId: string; step: number; kind: 'user' | 'assistant' | 'tool_result'; dedupeKey: string; content: unknown }) {
+export async function appendMessage(
+  db: DbOrTx,
+  m: {
+    ownerId: string;
+    taskId: string;
+    step: number;
+    kind: 'user' | 'assistant' | 'tool_result';
+    dedupeKey: string;
+    content: unknown;
+  },
+) {
   const rows = await db
     .insert(taskMessages)
-    .values({ ownerId: m.ownerId, taskId: m.taskId, step: m.step, kind: m.kind, dedupeKey: m.dedupeKey, content: m.content as object })
+    .values({
+      ownerId: m.ownerId,
+      taskId: m.taskId,
+      step: m.step,
+      kind: m.kind,
+      dedupeKey: m.dedupeKey,
+      content: m.content as object,
+    })
     .onConflictDoNothing({ target: [taskMessages.taskId, taskMessages.dedupeKey] })
     .returning({ id: taskMessages.id });
   return rows.length > 0;
@@ -131,13 +214,19 @@ export async function getMessageByDedupe(db: DbOrTx, ownerId: string, taskId: st
   const rows = await db
     .select()
     .from(taskMessages)
-    .where(and(eq(taskMessages.taskId, taskId), eq(taskMessages.ownerId, ownerId), eq(taskMessages.dedupeKey, dedupeKey)))
+    .where(
+      and(eq(taskMessages.taskId, taskId), eq(taskMessages.ownerId, ownerId), eq(taskMessages.dedupeKey, dedupeKey)),
+    )
     .limit(1);
   return rows[0];
 }
 
 export async function listMessages(db: DbOrTx, ownerId: string, taskId: string) {
-  return db.select().from(taskMessages).where(and(eq(taskMessages.taskId, taskId), eq(taskMessages.ownerId, ownerId))).orderBy(asc(taskMessages.id));
+  return db
+    .select()
+    .from(taskMessages)
+    .where(and(eq(taskMessages.taskId, taskId), eq(taskMessages.ownerId, ownerId)))
+    .orderBy(asc(taskMessages.id));
 }
 
 export async function upsertToolCalls(db: DbOrTx, rows: Array<typeof toolCalls.$inferInsert>) {
@@ -146,12 +235,22 @@ export async function upsertToolCalls(db: DbOrTx, rows: Array<typeof toolCalls.$
 }
 
 export async function getToolCall(db: DbOrTx, ownerId: string, id: string) {
-  const rows = await db.select().from(toolCalls).where(and(eq(toolCalls.id, id), eq(toolCalls.ownerId, ownerId))).limit(1);
+  const rows = await db
+    .select()
+    .from(toolCalls)
+    .where(and(eq(toolCalls.id, id), eq(toolCalls.ownerId, ownerId)))
+    .limit(1);
   if (!rows[0]) throw new NotFoundError('tool call');
   return rows[0];
 }
 
-export async function setToolCallStatus(db: DbOrTx, ownerId: string, id: string, status: string, resultSummary?: string) {
+export async function setToolCallStatus(
+  db: DbOrTx,
+  ownerId: string,
+  id: string,
+  status: string,
+  resultSummary?: string,
+) {
   await db
     .update(toolCalls)
     .set({ status, updatedAt: new Date(), ...(resultSummary !== undefined ? { resultSummary } : {}) })
@@ -160,7 +259,10 @@ export async function setToolCallStatus(db: DbOrTx, ownerId: string, id: string,
 
 /* ---------- outbox ---------- */
 
-export async function enqueueOutbox(db: DbOrTx, row: { ownerId: string; kind: string; refId: string; payload?: Record<string, unknown> }) {
+export async function enqueueOutbox(
+  db: DbOrTx,
+  row: { ownerId: string; kind: string; refId: string; payload?: Record<string, unknown> },
+) {
   await db
     .insert(workflowOutbox)
     .values({ ownerId: row.ownerId, kind: row.kind, refId: row.refId, payload: row.payload ?? {} })
@@ -184,20 +286,32 @@ export async function claimOutbox(db: Db, limit = 20) {
     await tx
       .update(workflowOutbox)
       .set({ availableAt: new Date(Date.now() + 60_000), attempts: sql`${workflowOutbox.attempts} + 1` })
-      .where(inArray(workflowOutbox.id, rows.map((r) => r.id)));
+      .where(
+        inArray(
+          workflowOutbox.id,
+          rows.map((r) => r.id),
+        ),
+      );
     return rows;
   });
 }
 
 export async function completeOutbox(db: DbOrTx, id: string) {
-  await db.update(workflowOutbox).set({ status: 'done', processedAt: new Date(), lastError: null }).where(eq(workflowOutbox.id, id));
+  await db
+    .update(workflowOutbox)
+    .set({ status: 'done', processedAt: new Date(), lastError: null })
+    .where(eq(workflowOutbox.id, id));
 }
 
 export async function failOutbox(db: DbOrTx, id: string, attempts: number, error: string, maxAttempts = 50) {
   const backoffMs = Math.min(5 * 60_000, 1000 * 2 ** Math.min(attempts, 8));
   await db
     .update(workflowOutbox)
-    .set({ status: attempts >= maxAttempts ? 'dead' : 'pending', lastError: error.slice(0, 500), availableAt: new Date(Date.now() + backoffMs) })
+    .set({
+      status: attempts >= maxAttempts ? 'dead' : 'pending',
+      lastError: error.slice(0, 500),
+      availableAt: new Date(Date.now() + backoffMs),
+    })
     .where(eq(workflowOutbox.id, id));
 }
 
