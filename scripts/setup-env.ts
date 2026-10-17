@@ -1,7 +1,8 @@
 /**
  * Creates/updates the gitignored .env from .env.example and generates LOCAL-ONLY secrets
- * (database, MinIO, Better Auth, dev seed). Existing values are never overwritten and no secret
- * value is printed. Third-party keys are left blank: add them with `pnpm setup:secret KEY`.
+ * (MinIO, Better Auth, dev seed). The local Postgres password is a fixed value: Postgres only reads
+ * it when its volume is first created, so a regenerated one would lock you out of existing data.
+ * Existing values are never overwritten and no secret value is printed. Third-party keys are left blank: add them with `pnpm setup:secret KEY`.
  */
 import { randomBytes } from 'node:crypto';
 import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -22,9 +23,11 @@ function parse(text: string): Map<string, string> {
 }
 
 const have = parse(current);
+// Postgres binds to 127.0.0.1 only (infra/local/compose.yaml).
+const LOCAL_POSTGRES_PASSWORD = 'superagent';
 const secret = (n = 24) => randomBytes(n).toString('base64url');
 const generated: Record<string, () => string> = {
-  POSTGRES_PASSWORD: () => secret(),
+  POSTGRES_PASSWORD: () => LOCAL_POSTGRES_PASSWORD,
   BETTER_AUTH_SECRET: () => secret(32),
   S3_ACCESS_KEY_ID: () => 'superagent',
   S3_SECRET_ACCESS_KEY: () => secret(),

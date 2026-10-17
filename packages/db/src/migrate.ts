@@ -15,7 +15,9 @@ async function main() {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((err) => {
-    console.error('migration failed:', err instanceof Error ? err.message : err);
+    // Drizzle wraps driver errors ("Failed query: ..."); the real Postgres error is in `cause`.
+    const cause = err instanceof Error && err.cause instanceof Error ? `\ncause: ${err.cause.message}` : '';
+    console.error('migration failed:', err instanceof Error ? err.message : err, cause);
     process.exit(1);
   });
 }
