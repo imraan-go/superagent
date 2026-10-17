@@ -67,7 +67,12 @@ test('routines are read-only and validate timezones', async () => {
         await fetch('/api/schedules', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ name: 'Bad', prompt: 'x', spec: { kind: 'cron', cron: '0 8 * * 1-5' }, timezone: 'Mars/Olympus' }),
+          body: JSON.stringify({
+            name: 'Bad',
+            prompt: 'x',
+            spec: { kind: 'cron', cron: '0 8 * * 1-5' },
+            timezone: 'Mars/Olympus',
+          }),
         })
       ).status,
   );
@@ -88,17 +93,42 @@ test('the Workspaces view reports health', async () => {
 });
 
 test('a user cannot read or change another user’s chats or memories', async ({ browser }) => {
-  const chatId = await page.evaluate(async () => ((await (await fetch('/api/chats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).json()) as { chat: { id: string } }).chat.id);
-  const memId = await page.evaluate(async () => ((await (await fetch('/api/memories')).json()) as { memories: Array<{ id: string }> }).memories[0]!.id);
+  const chatId = await page.evaluate(
+    async () =>
+      (
+        (await (
+          await fetch('/api/chats', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+        ).json()) as { chat: { id: string } }
+      ).chat.id,
+  );
+  const memId = await page.evaluate(
+    async () => ((await (await fetch('/api/memories')).json()) as { memories: Array<{ id: string }> }).memories[0]!.id,
+  );
 
   const otherCtx = await browser.newContext();
   const other = await otherCtx.newPage();
   await signUp(other, 'intruder');
-  expect(await other.evaluate(async (id) => (await fetch(`/api/memories/${id}`, { method: 'DELETE' })).status, memId)).toBe(404);
-  expect(await other.evaluate(async () => ((await (await fetch('/api/memories')).json()) as { memories: unknown[] }).memories.length)).toBe(0);
+  expect(
+    await other.evaluate(async (id) => (await fetch(`/api/memories/${id}`, { method: 'DELETE' })).status, memId),
+  ).toBe(404);
+  expect(
+    await other.evaluate(
+      async () => ((await (await fetch('/api/memories')).json()) as { memories: unknown[] }).memories.length,
+    ),
+  ).toBe(0);
   expect(await other.evaluate(async (id) => (await fetch(`/api/chats/${id}`)).status, chatId)).toBe(404);
   expect(
-    await other.evaluate(async (id) => (await fetch(`/api/chats/${id}/messages`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: 'hijack' }) })).status, chatId),
+    await other.evaluate(
+      async (id) =>
+        (
+          await fetch(`/api/chats/${id}/messages`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ text: 'hijack' }),
+          })
+        ).status,
+      chatId,
+    ),
   ).toBe(404);
   const res = await other.goto(`/chat/${chatId}`);
   expect(res?.status()).toBe(404);

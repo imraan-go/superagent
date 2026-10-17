@@ -7,9 +7,7 @@
   height: 100%;
   overflow: hidden;
   border-left: var(--border) solid var(--glass-line);
-  background:
-    linear-gradient(180deg, var(--glass-hi), transparent 30%),
-    var(--glass);
+  background: linear-gradient(180deg, var(--glass-hi), transparent 30%), var(--glass);
   backdrop-filter: blur(18px) saturate(1.2);
   transition: width var(--dur-panel) var(--ease-spring);
 }
@@ -17,7 +15,9 @@
 .full {
   width: var(--sidebar-r);
   height: 100%;
-  transition: opacity var(--dur-std) var(--ease-out), transform var(--dur-panel) var(--ease-spring);
+  transition:
+    opacity var(--dur-std) var(--ease-out),
+    transform var(--dur-panel) var(--ease-spring);
 }
 
 .rail[data-minimized] {
@@ -73,7 +73,9 @@
   background: none;
   color: var(--text-2);
   cursor: pointer;
-  transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-spring) var(--ease-spring);
+  transition:
+    background-color var(--dur-micro) var(--ease-out),
+    transform var(--dur-spring) var(--ease-spring);
 }
 
 .dockItem:hover {

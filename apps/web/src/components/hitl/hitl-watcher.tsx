@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { Bell } from "@phosphor-icons/react/dist/ssr";
-import { useToast } from "@/components/ui";
-import { usePending } from "@/hooks/use-pending";
-import { useSound } from "@/hooks/use-sound";
-import { useDesktopNotify } from "@/hooks/use-desktop-notify";
-import { newItems } from "@/lib/hitl";
-import type { PendingItem } from "@/lib/hitl";
-import styles from "./hitl.module.css";
+import { useEffect, useRef, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Bell } from '@phosphor-icons/react/dist/ssr';
+import { useToast } from '@/components/ui';
+import { usePending } from '@/hooks/use-pending';
+import { useSound } from '@/hooks/use-sound';
+import { useDesktopNotify } from '@/hooks/use-desktop-notify';
+import { newItems } from '@/lib/hitl';
+import type { PendingItem } from '@/lib/hitl';
+import styles from './hitl.module.css';
 
 /**
  * App-wide watcher: announces each new item waiting on the owner exactly once
@@ -23,7 +23,7 @@ export function HitlWatcher() {
   const { notify } = useDesktopNotify();
   const router = useRouter();
   const previous = useRef<PendingItem[] | undefined>(undefined);
-  const [spoken, setSpoken] = useState("");
+  const [spoken, setSpoken] = useState('');
 
   useEffect(() => {
     if (!data) return;
@@ -42,15 +42,15 @@ export function HitlWatcher() {
 
     for (const item of fresh.slice(0, 3)) {
       const href = item.chatId ? `/chat/${item.chatId}` : undefined;
-      const title = item.kind === "ask" ? "The agent has a question" : "Approval needed";
-      sound("approval");
-      notify(item.kind === "ask" ? "question" : "approval", title, item.prompt || title, href);
+      const title = item.kind === 'ask' ? 'The agent has a question' : 'Approval needed';
+      sound('approval');
+      notify(item.kind === 'ask' ? 'question' : 'approval', title, item.prompt || title, href);
       toast.push({
         title,
         message: item.prompt,
-        tone: "warning",
+        tone: 'warning',
         durationMs: 8_000,
-        action: href ? { label: "Review", onClick: () => router.push(href) } : undefined,
+        action: href ? { label: 'Review', onClick: () => router.push(href) } : undefined,
       });
     }
   }, [data, notify, router, sound, toast]);
@@ -66,12 +66,12 @@ export function HitlWatcher() {
 export function PendingBadge() {
   const { data } = usePending();
   const router = useRouter();
-  const manage = usePathname().startsWith("/manage");
+  const manage = usePathname().startsWith('/manage');
   const count = data?.count ?? 0;
   if (count === 0) return null;
 
   const first = data?.items.find((i) => i.chatId);
-  const label = `${count} item${count === 1 ? "" : "s"} waiting on you`;
+  const label = `${count} item${count === 1 ? '' : 's'} waiting on you`;
 
   return (
     <button
@@ -81,12 +81,12 @@ export function PendingBadge() {
       title={label}
       onClick={() => {
         // In Workspaces the badge opens the inbox; elsewhere the oldest chat waiting.
-        if (manage || !first?.chatId) router.push("/manage?section=inbox");
+        if (manage || !first?.chatId) router.push('/manage?section=inbox');
         else router.push(`/chat/${first.chatId}`);
       }}
     >
       <Bell size={16} weight="duotone" aria-hidden />
-      <span className={styles.badgeCount}>{count > 99 ? "99+" : count}</span>
+      <span className={styles.badgeCount}>{count > 99 ? '99+' : count}</span>
     </button>
   );
 }

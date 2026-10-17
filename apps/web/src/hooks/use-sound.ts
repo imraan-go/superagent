@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useCallback } from "react";
-import { usePathname } from "next/navigation";
-import { CUES } from "@/lib/sound-cues";
-import { soundEnabled } from "@/lib/prefs";
-import type { SoundEvent } from "@/lib/prefs";
-import { useSoundPrefs } from "./use-prefs";
+import { useCallback } from 'react';
+import { usePathname } from 'next/navigation';
+import { CUES } from '@/lib/sound-cues';
+import { soundEnabled } from '@/lib/prefs';
+import type { SoundEvent } from '@/lib/prefs';
+import { useSoundPrefs } from './use-prefs';
 
 /**
  * WebAudio cue player. One shared AudioContext, created lazily — browsers
@@ -15,15 +15,14 @@ import { useSoundPrefs } from "./use-prefs";
 let shared: AudioContext | null = null;
 
 function context(): AudioContext | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   if (!shared) {
     const Ctor =
-      window.AudioContext ??
-      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctor) return null;
     shared = new Ctor();
   }
-  if (shared.state === "suspended") void shared.resume().catch(() => {});
+  if (shared.state === 'suspended') void shared.resume().catch(() => {});
   return shared;
 }
 
@@ -57,7 +56,7 @@ function play(event: SoundEvent, volume: number): void {
 export function useSound(): (event: SoundEvent) => void {
   const prefs = useSoundPrefs();
   const pathname = usePathname();
-  const manage = pathname?.startsWith("/manage") ?? false;
+  const manage = pathname?.startsWith('/manage') ?? false;
 
   return useCallback(
     (event: SoundEvent) => {

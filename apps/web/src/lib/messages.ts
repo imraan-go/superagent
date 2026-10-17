@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 /**
  * The on-the-wire shape of a message turn. Isomorphic on purpose: the chat
@@ -10,7 +10,7 @@ import { z } from "zod";
  */
 
 export const textPartSchema = z.object({
-  type: z.literal("text"),
+  type: z.literal('text'),
   text: z.string(),
 });
 
@@ -20,7 +20,7 @@ export const textPartSchema = z.object({
  * authenticated files route.
  */
 export const imagePartSchema = z.object({
-  type: z.literal("image"),
+  type: z.literal('image'),
   fileId: z.uuid(),
   mime: z.string(),
   alt: z.string().optional(),
@@ -28,7 +28,7 @@ export const imagePartSchema = z.object({
 
 /** A non-image attachment (pdf, docx, csv, …), referenced by `fileId`. */
 export const filePartSchema = z.object({
-  type: z.literal("file"),
+  type: z.literal('file'),
   fileId: z.uuid(),
   name: z.string(),
   mime: z.string(),
@@ -36,14 +36,14 @@ export const filePartSchema = z.object({
 });
 
 export const toolUsePartSchema = z.object({
-  type: z.literal("tool_use"),
+  type: z.literal('tool_use'),
   id: z.string(),
   name: z.string(),
   args: z.record(z.string(), z.unknown()),
 });
 
 export const toolResultPartSchema = z.object({
-  type: z.literal("tool_result"),
+  type: z.literal('tool_result'),
   toolUseId: z.string(),
   name: z.string(),
   ok: z.boolean(),
@@ -58,7 +58,7 @@ export const toolResultPartSchema = z.object({
  * back to a model (src/server/agent/context.ts skips it).
  */
 export const thinkingPartSchema = z.object({
-  type: z.literal("thinking"),
+  type: z.literal('thinking'),
   text: z.string(),
 });
 
@@ -67,17 +67,20 @@ export const thinkingPartSchema = z.object({
  * Stored with the run's turn, so the transcript shows what was asked and what the owner chose.
  */
 export const questionPartSchema = z.object({
-  type: z.literal("question"),
+  type: z.literal('question'),
   questionId: z.string(),
-  kind: z.enum(["single", "multi", "text", "confirm"]),
+  kind: z.enum(['single', 'multi', 'text', 'confirm']),
   prompt: z.string(),
   options: z.array(z.object({ id: z.string(), label: z.string() })).default([]),
-  status: z.enum(["pending", "answered", "expired", "cancelled"]),
-  answer: z.object({ choices: z.array(z.string()), text: z.string().optional() }).nullable().default(null),
+  status: z.enum(['pending', 'answered', 'expired', 'cancelled']),
+  answer: z
+    .object({ choices: z.array(z.string()), text: z.string().optional() })
+    .nullable()
+    .default(null),
   expiresAt: z.string().optional(),
 });
 
-export const messagePartSchema = z.discriminatedUnion("type", [
+export const messagePartSchema = z.discriminatedUnion('type', [
   questionPartSchema,
   thinkingPartSchema,
   textPartSchema,
@@ -98,7 +101,7 @@ export type MessagePart = z.infer<typeof messagePartSchema>;
 export type ThinkingPart = z.infer<typeof thinkingPartSchema>;
 export type QuestionPart = z.infer<typeof questionPartSchema>;
 
-export const messageRoleSchema = z.enum(["user", "assistant", "system", "tool"]);
+export const messageRoleSchema = z.enum(['user', 'assistant', 'system', 'tool']);
 export type MessageRole = z.infer<typeof messageRoleSchema>;
 
 export interface ChatMessage {
@@ -113,9 +116,9 @@ export interface ChatMessage {
 /** Plain text of a turn — used for titles, memory extraction and search. */
 export function partsToText(parts: MessagePart[]): string {
   return parts
-    .filter((p): p is TextPart => p.type === "text")
+    .filter((p): p is TextPart => p.type === 'text')
     .map((p) => p.text)
-    .join("\n")
+    .join('\n')
     .trim();
 }
 
@@ -127,11 +130,11 @@ export const MAX_TITLE_LENGTH = 60;
  * and cuts on a word boundary.
  */
 export function deriveTitle(text: string): string {
-  const flat = text.replace(/\s+/g, " ").trim();
-  if (!flat) return "New chat";
+  const flat = text.replace(/\s+/g, ' ').trim();
+  if (!flat) return 'New chat';
   if (flat.length <= MAX_TITLE_LENGTH) return flat;
 
   const cut = flat.slice(0, MAX_TITLE_LENGTH);
-  const lastSpace = cut.lastIndexOf(" ");
+  const lastSpace = cut.lastIndexOf(' ');
   return `${(lastSpace > 24 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
 }

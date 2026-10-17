@@ -1,4 +1,4 @@
-import { readApiError } from "@/lib/api-error";
+import { readApiError } from '@/lib/api-error';
 
 /** Typed client for the Workspaces view (same-origin JSON). */
 export class ManageApiError extends Error {
@@ -8,16 +8,16 @@ export class ManageApiError extends Error {
     readonly status: number,
   ) {
     super(message);
-    this.name = "ManageApiError";
+    this.name = 'ManageApiError';
   }
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(path, { ...init, cache: "no-store" });
+    res = await fetch(path, { ...init, cache: 'no-store' });
   } catch {
-    throw new ManageApiError("network", "Could not reach the server.", 0);
+    throw new ManageApiError('network', 'Could not reach the server.', 0);
   }
   const text = await res.text();
   const body: unknown = text ? JSON.parse(text) : null;
@@ -30,4 +30,4 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const apiGet = <T>(path: string) => call<T>(path);
 export const apiPost = <T = { ok: true }>(path: string, body: unknown = {}) =>
-  call<T>(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  call<T>(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });

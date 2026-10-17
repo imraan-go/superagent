@@ -1,44 +1,37 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowClockwise,
-  Check,
-  Copy,
-  FastForward,
-  FileText,
-  Warning,
-} from "@phosphor-icons/react/dist/ssr";
-import dynamic from "next/dynamic";
-import { useQuery } from "@tanstack/react-query";
-import { LiveGlyph, SkeletonText } from "@/components/ui";
-import { api } from "@/lib/api";
-import type { ChatMessage, MessagePart } from "@/lib/messages";
-import type { RunStepView } from "@/lib/run-events";
-import { cn } from "@/lib/cn";
-import { formatBytes } from "@/lib/uploads";
-import { groupExchanges, liveTrace } from "./parts/exchanges";
-import type { Exchange } from "./parts/exchanges";
-import { RunTrace } from "./parts/run-trace";
-import { ReasoningBlock } from "./parts/reasoning-block";
-import { DebugPanel } from "./parts/debug-panel";
-import { QuestionCard } from "./parts/question-card";
-import { WaitingItem } from "@/components/hitl/waiting-panel";
-import { usePending } from "@/hooks/use-pending";
-import type { QuestionAnswer } from "./parts/question-card";
-import type { QuestionPart } from "@/lib/messages";
-import type { DebugEntry } from "@/hooks/use-run-stream";
-import { DEFAULT_CHAT_MODE, traceStaysOpen } from "@/lib/chat-mode";
-import type { ChatMode } from "@/lib/chat-mode";
-import modeStyles from "./parts/modes.module.css";
-import { formatMs } from "./parts/tool-meta";
-import styles from "./transcript.module.css";
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowClockwise, Check, Copy, FastForward, FileText, Warning } from '@phosphor-icons/react/dist/ssr';
+import dynamic from 'next/dynamic';
+import { useQuery } from '@tanstack/react-query';
+import { LiveGlyph, SkeletonText } from '@/components/ui';
+import { api } from '@/lib/api';
+import type { ChatMessage, MessagePart } from '@/lib/messages';
+import type { RunStepView } from '@/lib/run-events';
+import { cn } from '@/lib/cn';
+import { formatBytes } from '@/lib/uploads';
+import { groupExchanges, liveTrace } from './parts/exchanges';
+import type { Exchange } from './parts/exchanges';
+import { RunTrace } from './parts/run-trace';
+import { ReasoningBlock } from './parts/reasoning-block';
+import { DebugPanel } from './parts/debug-panel';
+import { QuestionCard } from './parts/question-card';
+import { WaitingItem } from '@/components/hitl/waiting-panel';
+import { usePending } from '@/hooks/use-pending';
+import type { QuestionAnswer } from './parts/question-card';
+import type { QuestionPart } from '@/lib/messages';
+import type { DebugEntry } from '@/hooks/use-run-stream';
+import { DEFAULT_CHAT_MODE, traceStaysOpen } from '@/lib/chat-mode';
+import type { ChatMode } from '@/lib/chat-mode';
+import modeStyles from './parts/modes.module.css';
+import { formatMs } from './parts/tool-meta';
+import styles from './transcript.module.css';
 
 /**
  * react-markdown + remark-gfm are the heaviest thing on the chat route, so they
  * load as their own chunk. Until then a text-shaped skeleton holds the space.
  */
-const Markdown = dynamic(() => import("./markdown").then((m) => m.Markdown), {
+const Markdown = dynamic(() => import('./markdown').then((m) => m.Markdown), {
   loading: () => <SkeletonText lines={3} />,
 });
 
@@ -84,7 +77,7 @@ export interface TranscriptProps {
   answering?: boolean;
 }
 
-const LIVE_PHASES = new Set(["thinking", "tool", "waiting", "approval"]);
+const LIVE_PHASES = new Set(['thinking', 'tool', 'waiting', 'approval']);
 
 export function Transcript({
   messages,
@@ -99,7 +92,7 @@ export function Transcript({
   onRetry,
   onContinue,
   mode = DEFAULT_CHAT_MODE,
-  streamingThinking = "",
+  streamingThinking = '',
   debug = [],
   errorCode = null,
   question = null,
@@ -122,7 +115,7 @@ export function Transcript({
             exchange={ex}
             live={isCurrent && running}
             current={isCurrent}
-            streamingText={isCurrent ? streamingText : ""}
+            streamingText={isCurrent ? streamingText : ''}
             steps={isCurrent ? steps : []}
             activity={activity}
             phase={phase}
@@ -133,7 +126,7 @@ export function Transcript({
             onRetry={onRetry}
             onContinue={onContinue}
             mode={mode}
-            streamingThinking={isCurrent ? streamingThinking : ""}
+            streamingThinking={isCurrent ? streamingThinking : ''}
             debug={isCurrent ? debug : []}
             errorCode={isCurrent ? errorCode : null}
             question={isCurrent ? question : null}
@@ -155,7 +148,13 @@ export function Transcript({
   );
 }
 
-function AgentShell({ children, glyph = "done" }: { children: React.ReactNode; glyph?: "done" | "thinking" | "error" }) {
+function AgentShell({
+  children,
+  glyph = 'done',
+}: {
+  children: React.ReactNode;
+  glyph?: 'done' | 'thinking' | 'error';
+}) {
   return (
     <article className={cn(styles.turn, styles.assistant)}>
       <span className={styles.gutter} aria-hidden>
@@ -214,13 +213,25 @@ function ExchangeView({
   const trace = live && steps.length > 0 ? liveTrace(steps, ex.trace) : ex.trace;
   const answer = streamingText || ex.answer;
   const streaming = Boolean(streamingText) && live;
-  const userText = ex.user ? textOf(ex.user.content) : "";
-  const reasoning = [ex.reasoning, streamingThinking].filter(Boolean).join("\n\n");
+  const userText = ex.user ? textOf(ex.user.content) : '';
+  const reasoning = [ex.reasoning, streamingThinking].filter(Boolean).join('\n\n');
   // Persisted questions, with the live one overlaid (it lands in the stored turn only at the end).
-  const questions = question && !ex.questions.some((q) => q.questionId === question.questionId) ? [...ex.questions, question] : ex.questions.map((q) => (question?.questionId === q.questionId ? question : q));
+  const questions =
+    question && !ex.questions.some((q) => q.questionId === question.questionId)
+      ? [...ex.questions, question]
+      : ex.questions.map((q) => (question?.questionId === q.questionId ? question : q));
   const { data: pending } = usePending();
-  const awaitingApproval = Boolean(ex.runId && pending?.items.some((i) => i.source === "approval" && i.runId === ex.runId));
-  const hasAgent = live || trace.length > 0 || Boolean(answer) || Boolean(error) || Boolean(reasoning) || questions.length > 0 || awaitingApproval;
+  const awaitingApproval = Boolean(
+    ex.runId && pending?.items.some((i) => i.source === 'approval' && i.runId === ex.runId),
+  );
+  const hasAgent =
+    live ||
+    trace.length > 0 ||
+    Boolean(answer) ||
+    Boolean(error) ||
+    Boolean(reasoning) ||
+    questions.length > 0 ||
+    awaitingApproval;
   const expanded = traceStaysOpen(mode);
 
   if (ex.note) {
@@ -235,12 +246,12 @@ function ExchangeView({
     <>
       {ex.user && <UserTurn message={ex.user} />}
       {hasAgent && (
-        <AgentShell glyph={live ? "thinking" : error ? "error" : "done"}>
+        <AgentShell glyph={live ? 'thinking' : error ? 'error' : 'done'}>
           {reasoning && <ReasoningBlock text={reasoning} live={live && Boolean(streamingThinking)} />}
           {(live || trace.length > 0) && (
             <div className={styles.traceSlot}>
               <RunTrace
-                key={live ? "live" : "settled"}
+                key={live ? 'live' : 'settled'}
                 items={trace}
                 live={live}
                 activity={activity}
@@ -257,7 +268,7 @@ function ExchangeView({
               key={q.questionId}
               question={q}
               busy={answering}
-              onAnswer={onAnswer && q.status === "pending" ? (a) => onAnswer(q, a) : undefined}
+              onAnswer={onAnswer && q.status === 'pending' ? (a) => onAnswer(q, a) : undefined}
             />
           ))}
           {answer && (
@@ -266,12 +277,9 @@ function ExchangeView({
             </div>
           )}
           {error && (
-            <ErrorLine
-              message={error}
-              onContinue={errorCode === "step_limit" && isLast ? onContinue : undefined}
-            />
+            <ErrorLine message={error} onContinue={errorCode === 'step_limit' && isLast ? onContinue : undefined} />
           )}
-          {mode === "debug" && debug.length > 0 && <DebugPanel entries={debug} />}
+          {mode === 'debug' && debug.length > 0 && <DebugPanel entries={debug} />}
           {!live && (answer || error) && (
             <Footer
               exchange={ex}
@@ -293,7 +301,7 @@ function ExchangeView({
  */
 function RunApprovals({ runId }: { runId: string }) {
   const { data } = usePending();
-  const items = (data?.items ?? []).filter((i) => i.source === "approval" && i.runId === runId);
+  const items = (data?.items ?? []).filter((i) => i.source === 'approval' && i.runId === runId);
   if (!items.length) return null;
   return (
     <ul className={styles.approvals} aria-label="Waiting for your approval">
@@ -320,15 +328,15 @@ function ErrorLine({ message, onContinue }: { message: string; onContinue?: () =
 
 function textOf(parts: MessagePart[]): string {
   return parts
-    .filter((p): p is Extract<MessagePart, { type: "text" }> => p.type === "text")
+    .filter((p): p is Extract<MessagePart, { type: 'text' }> => p.type === 'text')
     .map((p) => p.text)
-    .join("\n\n");
+    .join('\n\n');
 }
 
 function UserTurn({ message }: { message: ChatMessage }) {
   const text = textOf(message.content);
   const attachments = message.content.filter(
-    (p): p is Extract<MessagePart, { type: "image" | "file" }> => p.type === "image" || p.type === "file",
+    (p): p is Extract<MessagePart, { type: 'image' | 'file' }> => p.type === 'image' || p.type === 'file',
   );
   if (!text && attachments.length === 0) return null;
 
@@ -363,11 +371,10 @@ function Footer({
   onRetry?: () => void;
   onContinue?: () => void;
 }) {
-  const { data } = useQuery({ queryKey: ["models"], queryFn: api.listModels, staleTime: 60_000 });
+  const { data } = useQuery({ queryKey: ['models'], queryFn: api.listModels, staleTime: 60_000 });
   const modelLabel = ex.model ? (data?.models.find((m) => m.id === ex.model)?.label ?? ex.model) : null;
   const from = ex.user?.createdAt ?? ex.startedAt;
-  const latency =
-    from && ex.endedAt ? new Date(ex.endedAt).getTime() - new Date(from).getTime() : null;
+  const latency = from && ex.endedAt ? new Date(ex.endedAt).getTime() - new Date(from).getTime() : null;
 
   return (
     <footer className={styles.footer}>
@@ -376,7 +383,7 @@ function Footer({
         {usage && (
           <span title={`${usage.cached.toLocaleString()} cached`}>
             {compact(usage.tokensIn)} in · {compact(usage.tokensOut)} out
-            {usage.thinkingTokens ? ` (≈${compact(usage.thinkingTokens)} reasoning)` : ""}
+            {usage.thinkingTokens ? ` (≈${compact(usage.thinkingTokens)} reasoning)` : ''}
           </span>
         )}
         {usage && <span>${usage.costUsd < 0.01 ? usage.costUsd.toFixed(4) : usage.costUsd.toFixed(2)}</span>}
@@ -417,24 +424,24 @@ function CopyAction({ text }: { text: string }) {
       onClick={() => void navigator.clipboard.writeText(text).then(() => setCopied(true))}
     >
       {copied ? <Check size={13} weight="bold" aria-hidden /> : <Copy size={13} aria-hidden />}
-      {copied ? "Copied" : "Copy"}
+      {copied ? 'Copied' : 'Copy'}
     </button>
   );
 }
 
 /** Files the owner attached to a turn: image thumbnails and file chips. */
-function Attachments({ parts }: { parts: Array<Extract<MessagePart, { type: "image" | "file" }>> }) {
+function Attachments({ parts }: { parts: Array<Extract<MessagePart, { type: 'image' | 'file' }>> }) {
   return (
     <ul className={styles.attachments} aria-label="Attachments">
       {parts.map((part) =>
-        part.type === "image" ? (
+        part.type === 'image' ? (
           <li key={part.fileId}>
             <a href={`/api/uploads/${part.fileId}`} target="_blank" rel="noreferrer">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 className={styles.attachThumb}
                 src={`/api/uploads/${part.fileId}`}
-                alt={part.alt ?? "Attached image"}
+                alt={part.alt ?? 'Attached image'}
                 loading="lazy"
               />
             </a>

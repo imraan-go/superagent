@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useId, useRef } from "react";
-import type { ReactNode } from "react";
-import { X } from "@phosphor-icons/react/dist/ssr";
-import { cn } from "@/lib/cn";
-import { IconButton } from "./icon-button";
-import styles from "./modal.module.css";
+import { useEffect, useId, useRef } from 'react';
+import type { ReactNode } from 'react';
+import { X } from '@phosphor-icons/react/dist/ssr';
+import { cn } from '@/lib/cn';
+import { IconButton } from './icon-button';
+import styles from './modal.module.css';
 
 /**
  * Built on the native `<dialog>` element, which gives us focus trapping, Esc
@@ -78,13 +78,7 @@ export function Modal({
             </p>
           )}
         </div>
-        {!hideClose && (
-          <IconButton
-            label="Close"
-            icon={<X size={16} weight="bold" />}
-            onClick={onClose}
-          />
-        )}
+        {!hideClose && <IconButton label="Close" icon={<X size={16} weight="bold" />} onClick={onClose} />}
       </header>
 
       <div className={cn(styles.body, bodyFlush && styles.bodyFlush)}>{children}</div>

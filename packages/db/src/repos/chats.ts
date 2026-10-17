@@ -9,13 +9,20 @@ export type ChatMessageRow = typeof chatMessages.$inferSelect;
 export type ChatPart = Record<string, unknown> & { type: string };
 
 export async function createChat(db: DbOrTx, ownerId: string, title?: string) {
-  const [row] = await db.insert(chats).values({ ownerId, title: title || 'New chat' }).returning();
+  const [row] = await db
+    .insert(chats)
+    .values({ ownerId, title: title || 'New chat' })
+    .returning();
   return row!;
 }
 
 export async function getChatForOwner(db: DbOrTx, ownerId: string, chatId: string) {
   if (!isUuid(chatId)) throw new NotFoundError('chat');
-  const rows = await db.select().from(chats).where(and(eq(chats.id, chatId), eq(chats.ownerId, ownerId))).limit(1);
+  const rows = await db
+    .select()
+    .from(chats)
+    .where(and(eq(chats.id, chatId), eq(chats.ownerId, ownerId)))
+    .limit(1);
   if (!rows[0]) throw new NotFoundError('chat');
   return rows[0];
 }
@@ -24,7 +31,12 @@ export async function listChats(db: DbOrTx, ownerId: string, limit = 200) {
   return db.select().from(chats).where(eq(chats.ownerId, ownerId)).orderBy(desc(chats.updatedAt)).limit(limit);
 }
 
-export async function updateChat(db: DbOrTx, ownerId: string, chatId: string, patch: Partial<Pick<ChatRow, 'title' | 'pinned' | 'archived' | 'model' | 'prefs'>>) {
+export async function updateChat(
+  db: DbOrTx,
+  ownerId: string,
+  chatId: string,
+  patch: Partial<Pick<ChatRow, 'title' | 'pinned' | 'archived' | 'model' | 'prefs'>>,
+) {
   const rows = await db
     .update(chats)
     .set({ ...patch, updatedAt: new Date() })
@@ -35,7 +47,10 @@ export async function updateChat(db: DbOrTx, ownerId: string, chatId: string, pa
 }
 
 export async function touchChat(db: DbOrTx, ownerId: string, chatId: string) {
-  await db.update(chats).set({ updatedAt: new Date() }).where(and(eq(chats.id, chatId), eq(chats.ownerId, ownerId)));
+  await db
+    .update(chats)
+    .set({ updatedAt: new Date() })
+    .where(and(eq(chats.id, chatId), eq(chats.ownerId, ownerId)));
 }
 
 export async function deleteChat(db: DbOrTx, ownerId: string, chatId: string) {
@@ -46,11 +61,27 @@ export async function deleteChat(db: DbOrTx, ownerId: string, chatId: string) {
 /** Idempotent when `dedupeKey` is set: a retried Activity never posts the same note twice. */
 export async function appendChatMessage(
   db: DbOrTx,
-  m: { ownerId: string; chatId: string; role: 'user' | 'assistant' | 'system'; content: ChatPart[]; taskId?: string | null; model?: string | null; dedupeKey?: string },
+  m: {
+    ownerId: string;
+    chatId: string;
+    role: 'user' | 'assistant' | 'system';
+    content: ChatPart[];
+    taskId?: string | null;
+    model?: string | null;
+    dedupeKey?: string;
+  },
 ) {
   const rows = await db
     .insert(chatMessages)
-    .values({ ownerId: m.ownerId, chatId: m.chatId, role: m.role, content: m.content, taskId: m.taskId ?? null, model: m.model ?? null, dedupeKey: m.dedupeKey ?? null })
+    .values({
+      ownerId: m.ownerId,
+      chatId: m.chatId,
+      role: m.role,
+      content: m.content,
+      taskId: m.taskId ?? null,
+      model: m.model ?? null,
+      dedupeKey: m.dedupeKey ?? null,
+    })
     .onConflictDoNothing({ target: chatMessages.dedupeKey })
     .returning();
   await touchChat(db, m.ownerId, m.chatId);
@@ -77,7 +108,11 @@ export async function latestTasksByChat(db: DbOrTx, ownerId: string, chatIds: st
 }
 
 export async function listChatTasks(db: DbOrTx, ownerId: string, chatId: string) {
-  return db.select().from(tasks).where(and(eq(tasks.ownerId, ownerId), eq(tasks.chatId, chatId))).orderBy(asc(tasks.createdAt));
+  return db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.ownerId, ownerId), eq(tasks.chatId, chatId)))
+    .orderBy(asc(tasks.createdAt));
 }
 
 export function partsToText(parts: ChatPart[]): string {
@@ -93,13 +128,24 @@ export function partsToText(parts: ChatPart[]): string {
  * Only user text and the assistant's final answers are carried: tool traffic stays with the run
  * that produced it. Bounded by turns and characters so long chats stay cheap.
  */
-export async function chatHistoryForModel(db: DbOrTx, ownerId: string, chatId: string, opts: { maxTurns?: number; maxChars?: number } = {}) {
+export async function chatHistoryForModel(
+  db: DbOrTx,
+  ownerId: string,
+  chatId: string,
+  opts: { maxTurns?: number; maxChars?: number } = {},
+) {
   const maxTurns = opts.maxTurns ?? 20;
   const maxChars = opts.maxChars ?? 24_000;
   const rows = await db
     .select()
     .from(chatMessages)
-    .where(and(eq(chatMessages.chatId, chatId), eq(chatMessages.ownerId, ownerId), inArray(chatMessages.role, ['user', 'assistant'])))
+    .where(
+      and(
+        eq(chatMessages.chatId, chatId),
+        eq(chatMessages.ownerId, ownerId),
+        inArray(chatMessages.role, ['user', 'assistant']),
+      ),
+    )
     .orderBy(desc(chatMessages.createdAt), desc(chatMessages.id))
     .limit(maxTurns);
   const out: Array<{ role: 'user' | 'assistant'; content: string }> = [];
@@ -111,8 +157,12 @@ export async function chatHistoryForModel(db: DbOrTx, ownerId: string, chatId: s
     // Earlier runs' tool traffic is not replayed, so say what was actually done: without this the
     // model sees only its prose and may later "correct" claims it really did act on.
     if (r.role === 'assistant') {
-      const results = new Map(parts.filter((p) => p.type === 'tool_result').map((p) => [String(p.toolUseId), p.ok === true]));
-      const used = parts.filter((p) => p.type === 'tool_use').map((p) => `${String(p.name)} (${results.get(String(p.id)) ? 'succeeded' : 'did not succeed'})`);
+      const results = new Map(
+        parts.filter((p) => p.type === 'tool_result').map((p) => [String(p.toolUseId), p.ok === true]),
+      );
+      const used = parts
+        .filter((p) => p.type === 'tool_use')
+        .map((p) => `${String(p.name)} (${results.get(String(p.id)) ? 'succeeded' : 'did not succeed'})`);
       if (used.length) text = `${text}\n\n[Tools actually used in this turn: ${[...new Set(used)].join(', ')}]`;
     }
     if (used + text.length > maxChars) break;
@@ -130,9 +180,20 @@ export async function chatHistoryForModel(db: DbOrTx, ownerId: string, chatId: s
  * final text. Screenshots and exports are referenced by artifact id (served by /api/uploads/:id).
  */
 export async function runParts(db: DbOrTx, ownerId: string, taskId: string, finalText: string): Promise<ChatPart[]> {
-  const calls = await db.select().from(toolCalls).where(and(eq(toolCalls.ownerId, ownerId), eq(toolCalls.taskId, taskId))).orderBy(asc(toolCalls.createdAt));
-  const arts = await db.select().from(artifacts).where(and(eq(artifacts.ownerId, ownerId), eq(artifacts.taskId, taskId))).orderBy(asc(artifacts.createdAt));
-  const asks = await db.select().from(questions).where(and(eq(questions.ownerId, ownerId), eq(questions.taskId, taskId)));
+  const calls = await db
+    .select()
+    .from(toolCalls)
+    .where(and(eq(toolCalls.ownerId, ownerId), eq(toolCalls.taskId, taskId)))
+    .orderBy(asc(toolCalls.createdAt));
+  const arts = await db
+    .select()
+    .from(artifacts)
+    .where(and(eq(artifacts.ownerId, ownerId), eq(artifacts.taskId, taskId)))
+    .orderBy(asc(artifacts.createdAt));
+  const asks = await db
+    .select()
+    .from(questions)
+    .where(and(eq(questions.ownerId, ownerId), eq(questions.taskId, taskId)));
   const askByCall = new Map(asks.map((q) => [q.toolCallId, q]));
   const parts: ChatPart[] = [];
   for (const c of calls) {
@@ -144,9 +205,18 @@ export async function runParts(db: DbOrTx, ownerId: string, taskId: string, fina
       parts.push(questionPart(q));
       if (c.toolName === 'ask_user') continue;
     }
-    const images = arts.filter((a) => a.contentType.startsWith('image/') && (a.source as { toolCallId?: string }).toolCallId === c.id);
+    const images = arts.filter(
+      (a) => a.contentType.startsWith('image/') && (a.source as { toolCallId?: string }).toolCallId === c.id,
+    );
     parts.push({ type: 'tool_use', id: c.id, name: c.toolName, args: (c.input as Record<string, unknown>) ?? {} });
-    parts.push({ type: 'tool_result', toolUseId: c.id, name: c.toolName, ok: c.status === 'done', text: c.resultSummary ?? c.status, images: images.map((a) => a.id) });
+    parts.push({
+      type: 'tool_result',
+      toolUseId: c.id,
+      name: c.toolName,
+      ok: c.status === 'done',
+      text: c.resultSummary ?? c.status,
+      images: images.map((a) => a.id),
+    });
   }
   for (const a of arts) {
     if (a.contentType.startsWith('image/') && (a.source as { kind?: string }).kind === 'browser_screenshot') continue;
@@ -170,10 +240,19 @@ export function questionPart(q: typeof questions.$inferSelect): ChatPart {
 }
 
 export async function chatFiles(db: DbOrTx, ownerId: string, chatId: string) {
-  const taskIds = db.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.ownerId, ownerId), eq(tasks.chatId, chatId)));
+  const taskIds = db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.ownerId, ownerId), eq(tasks.chatId, chatId)));
   return db
     .select()
     .from(artifacts)
-    .where(and(eq(artifacts.ownerId, ownerId), sql`${artifacts.deletedAt} is null`, sql`(${artifacts.chatId} = ${chatId} or ${artifacts.taskId} in (${taskIds}))`))
+    .where(
+      and(
+        eq(artifacts.ownerId, ownerId),
+        sql`${artifacts.deletedAt} is null`,
+        sql`(${artifacts.chatId} = ${chatId} or ${artifacts.taskId} in (${taskIds}))`,
+      ),
+    )
     .orderBy(desc(artifacts.createdAt));
 }

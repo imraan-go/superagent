@@ -2,7 +2,13 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { hostname } from 'node:os';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { capabilityStatus, getEnv, modelAllowlist, requireKeys, type AppEnv } from '@superagent/config';
-import { VercelGatewayModelProvider, fetchGatewayCatalog, type CatalogEntry, type DecisionOutput, type DecisionRequest } from '@superagent/agent';
+import {
+  VercelGatewayModelProvider,
+  fetchGatewayCatalog,
+  type CatalogEntry,
+  type DecisionOutput,
+  type DecisionRequest,
+} from '@superagent/agent';
 import { getComposio, type ExecuteResult, type Toolkit } from '@superagent/connectors';
 import type { TaskEventType } from '@superagent/contracts';
 import {
@@ -15,7 +21,14 @@ import {
   updateWorkspace,
   type Db,
 } from '@superagent/db';
-import { BrowserBroker, Workspaces, realSandboxApi, type SandboxApi, type WorkspaceConfig, type WorkspaceStore } from '@superagent/execution';
+import {
+  BrowserBroker,
+  Workspaces,
+  realSandboxApi,
+  type SandboxApi,
+  type WorkspaceConfig,
+  type WorkspaceStore,
+} from '@superagent/execution';
 import { createLogger, type Logger } from '@superagent/observability';
 import { verifiedConnectorTools, type ConnectorToolSpec } from '@superagent/policy';
 import { getArtifactStore, type ArtifactStore } from '@superagent/storage';
@@ -25,7 +38,14 @@ export interface ModelPort {
 }
 
 export interface ConnectorPort {
-  execute(composioUserId: string, toolkit: Toolkit, connectedAccountId: string, slug: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<ExecuteResult>;
+  execute(
+    composioUserId: string,
+    toolkit: Toolkit,
+    connectedAccountId: string,
+    slug: string,
+    args: Record<string, unknown>,
+    signal?: AbortSignal,
+  ): Promise<ExecuteResult>;
 }
 
 export interface Deps {
@@ -94,7 +114,9 @@ export function createRealDeps(sandboxApi?: SandboxApi): Deps {
         const { AI_GATEWAY_API_KEY } = requireKeys('gateway', ['AI_GATEWAY_API_KEY']);
         model = new VercelGatewayModelProvider({
           apiKey: AI_GATEWAY_API_KEY,
-          providerOnly: env.AI_GATEWAY_PROVIDER_ONLY?.split(',').map((s) => s.trim()).filter(Boolean),
+          providerOnly: env.AI_GATEWAY_PROVIDER_ONLY?.split(',')
+            .map((s) => s.trim())
+            .filter(Boolean),
           reportingTags: env.AI_GATEWAY_REPORTING_TAGS,
         });
       }
@@ -123,6 +145,13 @@ export function createRealDeps(sandboxApi?: SandboxApi): Deps {
   };
 }
 
-export async function emit(d: Pick<Deps, 'db'>, ownerId: string, taskId: string, type: TaskEventType, dedupeKey: string, data: Record<string, unknown> = {}) {
+export async function emit(
+  d: Pick<Deps, 'db'>,
+  ownerId: string,
+  taskId: string,
+  type: TaskEventType,
+  dedupeKey: string,
+  data: Record<string, unknown> = {},
+) {
   await appendEvent(d.db, { ownerId, taskId, type, dedupeKey, data });
 }

@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button, SettingRow, SettingSection } from "@/components/ui";
-import { useSettingsSection } from "@/hooks/use-settings";
-import { NOTIFICATION_EVENTS, SOUND_EVENTS } from "@/lib/settings";
-import { InlineError, Toggle } from "../controls";
-import styles from "../settings-tabs.module.css";
+import { useState } from 'react';
+import { Button, SettingRow, SettingSection } from '@/components/ui';
+import { useSettingsSection } from '@/hooks/use-settings';
+import { NOTIFICATION_EVENTS, SOUND_EVENTS } from '@/lib/settings';
+import { InlineError, Toggle } from '../controls';
+import styles from '../settings-tabs.module.css';
 
 const SOUND_LABEL: Record<(typeof SOUND_EVENTS)[number], string> = {
-  send: "Message sent",
-  done: "Run finished",
-  approval: "Approval needed",
-  error: "Error",
+  send: 'Message sent',
+  done: 'Run finished',
+  approval: 'Approval needed',
+  error: 'Error',
 };
 
 const NOTIFY_LABEL: Record<(typeof NOTIFICATION_EVENTS)[number], string> = {
-  approval: "Approval needed",
-  runDone: "Run finished",
-  question: "Agent asked a question",
+  approval: 'Approval needed',
+  runDone: 'Run finished',
+  question: 'Agent asked a question',
 };
 
 /**
@@ -30,7 +30,7 @@ function beep(volume: number): void {
   const ctx = new Ctx();
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
-  osc.type = "sine";
+  osc.type = 'sine';
   osc.frequency.value = 880;
   gain.gain.setValueAtTime(volume * 0.4, ctx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
@@ -41,12 +41,12 @@ function beep(volume: number): void {
 }
 
 export function NotificationsTab() {
-  const sound = useSettingsSection("sound");
-  const notifications = useSettingsSection("notifications");
+  const sound = useSettingsSection('sound');
+  const notifications = useSettingsSection('notifications');
   const s = sound.value;
   const n = notifications.value;
   const [permission, setPermission] = useState<string>(() =>
-    typeof Notification === "undefined" ? "unsupported" : Notification.permission,
+    typeof Notification === 'undefined' ? 'unsupported' : Notification.permission,
   );
 
   return (
@@ -91,22 +91,22 @@ export function NotificationsTab() {
         <SettingRow
           label="Chrome notifications"
           description={
-            permission === "denied"
-              ? "Blocked by the browser — allow notifications for this site first."
-              : permission === "unsupported"
-                ? "This browser does not support notifications."
-                : "System notifications while the panel is in the background."
+            permission === 'denied'
+              ? 'Blocked by the browser — allow notifications for this site first.'
+              : permission === 'unsupported'
+                ? 'This browser does not support notifications.'
+                : 'System notifications while the panel is in the background.'
           }
         >
           <Toggle
             label="Chrome notifications"
             checked={n.chrome}
-            disabled={permission === "unsupported"}
+            disabled={permission === 'unsupported'}
             onChange={async (chrome) => {
-              if (chrome && permission === "default") {
+              if (chrome && permission === 'default') {
                 const result = await Notification.requestPermission();
                 setPermission(result);
-                if (result !== "granted") return;
+                if (result !== 'granted') return;
               }
               void notifications.save({ chrome });
             }}
@@ -119,9 +119,7 @@ export function NotificationsTab() {
               checked={n.events.includes(event)}
               onChange={(on) =>
                 void notifications.save({
-                  events: on
-                    ? [...new Set([...n.events, event])]
-                    : n.events.filter((e) => e !== event),
+                  events: on ? [...new Set([...n.events, event])] : n.events.filter((e) => e !== event),
                 })
               }
             />

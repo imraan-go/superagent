@@ -1,20 +1,14 @@
-"use client";
+'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import type { ReactNode } from "react";
-import {
-  CheckCircle,
-  Info,
-  Warning,
-  WarningOctagon,
-  X,
-} from "@phosphor-icons/react/dist/ssr";
-import { cn } from "@/lib/cn";
-import { Button } from "./button";
-import { IconButton } from "./icon-button";
-import styles from "./toast.module.css";
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
+import { CheckCircle, Info, Warning, WarningOctagon, X } from '@phosphor-icons/react/dist/ssr';
+import { cn } from '@/lib/cn';
+import { Button } from './button';
+import { IconButton } from './icon-button';
+import styles from './toast.module.css';
 
-export type ToastTone = "info" | "success" | "warning" | "error";
+export type ToastTone = 'info' | 'success' | 'warning' | 'error';
 
 export interface ToastInput {
   title: string;
@@ -63,7 +57,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const push = useCallback(
     (input: ToastInput) => {
       const id = Date.now() + Math.random();
-      const tone = input.tone ?? "info";
+      const tone = input.tone ?? 'info';
       const duration = input.durationMs ?? DEFAULT_MS[tone];
 
       setQueue((q) => [...q, { ...input, tone, id }]);
@@ -83,12 +77,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {visible.map((toast) => (
           <div
             key={toast.id}
-            className={cn(styles.toast, styles[toast.tone ?? "info"])}
-            role={toast.tone === "error" ? "alert" : "status"}
-            aria-live={toast.tone === "error" ? "assertive" : "polite"}
+            className={cn(styles.toast, styles[toast.tone ?? 'info'])}
+            role={toast.tone === 'error' ? 'alert' : 'status'}
+            aria-live={toast.tone === 'error' ? 'assertive' : 'polite'}
           >
             <span className={styles.icon} aria-hidden>
-              {ICONS[toast.tone ?? "info"]}
+              {ICONS[toast.tone ?? 'info']}
             </span>
             <div className={styles.content}>
               <div className={styles.title}>{toast.title}</div>
@@ -122,6 +116,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 export function useToast(): ToastApi {
   const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("useToast must be used inside <ToastProvider>");
+  if (!ctx) throw new Error('useToast must be used inside <ToastProvider>');
   return ctx;
 }

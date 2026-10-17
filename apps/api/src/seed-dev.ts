@@ -11,14 +11,21 @@ import { createAuth } from './auth';
 async function main() {
   const env = getEnv();
   if (env.APP_ENV === 'production') throw new Error('db:seed:dev is disabled in production');
-  if (!env.DEV_SEED_EMAIL || !env.DEV_SEED_PASSWORD) throw new Error('Set DEV_SEED_EMAIL and DEV_SEED_PASSWORD in .env (pnpm setup:env generates them).');
+  if (!env.DEV_SEED_EMAIL || !env.DEV_SEED_PASSWORD)
+    throw new Error('Set DEV_SEED_EMAIL and DEV_SEED_PASSWORD in .env (pnpm setup:env generates them).');
   const db = getDb();
-  const existing = await db.select({ id: schema.user.id }).from(schema.user).where(eq(schema.user.email, env.DEV_SEED_EMAIL.toLowerCase())).limit(1);
+  const existing = await db
+    .select({ id: schema.user.id })
+    .from(schema.user)
+    .where(eq(schema.user.email, env.DEV_SEED_EMAIL.toLowerCase()))
+    .limit(1);
   if (existing[0]) {
     console.log(`dev user already exists: ${env.DEV_SEED_EMAIL}`);
   } else {
     const auth = createAuth(db, { ...env, ALLOW_SIGNUP: true });
-    await auth.api.signUpEmail({ body: { email: env.DEV_SEED_EMAIL, password: env.DEV_SEED_PASSWORD, name: 'Dev User' } });
+    await auth.api.signUpEmail({
+      body: { email: env.DEV_SEED_EMAIL, password: env.DEV_SEED_PASSWORD, name: 'Dev User' },
+    });
     console.log(`created dev user: ${env.DEV_SEED_EMAIL} (password is in .env as DEV_SEED_PASSWORD)`);
   }
   await closeDb();

@@ -22,17 +22,24 @@ const ALLOWED_EXTENSIONS: Record<string, string> = {
   '.log': 'text/plain',
 };
 
-export type PathCheck = { ok: true; absolute: string; relative: string; contentType: string } | { ok: false; reason: string };
+export type PathCheck =
+  | { ok: true; absolute: string; relative: string; contentType: string }
+  | { ok: false; reason: string };
 
 /** Resolves a model-supplied relative path inside the workspace root, rejecting traversal. */
 export function checkWorkspacePath(input: string): PathCheck {
-  if (typeof input !== 'string' || input.length === 0 || input.length > 255) return { ok: false, reason: 'path must be 1-255 characters' };
+  if (typeof input !== 'string' || input.length === 0 || input.length > 255)
+    return { ok: false, reason: 'path must be 1-255 characters' };
   // eslint-disable-next-line no-control-regex
-  if (input.includes('\0') || /[\\\u0000-\u001f]/.test(input)) return { ok: false, reason: 'path contains control characters or backslashes' };
-  if (input.startsWith('/') || input.startsWith('~')) return { ok: false, reason: 'path must be relative to the workspace' };
+  if (input.includes('\0') || /[\\\u0000-\u001f]/.test(input))
+    return { ok: false, reason: 'path contains control characters or backslashes' };
+  if (input.startsWith('/') || input.startsWith('~'))
+    return { ok: false, reason: 'path must be relative to the workspace' };
   const normalized = posix.normalize(input);
-  if (normalized.startsWith('..') || normalized.split('/').includes('..')) return { ok: false, reason: 'path traversal is not allowed' };
-  if (normalized.split('/').some((seg) => seg.startsWith('.'))) return { ok: false, reason: 'hidden files and directories are not allowed' };
+  if (normalized.startsWith('..') || normalized.split('/').includes('..'))
+    return { ok: false, reason: 'path traversal is not allowed' };
+  if (normalized.split('/').some((seg) => seg.startsWith('.')))
+    return { ok: false, reason: 'hidden files and directories are not allowed' };
   const ext = posix.extname(normalized).toLowerCase();
   const contentType = ALLOWED_EXTENSIONS[ext];
   if (!contentType) return { ok: false, reason: `extension ${ext || '(none)'} is not allowed` };

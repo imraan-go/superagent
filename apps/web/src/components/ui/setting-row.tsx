@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
-import { cn } from "@/lib/cn";
-import styles from "./setting-row.module.css";
+import type { ReactNode } from 'react';
+import { cn } from '@/lib/cn';
+import styles from './setting-row.module.css';
 
 /**
  * One settings line: label + muted description on the left, control on the
@@ -26,13 +26,7 @@ export function SettingRow({ label, description, children, className }: SettingR
   );
 }
 
-export function SettingSection({
-  title,
-  children,
-}: {
-  title?: string;
-  children: ReactNode;
-}) {
+export function SettingSection({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <section className={styles.section}>
       {title && <h3 className={styles.sectionTitle}>{title}</h3>}

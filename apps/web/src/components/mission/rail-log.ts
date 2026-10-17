@@ -3,8 +3,8 @@
  * No React, no fetch — unit-tested in rail-log.test.ts.
  */
 
-export type LogSource = "chat" | "computer";
-export type LogFilter = "all" | "chat" | "computer" | "errors";
+export type LogSource = 'chat' | 'computer';
+export type LogFilter = 'all' | 'chat' | 'computer' | 'errors';
 
 export interface LogEntry {
   key: string;
@@ -40,7 +40,7 @@ export interface LhosEventInput {
 }
 
 /** LHOS event `ts` is unix seconds on some builds and ms on others. */
-export function eventMs(e: Pick<LhosEventInput, "ts" | "iso">): number {
+export function eventMs(e: Pick<LhosEventInput, 'ts' | 'iso'>): number {
   if (e.iso) {
     const t = Date.parse(e.iso);
     if (!Number.isNaN(t)) return t;
@@ -57,10 +57,10 @@ export function mergeLog(
   const out: LogEntry[] = [];
   for (const s of steps) {
     out.push({
-      key: `chat:${runId ?? ""}:${s.idx}`,
-      source: "chat",
+      key: `chat:${runId ?? ''}:${s.idx}`,
+      source: 'chat',
       ts: s.seenAt,
-      tool: s.toolName ?? s.type ?? "step",
+      tool: s.toolName ?? s.type ?? 'step',
       label: s.label,
       ok: s.ok,
       ms: s.ms,
@@ -70,30 +70,27 @@ export function mergeLog(
     const ts = eventMs(e);
     out.push({
       key: `computer:${ts}:${e.tool}:${i}`,
-      source: "computer",
+      source: 'computer',
       ts,
       tool: e.tool,
-      label: e.err ? e.err : e.tool.replace(/_/g, " "),
+      label: e.err ? e.err : e.tool.replace(/_/g, ' '),
       ok: e.ok ?? null,
       ms: e.ms ?? null,
       detail: e.err ?? null,
     });
   });
   // Newest first; ties keep chat steps above computer events, then by key.
-  out.sort(
-    (a, b) =>
-      b.ts - a.ts || (a.source === b.source ? (a.key < b.key ? 1 : -1) : a.source === "chat" ? -1 : 1),
-  );
+  out.sort((a, b) => b.ts - a.ts || (a.source === b.source ? (a.key < b.key ? 1 : -1) : a.source === 'chat' ? -1 : 1));
   return out.slice(0, limit);
 }
 
 export function filterLog(entries: readonly LogEntry[], filter: LogFilter): LogEntry[] {
   switch (filter) {
-    case "chat":
-      return entries.filter((e) => e.source === "chat");
-    case "computer":
-      return entries.filter((e) => e.source === "computer");
-    case "errors":
+    case 'chat':
+      return entries.filter((e) => e.source === 'chat');
+    case 'computer':
+      return entries.filter((e) => e.source === 'computer');
+    case 'errors':
       return entries.filter((e) => e.ok === false);
     default:
       return [...entries];
@@ -126,6 +123,6 @@ export function compactNumber(n: number): string {
 
 export function clockTime(ms: number): string {
   const d = new Date(ms);
-  const p = (n: number) => String(n).padStart(2, "0");
+  const p = (n: number) => String(n).padStart(2, '0');
   return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }

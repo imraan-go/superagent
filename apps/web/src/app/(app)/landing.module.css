@@ -44,20 +44,24 @@
 
 /* A slow conic halo orbits the mark (static under reduced motion). */
 .glyph::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: -2px;
   border-radius: 50%;
   padding: 1px;
   background: conic-gradient(from 0deg, var(--c-agent), var(--c-think), var(--c-web), transparent 70%, var(--c-agent));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   animation: halo-spin 9s linear infinite;
 }
 
 @keyframes halo-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .glyph .heroGlyph {
@@ -103,9 +107,7 @@
   margin: var(--sp-3) 0 var(--sp-2);
   border: var(--border) solid var(--glass-line);
   border-radius: var(--radius-control);
-  background:
-    linear-gradient(180deg, var(--glass-hi), transparent 60%),
-    var(--glass);
+  background: linear-gradient(180deg, var(--glass-hi), transparent 60%), var(--glass);
   backdrop-filter: blur(10px);
   overflow: hidden;
 }
@@ -121,7 +123,7 @@
 }
 
 .stat dt::before {
-  content: "";
+  content: '';
   width: 6px;
   height: 6px;
   border-radius: 2px;
@@ -171,8 +173,14 @@
 }
 
 @keyframes rise {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .suggestion {
@@ -184,9 +192,7 @@
   padding: var(--sp-3);
   border: var(--border) solid var(--glass-line);
   border-radius: var(--radius-control);
-  background:
-    linear-gradient(180deg, var(--glass-hi), transparent 60%),
-    var(--glass);
+  background: linear-gradient(180deg, var(--glass-hi), transparent 60%), var(--glass);
   color: var(--text-2);
   font: inherit;
   text-align: left;
@@ -230,7 +236,9 @@
   border-radius: var(--radius-chip);
   background: var(--ink-0);
   color: var(--text-2);
-  transition: color var(--dur-micro) ease, border-color var(--dur-micro) ease;
+  transition:
+    color var(--dur-micro) ease,
+    border-color var(--dur-micro) ease;
 }
 
 .sugText {
@@ -258,29 +266,64 @@
 }
 
 @media (max-width: 900px) {
-  .suggestions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .suggestions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 1100px) {
-  .scroll { padding-top: var(--sp-8); }
+  .scroll {
+    padding-top: var(--sp-8);
+  }
 }
 
 @media (max-width: 480px) {
-  .hero { padding: var(--sp-4) var(--sp-3); gap: var(--sp-2); }
-  .glyph { width: 88px; height: 88px; }
-  .title { font-size: var(--fs-2xl); }
-  .sub { font-size: var(--fs-small); }
-  .status { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
-  .stat { min-width: 0; padding: var(--sp-2) var(--sp-3); border-left: 0 !important; }
-  .stat:nth-child(even) { border-left: var(--border) solid var(--line) !important; }
-  .stat:nth-child(n + 3) { border-top: var(--border) solid var(--line); }
-  .suggestions { grid-template-columns: 1fr; }
-  .suggestion { padding: var(--sp-2) var(--sp-3); align-items: center; }
+  .hero {
+    padding: var(--sp-4) var(--sp-3);
+    gap: var(--sp-2);
+  }
+  .glyph {
+    width: 88px;
+    height: 88px;
+  }
+  .title {
+    font-size: var(--fs-2xl);
+  }
+  .sub {
+    font-size: var(--fs-small);
+  }
+  .status {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .stat {
+    min-width: 0;
+    padding: var(--sp-2) var(--sp-3);
+    border-left: 0 !important;
+  }
+  .stat:nth-child(even) {
+    border-left: var(--border) solid var(--line) !important;
+  }
+  .stat:nth-child(n + 3) {
+    border-top: var(--border) solid var(--line);
+  }
+  .suggestions {
+    grid-template-columns: 1fr;
+  }
+  .suggestion {
+    padding: var(--sp-2) var(--sp-3);
+    align-items: center;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .suggestions li { animation: none; }
-  .suggestion { transition: none; }
+  .suggestions li {
+    animation: none;
+  }
+  .suggestion {
+    transition: none;
+  }
 }
 
 /* Apps stat: the count doubles as the entry to Connect Apps. */
@@ -295,6 +338,17 @@
   font: inherit;
   cursor: pointer;
 }
-.statBtn:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: var(--radius-chip); }
-.statAction { font-size: var(--fs-micro); color: var(--text-3); text-decoration: underline; text-underline-offset: 3px; }
-.statBtn:hover .statAction { color: var(--signal); }
+.statBtn:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 3px;
+  border-radius: var(--radius-chip);
+}
+.statAction {
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.statBtn:hover .statAction {
+  color: var(--signal);
+}

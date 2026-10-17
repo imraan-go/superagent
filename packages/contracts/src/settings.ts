@@ -117,7 +117,8 @@ export function mergeSection(current: unknown, patch: unknown): Record<string, u
   if (!isPlainObject(patch)) return base;
   for (const [key, value] of Object.entries(patch)) {
     if (value === null) delete base[key];
-    else if (isPlainObject(value) && isPlainObject(base[key])) base[key] = { ...(base[key] as Record<string, unknown>), ...value };
+    else if (isPlainObject(value) && isPlainObject(base[key]))
+      base[key] = { ...(base[key] as Record<string, unknown>), ...value };
     else base[key] = value;
   }
   return base;

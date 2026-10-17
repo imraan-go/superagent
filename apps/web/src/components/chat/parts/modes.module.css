@@ -9,7 +9,9 @@
   mask-image: linear-gradient(90deg, #000 85%, transparent);
   padding-right: var(--sp-3);
 }
-.caps::-webkit-scrollbar { display: none; }
+.caps::-webkit-scrollbar {
+  display: none;
+}
 
 .cap {
   display: inline-flex;
@@ -25,10 +27,19 @@
   font: inherit;
   font-size: var(--fs-tiny);
   cursor: pointer;
-  transition: color var(--dur-micro) ease, border-color var(--dur-micro) ease, background var(--dur-micro) ease;
+  transition:
+    color var(--dur-micro) ease,
+    border-color var(--dur-micro) ease,
+    background var(--dur-micro) ease;
 }
-.cap:hover { color: var(--text-1); border-color: var(--line-strong); }
-.cap:focus-visible { outline: 2px solid var(--signal); outline-offset: 1px; }
+.cap:hover {
+  color: var(--text-1);
+  border-color: var(--line-strong);
+}
+.cap:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 1px;
+}
 
 .capOn {
   border-color: color-mix(in oklab, var(--signal) 55%, var(--line));
@@ -53,8 +64,14 @@
   font-size: var(--fs-tiny);
   cursor: pointer;
 }
-.mode:focus-visible { outline: 2px solid var(--signal); outline-offset: 1px; }
-.modeDebug { border-color: var(--amber); color: var(--amber); }
+.mode:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 1px;
+}
+.modeDebug {
+  border-color: var(--amber);
+  color: var(--amber);
+}
 
 .reasoning {
   margin: 0 0 var(--sp-2);
@@ -74,7 +91,9 @@
   font-size: var(--fs-tiny);
   cursor: pointer;
 }
-.reasoningHead:hover { color: var(--text-2); }
+.reasoningHead:hover {
+  color: var(--text-2);
+}
 .reasoningBody {
   margin: var(--sp-1) 0 0;
   white-space: pre-wrap;
@@ -105,7 +124,11 @@
   cursor: pointer;
   text-align: left;
 }
-.debugBody { padding: 0 var(--sp-2) var(--sp-2); display: grid; gap: var(--sp-2); }
+.debugBody {
+  padding: 0 var(--sp-2) var(--sp-2);
+  display: grid;
+  gap: var(--sp-2);
+}
 .debugBody pre {
   margin: 0;
   max-height: 320px;
@@ -117,8 +140,14 @@
   border-radius: var(--radius-chip);
   padding: var(--sp-2);
 }
-.debugRow { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
-.debugLabel { color: var(--text-3); }
+.debugRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+.debugLabel {
+  color: var(--text-3);
+}
 
 .continue {
   display: inline-flex;
@@ -137,8 +166,19 @@
 }
 
 @media (max-width: 640px) {
-  .cap span { display: none; }
-  .cap { width: 28px; justify-content: center; padding: 0; }
-  .capAuto span { display: inline; }
-  .capAuto { width: auto; padding: 0 var(--sp-2); }
+  .cap span {
+    display: none;
+  }
+  .cap {
+    width: 28px;
+    justify-content: center;
+    padding: 0;
+  }
+  .capAuto span {
+    display: inline;
+  }
+  .capAuto {
+    width: auto;
+    padding: 0 var(--sp-2);
+  }
 }

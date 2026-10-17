@@ -20,3 +20,7 @@ next-env.d.ts
 *.crt
 test-results/
 playwright-report/
+
+# Claude Code: personal settings and app-created worktrees
+.claude/settings.local.json
+.claude/worktrees/

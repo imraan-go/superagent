@@ -31,7 +31,7 @@
 }
 
 .base:disabled,
-.base[aria-disabled="true"] {
+.base[aria-disabled='true'] {
   cursor: not-allowed;
   opacity: 0.45;
   transform: none;
@@ -152,7 +152,7 @@
 }
 
 .spinner::after {
-  content: "";
+  content: '';
   width: 14px;
   height: 14px;
   border: 2px solid currentColor;

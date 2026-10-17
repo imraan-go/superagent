@@ -73,11 +73,25 @@ Optional capabilities light up when their credentials exist (see
 | `pnpm test:e2e` | Playwright against the running local stack (installed Google Chrome) |
 | `pnpm smoke:cloud --stage=m1,m5` | Live cloud smoke tests within `LIVE_SMOKE_MAX_COST` |
 | `pnpm cleanup:cloud [--yes]` | List (and kill) app-tagged E2B sandboxes |
-| `pnpm lint` · `pnpm typecheck` | ESLint (incl. workflow determinism rules) and TypeScript across all packages |
+| `pnpm check` | Everything CI runs on every PR except integration tests: Prettier check, ESLint, typecheck, unit + web tests (~25 s) |
+| `pnpm check:changed` | The same checks scoped to files/packages changed since the branch left `main` |
+| `pnpm format` | Prettier on the whole repo (config in `.prettierrc.json`; Markdown is not formatted) |
+| `pnpm lint` · `pnpm typecheck` | ESLint (workflow determinism, package boundaries, Gateway-only model calls) and TypeScript across all packages |
+
+## Working on the code
+
+Conventions for people and coding agents are in [CLAUDE.md](CLAUDE.md), with a short `CLAUDE.md` in
+each app and package for its local rules. Shared Claude Code configuration lives in `.claude/`:
+`settings.json` (permissions, plus hooks that format each edited file and run `pnpm check:changed`
+before a session finishes) and `skills/` for repeated tasks (adding a migration, a connector tool or
+a workflow activity, and debugging the local stack). Why things are the way they are:
+[docs/decisions](docs/decisions/README.md). CI (`.github/workflows/ci.yml`) runs `pnpm check` and
+`pnpm test:integration` on every PR.
 
 ## Documentation
 
 - [Implementation plan and status](docs/implementation-plan.md)
+- [Architecture decision records](docs/decisions/README.md)
 - [Web app: chats, questions, routines, apps, workspaces](docs/web-app.md)
 - [Architecture](docs/architecture.md)
 - [Credentials checklist](docs/credentials-checklist.md)

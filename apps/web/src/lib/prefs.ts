@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 /**
  * Sound and notification preferences, mirroring the `sound` and
@@ -6,7 +6,7 @@ import { z } from "zod";
  * (built separately) serves them at `/api/settings/{section}`; anything
  * missing, malformed or unreachable falls back to the schema defaults.
  */
-export const SOUND_EVENTS = ["send", "done", "approval", "error", "takeover"] as const;
+export const SOUND_EVENTS = ['send', 'done', 'approval', 'error', 'takeover'] as const;
 export type SoundEvent = (typeof SOUND_EVENTS)[number];
 
 const eventToggle = z.boolean().catch(true).default(true);
@@ -27,7 +27,7 @@ export const soundPrefsSchema = z.object({
 });
 export type SoundPrefs = z.infer<typeof soundPrefsSchema>;
 
-export const NOTIFY_EVENTS = ["approval", "runDone", "question"] as const;
+export const NOTIFY_EVENTS = ['approval', 'runDone', 'question'] as const;
 export type NotifyEvent = (typeof NOTIFY_EVENTS)[number];
 
 export const notificationPrefsSchema = z.object({
@@ -49,9 +49,9 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = notificationPrefsSc
 export function parseSection<T>(schema: z.ZodType<T>, section: string, raw: unknown): T {
   const obj = (raw ?? {}) as Record<string, unknown>;
   const candidate =
-    obj[section] && typeof obj[section] === "object"
+    obj[section] && typeof obj[section] === 'object'
       ? obj[section]
-      : obj.value && typeof obj.value === "object"
+      : obj.value && typeof obj.value === 'object'
         ? obj.value
         : obj;
   const parsed = schema.safeParse(candidate);

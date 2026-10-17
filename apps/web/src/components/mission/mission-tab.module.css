@@ -81,11 +81,11 @@
   transition: width var(--dur-panel) var(--ease-spring);
 }
 
-.budget[data-state="warn"] .budgetFill {
+.budget[data-state='warn'] .budgetFill {
   background: var(--amber);
 }
 
-.budget[data-state="over"] .budgetFill {
+.budget[data-state='over'] .budgetFill {
   background: var(--danger);
 }
 
@@ -96,11 +96,11 @@
   color: var(--text-3);
 }
 
-.budget[data-state="warn"] .budgetText {
+.budget[data-state='warn'] .budgetText {
   color: var(--amber);
 }
 
-.budget[data-state="over"] .budgetText {
+.budget[data-state='over'] .budgetText {
   color: var(--danger);
 }
 
@@ -122,10 +122,10 @@
   padding: var(--sp-2);
   border: var(--border) solid var(--glass-line);
   border-radius: var(--radius-control);
-  background:
-    linear-gradient(160deg, var(--glass-hi), transparent 60%),
-    var(--ink-1);
-  transition: transform var(--dur-spring) var(--ease-spring), border-color var(--dur-std) var(--ease-out);
+  background: linear-gradient(160deg, var(--glass-hi), transparent 60%), var(--ink-1);
+  transition:
+    transform var(--dur-spring) var(--ease-spring),
+    border-color var(--dur-std) var(--ease-out);
 }
 
 .stat:hover {
@@ -149,11 +149,11 @@
   text-overflow: ellipsis;
 }
 
-.stat[data-tone="ok"] .statValue {
+.stat[data-tone='ok'] .statValue {
   color: var(--c-money);
 }
 
-.stat[data-tone="warn"] .statValue {
+.stat[data-tone='warn'] .statValue {
   color: var(--amber);
 }
 
@@ -203,14 +203,16 @@
 }
 
 .chip {
-  transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-spring) var(--ease-spring);
+  transition:
+    background-color var(--dur-micro) var(--ease-out),
+    transform var(--dur-spring) var(--ease-spring);
 }
 
 .chip:active {
   transform: scale(0.94);
 }
 
-.chip[aria-pressed="true"] {
+.chip[aria-pressed='true'] {
   border-color: var(--signal-dim);
   background: var(--signal-wash);
   color: var(--signal);
@@ -249,7 +251,7 @@
   background: var(--ink-2);
 }
 
-.entry[data-ok="false"] {
+.entry[data-ok='false'] {
   background: var(--danger-wash);
 }
 
@@ -280,7 +282,7 @@
   color: var(--text-3);
 }
 
-.src[data-src="chat"] {
+.src[data-src='chat'] {
   color: var(--signal);
 }
 

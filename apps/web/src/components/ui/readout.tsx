@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/cn";
-import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import styles from "./readout.module.css";
+import { useEffect, useRef, useState } from 'react';
+import { cn } from '@/lib/cn';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import styles from './readout.module.css';
 
-export type ReadoutTone = "default" | "signal" | "amber" | "danger" | "ok";
+export type ReadoutTone = 'default' | 'signal' | 'amber' | 'danger' | 'ok';
 
 export interface ReadoutProps {
   label: string;
@@ -14,7 +14,7 @@ export interface ReadoutProps {
   unit?: string;
   /** Pre-value symbol, e.g. "$" for cost. */
   prefix?: string;
-  size?: "sm" | "md" | "lg";
+  size?: 'sm' | 'md' | 'lg';
   tone?: ReadoutTone;
   /** Label and value on one baseline instead of stacked. */
   inline?: boolean;
@@ -72,20 +72,20 @@ export function Readout({
   value,
   unit,
   prefix,
-  size = "md",
-  tone = "default",
+  size = 'md',
+  tone = 'default',
   inline = false,
   precision,
   estimate = false,
   className,
 }: ReadoutProps) {
-  const isNumeric = typeof value === "number";
+  const isNumeric = typeof value === 'number';
   const reduced = useReducedMotion();
   const animated = useCountUp(isNumeric ? value : 0, isNumeric && !reduced);
 
   const decimals = precision ?? (isNumeric && !Number.isInteger(value) ? 2 : 0);
   const text = isNumeric
-    ? animated.toLocaleString("en-US", {
+    ? animated.toLocaleString('en-US', {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals,
       })
@@ -96,7 +96,7 @@ export function Readout({
       className={cn(
         styles.readout,
         styles[size],
-        tone !== "default" && styles[tone],
+        tone !== 'default' && styles[tone],
         inline && styles.inline,
         estimate && styles.estimate,
         className,
@@ -140,7 +140,7 @@ export function CountUp({
     <>
       {format
         ? format(shown)
-        : shown.toLocaleString("en-US", {
+        : shown.toLocaleString('en-US', {
             minimumFractionDigits: precision,
             maximumFractionDigits: precision,
           })}

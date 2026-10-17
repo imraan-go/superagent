@@ -42,14 +42,28 @@
   animation: jumpIn var(--dur-std) var(--ease-out) both;
 }
 
-.jump:hover { border-color: var(--signal); color: var(--signal); }
-.jump:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.jump:hover {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+.jump:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
 
 @keyframes jumpIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .jump { animation: none; }
+  .jump {
+    animation: none;
+  }
 }

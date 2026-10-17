@@ -21,7 +21,10 @@ export async function patchPreference(db: DbOrTx, ownerId: string, section: stri
   await db
     .insert(userPreferences)
     .values({ ownerId, section, value: next })
-    .onConflictDoUpdate({ target: [userPreferences.ownerId, userPreferences.section], set: { value: next, updatedAt: new Date() } });
+    .onConflictDoUpdate({
+      target: [userPreferences.ownerId, userPreferences.section],
+      set: { value: next, updatedAt: new Date() },
+    });
   return next;
 }
 
@@ -30,6 +33,9 @@ export async function setPreference(db: DbOrTx, ownerId: string, section: string
   await db
     .insert(userPreferences)
     .values({ ownerId, section, value })
-    .onConflictDoUpdate({ target: [userPreferences.ownerId, userPreferences.section], set: { value, updatedAt: new Date() } });
+    .onConflictDoUpdate({
+      target: [userPreferences.ownerId, userPreferences.section],
+      set: { value, updatedAt: new Date() },
+    });
   return value;
 }

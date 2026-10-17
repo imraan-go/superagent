@@ -10,14 +10,16 @@
  * identifiers are kept in the registry so clipping never loses routing.
  */
 export const TOOL_NAME_MAX = 64;
-export type ToolNamespace = "composio" | "mcp" | "pipedream";
+export type ToolNamespace = 'composio' | 'mcp' | 'pipedream';
 
 export function slug(part: string): string {
-  return part
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/_{2,}/g, "_")
-    .replace(/^_+|_+$/g, "") || "x";
+  return (
+    part
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/_{2,}/g, '_')
+      .replace(/^_+|_+$/g, '') || 'x'
+  );
 }
 
 export function namespacedTool(ns: ToolNamespace, group: string, action?: string): string {
@@ -25,9 +27,7 @@ export function namespacedTool(ns: ToolNamespace, group: string, action?: string
   return name.slice(0, TOOL_NAME_MAX);
 }
 
-export function parseNamespaced(
-  name: string,
-): { ns: ToolNamespace; group: string; action: string | null } | null {
+export function parseNamespaced(name: string): { ns: ToolNamespace; group: string; action: string | null } | null {
   const m = /^(composio|mcp|pipedream)__([a-z0-9_]+?)(?:__([a-z0-9_]+))?$/.exec(name);
   if (!m) return null;
   return { ns: m[1] as ToolNamespace, group: m[2]!, action: m[3] ?? null };
@@ -46,22 +46,100 @@ export function isExternalToolName(name: string): boolean {
  * fail closed.
  */
 const READ_VERBS = new Set([
-  "get", "list", "fetch", "search", "find", "read", "query", "retrieve", "check",
-  "describe", "lookup", "view", "count", "show", "browse", "resolve", "verify", "preview",
+  'get',
+  'list',
+  'fetch',
+  'search',
+  'find',
+  'read',
+  'query',
+  'retrieve',
+  'check',
+  'describe',
+  'lookup',
+  'view',
+  'count',
+  'show',
+  'browse',
+  'resolve',
+  'verify',
+  'preview',
 ]);
 const WRITE_TOKENS = new Set([
-  "send", "post", "publish", "submit", "reply", "comment", "create", "update", "edit", "add",
-  "insert", "append", "set", "modify", "patch", "put", "move", "copy", "rename", "upload",
-  "write", "delete", "remove", "trash", "archive", "clear", "share", "invite", "forward",
-  "cancel", "approve", "reject", "merge", "push", "deploy", "pay", "transfer", "revoke",
-  "grant", "label", "unlabel", "mark", "star", "pin", "follow", "unfollow", "like", "react",
-  "schedule", "reschedule", "import", "run", "execute", "trigger", "start", "stop", "enable",
-  "disable", "assign", "tag", "untag", "undelete", "restore", "empty", "drop", "purge",
+  'send',
+  'post',
+  'publish',
+  'submit',
+  'reply',
+  'comment',
+  'create',
+  'update',
+  'edit',
+  'add',
+  'insert',
+  'append',
+  'set',
+  'modify',
+  'patch',
+  'put',
+  'move',
+  'copy',
+  'rename',
+  'upload',
+  'write',
+  'delete',
+  'remove',
+  'trash',
+  'archive',
+  'clear',
+  'share',
+  'invite',
+  'forward',
+  'cancel',
+  'approve',
+  'reject',
+  'merge',
+  'push',
+  'deploy',
+  'pay',
+  'transfer',
+  'revoke',
+  'grant',
+  'label',
+  'unlabel',
+  'mark',
+  'star',
+  'pin',
+  'follow',
+  'unfollow',
+  'like',
+  'react',
+  'schedule',
+  'reschedule',
+  'import',
+  'run',
+  'execute',
+  'trigger',
+  'start',
+  'stop',
+  'enable',
+  'disable',
+  'assign',
+  'tag',
+  'untag',
+  'undelete',
+  'restore',
+  'empty',
+  'drop',
+  'purge',
 ]);
 
 export function isComposioReadAction(action: string): boolean {
-  const tokens = action.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
-  if (tokens[0] === "batch") tokens.shift(); // batch_get, batch_read
+  const tokens = action
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+  if (tokens[0] === 'batch') tokens.shift(); // batch_get, batch_read
   const first = tokens[0];
   if (!first || !READ_VERBS.has(first)) return false;
   return !tokens.slice(1).some((t) => WRITE_TOKENS.has(t));
@@ -69,5 +147,5 @@ export function isComposioReadAction(action: string): boolean {
 
 /** `GMAIL_FETCH_EMAILS` + `gmail` → `fetch_emails` (what the model sees after `composio__gmail__`). */
 export function composioActionName(toolSlug: string, toolkit: string): string {
-  return slug(toolSlug.replace(new RegExp(`^${toolkit.replace(/[^a-z0-9]/gi, ".?")}_`, "i"), ""));
+  return slug(toolSlug.replace(new RegExp(`^${toolkit.replace(/[^a-z0-9]/gi, '.?')}_`, 'i'), ''));
 }

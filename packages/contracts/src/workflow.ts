@@ -75,7 +75,11 @@ export interface QuestionSignal {
   questionId: string;
 }
 
-export type QuestionCheck = { state: 'answered'; confirmed: boolean } | { state: 'expired' } | { state: 'pending' } | { state: 'cancelled' };
+export type QuestionCheck =
+  | { state: 'answered'; confirmed: boolean }
+  | { state: 'expired' }
+  | { state: 'pending' }
+  | { state: 'cancelled' };
 
 export type ApprovalCheck = { state: 'approved' } | { state: 'rejected' } | { state: 'expired' } | { state: 'pending' };
 
@@ -126,7 +130,9 @@ export interface AgentActivities {
   prepareForQuestionWait(ref: QuestionRef): Promise<void>;
   checkQuestion(ref: QuestionRef): Promise<QuestionCheck>;
   /** Writes the answer (or expiry/refusal) as the tool result; a confirmed gate re-allows the call. */
-  recordQuestionOutcome(ref: QuestionRef & { gate: boolean; state: 'answered' | 'expired' | 'cancelled' }): Promise<{ runGatedTool: boolean }>;
+  recordQuestionOutcome(
+    ref: QuestionRef & { gate: boolean; state: 'answered' | 'expired' | 'cancelled' },
+  ): Promise<{ runGatedTool: boolean }>;
   finalizeTask(f: TaskFinalization): Promise<void>;
   releaseTaskResources(ref: TaskRef): Promise<void>;
   createScheduledTask(input: ScheduledTaskInput & { runKey: string }): Promise<{ taskId: string | null }>;

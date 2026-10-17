@@ -2,7 +2,13 @@ import type { Hono } from 'hono';
 import { lookup } from 'node:dns/promises';
 import { z } from 'zod';
 import { ConnectRequest } from '@superagent/contracts';
-import { composioUserIdFor, createPendingConnection, getConnectionForOwner, listConnections, updateConnection } from '@superagent/db';
+import {
+  composioUserIdFor,
+  createPendingConnection,
+  getConnectionForOwner,
+  listConnections,
+  updateConnection,
+} from '@superagent/db';
 import { isPrivateAddress } from '@superagent/policy';
 import type { Toolkit } from '@superagent/connectors';
 import type { ApiDeps, AppEnvVars, RouteHelpers } from '../app';
@@ -23,13 +29,24 @@ const CatalogQuery = z.object({
 });
 
 const ComposioAction = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('connect'), toolkit: z.string().trim().min(1).max(64), credentials: z.record(z.string(), z.string()).optional() }),
+  z.object({
+    action: z.literal('connect'),
+    toolkit: z.string().trim().min(1).max(64),
+    credentials: z.record(z.string(), z.string()).optional(),
+  }),
   z.object({ action: z.literal('disconnect'), accountId: z.uuid() }),
   z.object({ action: z.literal('setKey'), key: z.string() }),
   z.object({ action: z.literal('clearKey') }),
 ]);
 
-const STATUS: Record<string, string> = { active: 'ACTIVE', initiated: 'PENDING', expired: 'EXPIRED', revoked: 'EXPIRED', failed: 'FAILED', disconnected: 'INACTIVE' };
+const STATUS: Record<string, string> = {
+  active: 'ACTIVE',
+  initiated: 'PENDING',
+  expired: 'EXPIRED',
+  revoked: 'EXPIRED',
+  failed: 'FAILED',
+  disconnected: 'INACTIVE',
+};
 
 /**
  * Connect Apps over main's Composio model. The catalog (all Composio apps) is browsable; an app
@@ -39,7 +56,10 @@ const STATUS: Record<string, string> = { active: 'ACTIVE', initiated: 'PENDING',
 export function registerAppRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: RouteHelpers) {
   const { uid } = h;
   const client = () => (d.env.COMPOSIO_API_KEY ? new ComposioClient(d.env.COMPOSIO_API_KEY) : null);
-  const notConfigured = () => ({ error: 'setup_required', message: 'Composio is not configured on this server (COMPOSIO_API_KEY).' });
+  const notConfigured = () => ({
+    error: 'setup_required',
+    message: 'Composio is not configured on this server (COMPOSIO_API_KEY).',
+  });
 
   app.get('/api/connectors/composio', async (c) => {
     if (!d.env.COMPOSIO_API_KEY) return c.json({ configured: false });
@@ -50,7 +70,14 @@ export function registerAppRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: RouteHel
       last4: null,
       accounts: conns
         .filter((x) => x.status !== 'disconnected')
-        .map((x) => ({ id: x.id, toolkit: x.toolkit, status: STATUS[x.status] ?? 'PENDING', reason: x.status === 'failed' ? 'connection failed' : null, scheme: 'OAUTH2', createdAt: x.createdAt.toISOString() })),
+        .map((x) => ({
+          id: x.id,
+          toolkit: x.toolkit,
+          status: STATUS[x.status] ?? 'PENDING',
+          reason: x.status === 'failed' ? 'connection failed' : null,
+          scheme: 'OAUTH2',
+          createdAt: x.createdAt.toISOString(),
+        })),
       mcp: null,
       triggers: 0,
       error: null,
@@ -61,12 +88,16 @@ export function registerAppRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: RouteHel
     const ownerId = uid(c);
     const req = ComposioAction.parse(await c.req.json().catch(() => ({})));
     if (req.action === 'setKey' || req.action === 'clearKey') {
-      return c.json({ error: 'forbidden', message: 'The Composio key is managed on the server (COMPOSIO_API_KEY), not per user.' }, 403);
+      return c.json(
+        { error: 'forbidden', message: 'The Composio key is managed on the server (COMPOSIO_API_KEY), not per user.' },
+        403,
+      );
     }
     if (!d.env.COMPOSIO_API_KEY) return c.json(notConfigured(), 503);
     if (req.action === 'disconnect') {
       const conn = await getConnectionForOwner(d.db, ownerId, req.accountId);
-      if (conn.composioConnectedAccountId && conn.status !== 'disconnected') await d.connections().disconnect(conn.composioConnectedAccountId);
+      if (conn.composioConnectedAccountId && conn.status !== 'disconnected')
+        await d.connections().disconnect(conn.composioConnectedAccountId);
       await updateConnection(d.db, ownerId, conn.id, { status: 'disconnected' });
       return c.json({ ok: true });
     }
@@ -95,18 +126,39 @@ export function registerAppRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: RouteHel
     if (!cl) return c.json(notConfigured(), 503);
     const q = CatalogQuery.parse(Object.fromEntries(new URL(c.req.url).searchParams));
     const all = await getCatalog(cl, q.refresh === '1');
-    const meta = { facets: all.facets, categories: all.categories, catalogSize: all.toolkits.length, upstreamTotal: all.upstreamTotal };
+    const meta = {
+      facets: all.facets,
+      categories: all.categories,
+      catalogSize: all.toolkits.length,
+      upstreamTotal: all.upstreamTotal,
+    };
     c.header('Cache-Control', 'private, max-age=60');
     if (q.view === 'sections') return c.json({ ...buildSections(all.toolkits), ...meta });
-    const slugs = q.slugs ? q.slugs.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 100) : undefined;
-    const { items, total } = queryCatalog(all.toolkits, { search: q.q, category: q.category, slugs, offset: q.offset, limit: q.limit });
+    const slugs = q.slugs
+      ? q.slugs
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .slice(0, 100)
+      : undefined;
+    const { items, total } = queryCatalog(all.toolkits, {
+      search: q.q,
+      category: q.category,
+      slugs,
+      offset: q.offset,
+      limit: q.limit,
+    });
     return c.json({ items, total, offset: q.offset, ...meta });
   });
 
   app.get('/api/connectors/composio/toolkit', async (c) => {
     const cl = client();
     if (!cl) return c.json(notConfigured(), 503);
-    const slug = z.string().trim().regex(/^[a-z0-9_-]{1,64}$/i).parse(c.req.query('slug'));
+    const slug = z
+      .string()
+      .trim()
+      .regex(/^[a-z0-9_-]{1,64}$/i)
+      .parse(c.req.query('slug'));
     const detail = await getToolkitDetail(cl, slug);
     if (!detail) return c.json({ error: 'not_found', message: `No Composio app "${slug}".` }, 404);
     return c.json(detail);
@@ -124,9 +176,14 @@ export function registerAppRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: RouteHel
         const best = rows.find((r) => r.status === 'active') ?? rows[0]!;
         return {
           toolkit,
-          status: STATUS[best.status] === 'ACTIVE' ? 'ACTIVE' : STATUS[best.status] === 'EXPIRED' ? 'EXPIRED' : 'PENDING',
+          status:
+            STATUS[best.status] === 'ACTIVE' ? 'ACTIVE' : STATUS[best.status] === 'EXPIRED' ? 'EXPIRED' : 'PENDING',
           accountId: best.id,
-          accounts: rows.map((r) => ({ id: r.id, status: STATUS[r.status] ?? 'PENDING', createdAt: r.createdAt.toISOString() })),
+          accounts: rows.map((r) => ({
+            id: r.id,
+            status: STATUS[r.status] ?? 'PENDING',
+            createdAt: r.createdAt.toISOString(),
+          })),
           createdAt: best.createdAt.toISOString(),
           name: tk?.name ?? toolkit,
           description: tk?.description ?? '',
@@ -164,12 +221,23 @@ export function registerAppRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: RouteHel
     const buf = Buffer.from(await res.arrayBuffer());
     if (buf.byteLength > 256 * 1024) return c.body(null, 404);
     return new Response(buf, {
-      headers: { 'content-type': type, 'cache-control': 'private, max-age=86400', 'x-content-type-options': 'nosniff', 'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox" },
+      headers: {
+        'content-type': type,
+        'cache-control': 'private, max-age=86400',
+        'x-content-type-options': 'nosniff',
+        'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+      },
     });
   });
 
   /** Per-tool enable/disable is application policy here (curated, verified tools), not a user setting. */
   app.put('/api/connectors/composio/tools', (c) =>
-    c.json({ error: 'forbidden', message: 'Which app tools the agent may use is decided by the application (verified tools only).' }, 403),
+    c.json(
+      {
+        error: 'forbidden',
+        message: 'Which app tools the agent may use is decided by the application (verified tools only).',
+      },
+      403,
+    ),
   );
 }

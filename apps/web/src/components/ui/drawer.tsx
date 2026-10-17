@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
-import type { ReactNode } from "react";
-import { X } from "@phosphor-icons/react/dist/ssr";
-import { IconButton } from "./icon-button";
-import styles from "./drawer.module.css";
+import { useEffect, useRef } from 'react';
+import type { ReactNode } from 'react';
+import { X } from '@phosphor-icons/react/dist/ssr';
+import { IconButton } from './icon-button';
+import styles from './drawer.module.css';
 
 /**
  * A modal side sheet on the native `<dialog>`: focus is trapped, Esc closes it

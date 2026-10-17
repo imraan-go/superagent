@@ -30,13 +30,13 @@ export interface ParsedCombo {
 
 /** `mod+k`, `alt+x`, `shift+g`, `?`. `mod` is ⌘ on macOS and Ctrl elsewhere. */
 export function parseCombo(combo: string): ParsedCombo {
-  const parts = combo.toLowerCase().split("+");
-  const key = parts.pop() ?? "";
+  const parts = combo.toLowerCase().split('+');
+  const key = parts.pop() ?? '';
   return {
-    key: key === "space" ? " " : key,
-    mod: parts.includes("mod"),
-    alt: parts.includes("alt"),
-    shift: parts.includes("shift"),
+    key: key === 'space' ? ' ' : key,
+    mod: parts.includes('mod'),
+    alt: parts.includes('alt'),
+    shift: parts.includes('shift'),
   };
 }
 
@@ -59,12 +59,12 @@ export function isTypingTarget(target: TargetLike | null | undefined): boolean {
   if (!target) return false;
   if (target.isContentEditable) return true;
   const tag = target.tagName?.toUpperCase();
-  if (tag === "TEXTAREA" || tag === "SELECT") return true;
-  if (tag === "INPUT") {
-    const type = (target.getAttribute?.("type") ?? "text").toLowerCase();
-    return !["button", "checkbox", "radio", "submit", "reset", "range", "file"].includes(type);
+  if (tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  if (tag === 'INPUT') {
+    const type = (target.getAttribute?.('type') ?? 'text').toLowerCase();
+    return !['button', 'checkbox', 'radio', 'submit', 'reset', 'range', 'file'].includes(type);
   }
-  return target.getAttribute?.("role") === "textbox";
+  return target.getAttribute?.('role') === 'textbox';
 }
 
 export interface Binding {
@@ -78,7 +78,7 @@ export interface Binding {
 export const SEQUENCE_TIMEOUT_MS = 1000;
 
 export function isSequence(keys: string): boolean {
-  return keys.trim().includes(" ");
+  return keys.trim().includes(' ');
 }
 
 /** Whether a combo carries ⌘/Ctrl/Alt — the only kind safe to fire in inputs. */
@@ -113,7 +113,7 @@ export function resolveBinding(
   if (pending && now - pending.at <= SEQUENCE_TIMEOUT_MS && !typing) {
     for (const b of bindings) {
       if (!isSequence(b.keys)) continue;
-      const [first, second] = b.keys.split(" ") as [string, string];
+      const [first, second] = b.keys.split(' ') as [string, string];
       if (first.toLowerCase() === pending.key && matchCombo(e, second)) return b;
     }
   }
@@ -128,7 +128,7 @@ export function resolveBinding(
   // Start of a sequence: a bare key that opens one, outside text fields.
   if (!typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
     const key = e.key.toLowerCase();
-    if (bindings.some((b) => isSequence(b.keys) && b.keys.split(" ")[0]!.toLowerCase() === key)) {
+    if (bindings.some((b) => isSequence(b.keys) && b.keys.split(' ')[0]!.toLowerCase() === key)) {
       state.pending = { key, at: now };
     }
   }
@@ -148,7 +148,7 @@ export function fuzzyScore(needle: string, haystack: string): number {
   let hi = 0;
   let run = 0;
   for (const ch of n) {
-    if (ch === " ") continue;
+    if (ch === ' ') continue;
     const found = h.indexOf(ch, hi);
     if (found === -1) return 0;
     run = found === hi ? run + 1 : 0;
@@ -162,13 +162,14 @@ export function fuzzyScore(needle: string, haystack: string): number {
 /** Platform-aware label for a combo, e.g. `mod+k` -> `⌘K` / `Ctrl+K`. */
 export function formatCombo(keys: string, mac: boolean): string {
   return keys
-    .split(" ")
+    .split(' ')
     .map((part) => {
       const c = parseCombo(part);
       const k = c.key.length === 1 ? c.key.toUpperCase() : c.key;
-      const mods = [c.mod ? (mac ? "⌘" : "Ctrl") : "", c.alt ? (mac ? "⌥" : "Alt") : "", c.shift ? "⇧" : ""]
-        .filter(Boolean);
-      return mac ? [...mods, k].join("") : [...mods, k].join("+");
+      const mods = [c.mod ? (mac ? '⌘' : 'Ctrl') : '', c.alt ? (mac ? '⌥' : 'Alt') : '', c.shift ? '⇧' : ''].filter(
+        Boolean,
+      );
+      return mac ? [...mods, k].join('') : [...mods, k].join('+');
     })
-    .join(" then ");
+    .join(' then ');
 }

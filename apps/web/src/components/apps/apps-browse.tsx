@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import { useCallback, useState } from "react";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { api } from "@/components/settings/tabs/shared";
-import { Button, SkeletonText } from "@/components/ui";
-import { prettyCategory } from "@/lib/apps";
-import { COMPOSIO_STATUS_KEY } from "@/lib/composio-types";
-import type { CatalogPage, CatalogSectionsResponse, CatalogToolkit } from "@/lib/composio-types";
-import { AppRow, RowSkeleton } from "./app-row";
-import { VirtualGrid, gridKeyNav } from "./virtual-grid";
-import styles from "./apps.module.css";
+import { useCallback, useState } from 'react';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { api } from '@/components/settings/tabs/shared';
+import { Button, SkeletonText } from '@/components/ui';
+import { prettyCategory } from '@/lib/apps';
+import { COMPOSIO_STATUS_KEY } from '@/lib/composio-types';
+import type { CatalogPage, CatalogSectionsResponse, CatalogToolkit } from '@/lib/composio-types';
+import { AppRow, RowSkeleton } from './app-row';
+import { VirtualGrid, gridKeyNav } from './virtual-grid';
+import styles from './apps.module.css';
 
 const PAGE = 100;
 const SECTION_STEP = 10;
 
-export const CATALOG_KEY = [...COMPOSIO_STATUS_KEY, "catalog"] as const;
+export const CATALOG_KEY = [...COMPOSIO_STATUS_KEY, 'catalog'] as const;
 
 export function useSections(enabled: boolean) {
   return useQuery({
-    queryKey: [...CATALOG_KEY, "sections"],
-    queryFn: () => api<CatalogSectionsResponse>("/api/connectors/composio/catalog?view=sections"),
+    queryKey: [...CATALOG_KEY, 'sections'],
+    queryFn: () => api<CatalogSectionsResponse>('/api/connectors/composio/catalog?view=sections'),
     enabled,
     staleTime: 5 * 60_000,
   });
@@ -28,12 +28,14 @@ export function useSections(enabled: boolean) {
 /** Search + category facet over the FULL catalog, server-paged 100 at a time. */
 export function useFlatCatalog(q: string, category: string, enabled: boolean) {
   return useInfiniteQuery({
-    queryKey: [...CATALOG_KEY, "flat", q, category],
+    queryKey: [...CATALOG_KEY, 'flat', q, category],
     enabled,
     staleTime: 5 * 60_000,
     initialPageParam: 0,
     queryFn: ({ pageParam }) =>
-      api<CatalogPage>(`/api/connectors/composio/catalog?${new URLSearchParams({ q, category, offset: String(pageParam), limit: String(PAGE) })}`),
+      api<CatalogPage>(
+        `/api/connectors/composio/catalog?${new URLSearchParams({ q, category, offset: String(pageParam), limit: String(PAGE) })}`,
+      ),
     getNextPageParam: (last, all) => {
       const loaded = all.reduce((n, p) => n + p.items.length, 0);
       return loaded < last.total && last.items.length > 0 ? loaded : undefined;
@@ -167,9 +169,9 @@ function Flat({ scrollEl, q, category }: { scrollEl: HTMLElement | null; q: stri
   return (
     <div className={styles.flat} onKeyDown={gridKeyNav}>
       <p className={styles.flatMeta} role="status">
-        <span className={styles.num}>{total}</span> {total === 1 ? "app" : "apps"}
-        {category ? ` in ${prettyCategory(category)}` : ""}
-        {q ? ` matching “${q}”` : ""}
+        <span className={styles.num}>{total}</span> {total === 1 ? 'app' : 'apps'}
+        {category ? ` in ${prettyCategory(category)}` : ''}
+        {q ? ` matching “${q}”` : ''}
       </p>
       {total === 0 ? (
         <p className={styles.empty}>No apps match. Try a shorter name, or clear the category.</p>

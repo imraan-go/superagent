@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowUpRight, Lightning, ShareNetwork, ShieldCheck } from "@phosphor-icons/react/dist/ssr";
-import { api } from "@/components/settings/tabs/shared";
-import { Button, HoldToConfirm, SkeletonText, useToast } from "@/components/ui";
-import { maskId, prettyCategory } from "@/lib/apps";
-import { openSettings } from "@/lib/app-events";
-import { COMPOSIO_STATUS_KEY } from "@/lib/composio-types";
-import type { ToolkitDetail } from "@/lib/composio-types";
-import { AppLogo } from "./app-logo";
-import { useApps } from "./apps-context";
-import { CredsForm } from "./creds-form";
-import styles from "./apps.module.css";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowUpRight, Lightning, ShareNetwork, ShieldCheck } from '@phosphor-icons/react/dist/ssr';
+import { api } from '@/components/settings/tabs/shared';
+import { Button, HoldToConfirm, SkeletonText, useToast } from '@/components/ui';
+import { maskId, prettyCategory } from '@/lib/apps';
+import { openSettings } from '@/lib/app-events';
+import { COMPOSIO_STATUS_KEY } from '@/lib/composio-types';
+import type { ToolkitDetail } from '@/lib/composio-types';
+import { AppLogo } from './app-logo';
+import { useApps } from './apps-context';
+import { CredsForm } from './creds-form';
+import styles from './apps.module.css';
 
-export const DETAIL_KEY = (slug: string) => [...COMPOSIO_STATUS_KEY, "toolkit", slug] as const;
+export const DETAIL_KEY = (slug: string) => [...COMPOSIO_STATUS_KEY, 'toolkit', slug] as const;
 const TOOL_STEP = 40;
 
 export function shareLink(slug: string): string {
@@ -55,9 +55,9 @@ export function AppsDetail({ slug }: { slug: string }) {
   const share = async () => {
     try {
       await navigator.clipboard.writeText(shareLink(tk.slug));
-      toast.push({ title: "Link copied", message: `Deep link to ${tk.name} copied.`, tone: "success" });
+      toast.push({ title: 'Link copied', message: `Deep link to ${tk.name} copied.`, tone: 'success' });
     } catch {
-      toast.push({ title: "Copy failed", message: shareLink(tk.slug), tone: "error" });
+      toast.push({ title: 'Copy failed', message: shareLink(tk.slug), tone: 'error' });
     }
   };
   const showCreds = apps.creds?.toolkit === tk.slug;
@@ -78,14 +78,19 @@ export function AppsDetail({ slug }: { slug: string }) {
           </div>
         </div>
         <div className={styles.detailActions}>
-          {st?.status === "ACTIVE" ? (
+          {st?.status === 'ACTIVE' ? (
             <>
               <span className={styles.okChip}>Connected</span>
-              <HoldToConfirm size="sm" tone="danger" onConfirm={() => apps.disconnect(st.account.id)} disabled={apps.disconnecting}>
+              <HoldToConfirm
+                size="sm"
+                tone="danger"
+                onConfirm={() => apps.disconnect(st.account.id)}
+                disabled={apps.disconnecting}
+              >
                 Disconnect
               </HoldToConfirm>
             </>
-          ) : st?.status === "PENDING" ? (
+          ) : st?.status === 'PENDING' ? (
             <>
               <Button size="md" disabled>
                 Waiting for authorisation…
@@ -94,9 +99,14 @@ export function AppsDetail({ slug }: { slug: string }) {
                 Cancel
               </HoldToConfirm>
             </>
-          ) : st?.status === "EXPIRED" ? (
+          ) : st?.status === 'EXPIRED' ? (
             <>
-              <Button size="md" variant="attention" loading={apps.connecting === tk.slug} onClick={() => apps.connect(tk.slug, tk.name)}>
+              <Button
+                size="md"
+                variant="attention"
+                loading={apps.connecting === tk.slug}
+                onClick={() => apps.connect(tk.slug, tk.name)}
+              >
                 Re-authenticate
               </Button>
               <HoldToConfirm size="sm" tone="danger" onConfirm={() => apps.disconnect(st.account.id)}>
@@ -104,11 +114,19 @@ export function AppsDetail({ slug }: { slug: string }) {
               </HoldToConfirm>
             </>
           ) : tk.pinned ? (
-            <Button size="md" variant="primary" loading={apps.connecting === tk.slug} onClick={() => apps.connect(tk.slug, tk.name)}>
+            <Button
+              size="md"
+              variant="primary"
+              loading={apps.connecting === tk.slug}
+              onClick={() => apps.connect(tk.slug, tk.name)}
+            >
               Connect
             </Button>
           ) : (
-            <span className={styles.muted} title="Add curated tools in packages/policy (connector-catalog.ts), then run pnpm composio:discover">
+            <span
+              className={styles.muted}
+              title="Add curated tools in packages/policy (connector-catalog.ts), then run pnpm composio:discover"
+            >
               Not available yet: the agent has no verified tools for {tk.name}.
             </span>
           )}
@@ -117,10 +135,10 @@ export function AppsDetail({ slug }: { slug: string }) {
 
       {apps.note && (
         <p className={styles.note} role="status">
-          {apps.note.text}{" "}
+          {apps.note.text}{' '}
           {apps.note.href && (
             <a href={apps.note.href} target="_blank" rel="noopener noreferrer" className={styles.link}>
-              {apps.note.hrefLabel ?? "Open"} <ArrowUpRight size={12} aria-hidden />
+              {apps.note.hrefLabel ?? 'Open'} <ArrowUpRight size={12} aria-hidden />
             </a>
           )}
         </p>
@@ -128,7 +146,7 @@ export function AppsDetail({ slug }: { slug: string }) {
 
       {showCreds && <CredsForm />}
 
-      <p className={styles.detailDesc}>{tk.description || "No description provided."}</p>
+      <p className={styles.detailDesc}>{tk.description || 'No description provided.'}</p>
 
       <ToolsSection detail={d} slug={tk.slug} />
 
@@ -153,8 +171,8 @@ export function AppsDetail({ slug }: { slug: string }) {
               ))}
             </ul>
             <p className={styles.muted}>
-              Set a trigger up under{" "}
-              <button type="button" className={styles.link} onClick={() => openSettings("connectors")}>
+              Set a trigger up under{' '}
+              <button type="button" className={styles.link} onClick={() => openSettings('connectors')}>
                 Settings → Connectors
               </button>
               ; events then start an LHOS run.
@@ -169,27 +187,30 @@ export function AppsDetail({ slug }: { slug: string }) {
 }
 
 function ToolsSection({ detail }: { detail: ToolkitDetail; slug: string }) {
-  const [filter, setFilter] = useState("");
+  const [filter, setFilter] = useState('');
   const [shown, setShown] = useState(TOOL_STEP);
   const needle = filter.trim().toLowerCase();
   // The agent's tools first, then the rest of the app's catalogue for reference.
   const ordered = [...detail.tools].sort((a, b) => Number(b.enabled) - Number(a.enabled));
-  const rows = needle ? ordered.filter((t) => `${t.name} ${t.slug} ${t.description}`.toLowerCase().includes(needle)) : ordered;
+  const rows = needle
+    ? ordered.filter((t) => `${t.name} ${t.slug} ${t.description}`.toLowerCase().includes(needle))
+    : ordered;
 
   return (
     <section className={styles.block} aria-labelledby="apps-tools">
       <div className={styles.blockBar}>
         <h4 id="apps-tools" className={styles.blockHead}>
-          Tools{" "}
+          Tools{' '}
           <span className={styles.num}>
             {detail.enabledCount}/{detail.tools.length}
-          </span>{" "}
+          </span>{' '}
           <span className={styles.muted}>usable by the agent</span>
         </h4>
       </div>
       <p className={styles.muted}>
-        <ShieldCheck size={13} aria-hidden className={styles.inlineIcon} /> The agent only calls tools the application has verified, with a
-        curated set of arguments. Anything that changes your account stops for your exact approval first.
+        <ShieldCheck size={13} aria-hidden className={styles.inlineIcon} /> The agent only calls tools the application
+        has verified, with a curated set of arguments. Anything that changes your account stops for your exact approval
+        first.
       </p>
       {detail.tools.length > 8 && (
         <input
@@ -232,22 +253,37 @@ function ToolsSection({ detail }: { detail: ToolkitDetail; slug: string }) {
   );
 }
 
-function Information({ detail, account, updatedAt }: { detail: ToolkitDetail; account: ReturnType<ReturnType<typeof useApps>["stateOf"]>; updatedAt: number }) {
+function Information({
+  detail,
+  account,
+  updatedAt,
+}: {
+  detail: ToolkitDetail;
+  account: ReturnType<ReturnType<typeof useApps>['stateOf']>;
+  updatedAt: number;
+}) {
   const tk = detail.toolkit;
   const rows: Array<[string, React.ReactNode]> = [
-    ["Auth", tk.noAuth ? "None required" : tk.authSchemes.length ? tk.authSchemes.map((s) => s.replace(/_/g, " ").toLowerCase()).join(", ") : "—"],
     [
-      "Managed auth",
+      'Auth',
+      tk.noAuth
+        ? 'None required'
+        : tk.authSchemes.length
+          ? tk.authSchemes.map((s) => s.replace(/_/g, ' ').toLowerCase()).join(', ')
+          : '—',
+    ],
+    [
+      'Managed auth',
       tk.noAuth ? (
-        "Not needed"
+        'Not needed'
       ) : tk.managedAuth ? (
-        "Available: Composio hosts the OAuth app"
+        'Available: Composio hosts the OAuth app'
       ) : (
         <>
           Not available: needs your own developer app
           {tk.authGuideUrl && (
             <>
-              {" "}
+              {' '}
               <a href={tk.authGuideUrl} target="_blank" rel="noopener noreferrer" className={styles.link}>
                 Setup guide <ArrowUpRight size={12} aria-hidden />
               </a>
@@ -256,21 +292,27 @@ function Information({ detail, account, updatedAt }: { detail: ToolkitDetail; ac
         </>
       ),
     ],
-    ["Tools", String(detail.tools.length || tk.toolsCount)],
-    ["Triggers", String(detail.triggers.length || tk.triggersCount)],
-    ["Categories", tk.categories.map(prettyCategory).join(", ") || "—"],
+    ['Tools', String(detail.tools.length || tk.toolsCount)],
+    ['Triggers', String(detail.triggers.length || tk.triggersCount)],
+    ['Categories', tk.categories.map(prettyCategory).join(', ') || '—'],
     [
-      "Connected account",
+      'Connected account',
       account ? (
         <>
-          <span className={account.status === "ACTIVE" ? styles.okChip : styles.badgeWarn}>{account.status === "ACTIVE" ? "Connected" : account.status === "PENDING" ? "Waiting" : "Needs authentication"}</span>{" "}
+          <span className={account.status === 'ACTIVE' ? styles.okChip : styles.badgeWarn}>
+            {account.status === 'ACTIVE'
+              ? 'Connected'
+              : account.status === 'PENDING'
+                ? 'Waiting'
+                : 'Needs authentication'}
+          </span>{' '}
           <code className={styles.mono}>{maskId(account.account.id)}</code>
         </>
       ) : (
-        "Not connected"
+        'Not connected'
       ),
     ],
-    ["Last checked", updatedAt ? new Date(updatedAt).toLocaleTimeString() : "—"],
+    ['Last checked', updatedAt ? new Date(updatedAt).toLocaleTimeString() : '—'],
   ];
   return (
     <section className={styles.block} aria-labelledby="apps-info">

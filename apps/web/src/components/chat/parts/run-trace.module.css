@@ -4,36 +4,49 @@
   position: relative;
   border: var(--border) solid var(--glass-line);
   border-radius: var(--radius-control);
-  background:
-    linear-gradient(180deg, var(--glass-hi), transparent 60%),
-    var(--glass);
+  background: linear-gradient(180deg, var(--glass-hi), transparent 60%), var(--glass);
   overflow: hidden;
   transition: border-color var(--dur-std) var(--ease-out);
 }
 
 /* Phase colour: thinking violet → tool teal → approval amber → done lime → error coral. */
-.trace[data-phase="thinking"] { --trace-accent: var(--c-think); }
-.trace[data-phase="tool"] { --trace-accent: var(--c-agent); }
-.trace[data-phase="approval"] { --trace-accent: var(--c-approval); }
-.trace[data-phase="done"] { --trace-accent: var(--c-money); }
-.trace[data-phase="error"] { --trace-accent: var(--c-error); }
+.trace[data-phase='thinking'] {
+  --trace-accent: var(--c-think);
+}
+.trace[data-phase='tool'] {
+  --trace-accent: var(--c-agent);
+}
+.trace[data-phase='approval'] {
+  --trace-accent: var(--c-approval);
+}
+.trace[data-phase='done'] {
+  --trace-accent: var(--c-money);
+}
+.trace[data-phase='error'] {
+  --trace-accent: var(--c-error);
+}
 
 .live,
-.trace[data-phase="approval"] {
+.trace[data-phase='approval'] {
   border-color: color-mix(in oklab, var(--trace-accent) 45%, var(--line));
   box-shadow: 0 0 28px color-mix(in srgb, var(--trace-accent) 16%, transparent);
-  transition: border-color var(--dur-panel) var(--ease-out), box-shadow var(--dur-panel) var(--ease-out);
+  transition:
+    border-color var(--dur-panel) var(--ease-out),
+    box-shadow var(--dur-panel) var(--ease-out);
 }
 
 .stack {
   display: inline-flex;
   flex: none;
 }
-.stack > * + * { margin-left: -6px; box-shadow: 0 0 0 2px var(--ink-1); }
+.stack > * + * {
+  margin-left: -6px;
+  box-shadow: 0 0 0 2px var(--ink-1);
+}
 
 /* A 1px scanline along the top edge while live — the "frame is alive" cue. */
 .live::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0 0 auto;
   height: 1px;
@@ -44,8 +57,12 @@
 }
 
 @keyframes sweep {
-  from { background-position: -50% 0; }
-  to { background-position: 150% 0; }
+  from {
+    background-position: -50% 0;
+  }
+  to {
+    background-position: 150% 0;
+  }
 }
 
 .head {
@@ -64,9 +81,17 @@
   cursor: pointer;
 }
 
-.head:disabled { cursor: default; }
-.head:not(:disabled):hover { color: var(--text-1); background: var(--ink-2); }
-.head:focus-visible { outline: 2px solid var(--signal); outline-offset: -2px; }
+.head:disabled {
+  cursor: default;
+}
+.head:not(:disabled):hover {
+  color: var(--text-1);
+  background: var(--ink-2);
+}
+.head:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: -2px;
+}
 
 .headline {
   min-width: 0;
@@ -75,7 +100,9 @@
   white-space: nowrap;
 }
 
-.live .headline { color: var(--text-1); }
+.live .headline {
+  color: var(--text-1);
+}
 
 .meta {
   display: inline-flex;
@@ -95,10 +122,16 @@
 }
 
 .open > .head .caret,
-[aria-expanded="true"] > .caret,
-[aria-expanded="true"] .caret { transform: rotate(90deg); }
+[aria-expanded='true'] > .caret,
+[aria-expanded='true'] .caret {
+  transform: rotate(90deg);
+}
 
-.dots { display: inline-flex; gap: 3px; flex: none; }
+.dots {
+  display: inline-flex;
+  gap: 3px;
+  flex: none;
+}
 .dots i {
   width: 3px;
   height: 3px;
@@ -106,12 +139,21 @@
   background: var(--trace-accent);
   animation: breathe 1.2s ease-in-out infinite;
 }
-.dots i:nth-child(2) { animation-delay: 0.15s; }
-.dots i:nth-child(3) { animation-delay: 0.3s; }
+.dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
 
 @keyframes breathe {
-  0%, 100% { opacity: 0.2; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* --- steps ------------------------------------------------------------- */
@@ -125,7 +167,7 @@
 
 /* The timeline spine. */
 .steps::before {
-  content: "";
+  content: '';
   position: absolute;
   top: var(--sp-3);
   bottom: var(--sp-4);
@@ -145,8 +187,14 @@
 }
 
 @keyframes enter {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .rail {
@@ -170,25 +218,40 @@
   border-radius: var(--radius-chip);
   background: var(--ink-0);
   overflow: hidden;
-  transition: transform var(--dur-spring) var(--ease-spring), border-color var(--dur-std) var(--ease-out);
+  transition:
+    transform var(--dur-spring) var(--ease-spring),
+    border-color var(--dur-std) var(--ease-out);
 }
-.step[data-cat] .card { --cat: inherit; }
-.step:hover .card { transform: translateX(2px); }
-.step[data-status="error"] .card { border-left-color: var(--c-error); }
+.step[data-cat] .card {
+  --cat: inherit;
+}
+.step:hover .card {
+  transform: translateX(2px);
+}
+.step[data-status='error'] .card {
+  border-left-color: var(--c-error);
+}
 
 /* Running tool: a soft shimmer crosses the card in its category hue. */
-.step[data-status="pending"] .card::after {
-  content: "";
+.step[data-status='pending'] .card::after {
+  content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--cat) 14%, transparent) 50%, transparent 80%);
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in srgb, var(--cat) 14%, transparent) 50%,
+    transparent 80%
+  );
   transform: translateX(-100%);
   animation: card-shimmer 1.6s var(--ease-out) infinite;
 }
 
 @keyframes card-shimmer {
-  to { transform: translateX(100%); }
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .cardHead {
@@ -205,9 +268,16 @@
   text-align: left;
   cursor: pointer;
 }
-.cardHead:disabled { cursor: default; }
-.cardHead:not(:disabled):hover { background: var(--ink-2); }
-.cardHead:focus-visible { outline: 2px solid var(--signal); outline-offset: -2px; }
+.cardHead:disabled {
+  cursor: default;
+}
+.cardHead:not(:disabled):hover {
+  background: var(--ink-2);
+}
+.cardHead:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: -2px;
+}
 
 .title {
   min-width: 0;
@@ -257,7 +327,9 @@
   transition: border-color var(--dur-micro) ease;
 }
 .shot:hover,
-.shot:focus-visible { border-color: var(--signal); }
+.shot:focus-visible {
+  border-color: var(--signal);
+}
 .shot img {
   display: block;
   height: 72px;
@@ -279,7 +351,10 @@
   letter-spacing: 0.04em;
   color: var(--text-3);
 }
-.detailLabel { margin-top: var(--sp-2); text-transform: uppercase; }
+.detailLabel {
+  margin-top: var(--sp-2);
+  text-transform: uppercase;
+}
 
 .detail pre {
   margin: 0;
@@ -345,13 +420,21 @@
   font-weight: 500;
   cursor: pointer;
 }
-.approvalLink:hover { text-decoration: underline; }
-.approvalLink:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 4px; }
+.approvalLink:hover {
+  text-decoration: underline;
+}
+.approvalLink:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .live::before,
   .dots i,
-  .step { animation: none; }
+  .step {
+    animation: none;
+  }
 }
 
 .shotMissing {
@@ -377,5 +460,10 @@
   cursor: pointer;
   transition: transform var(--dur-micro) var(--ease-out);
 }
-.appLogoBtn:hover { transform: scale(1.06); }
-.appLogoBtn:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+.appLogoBtn:hover {
+  transform: scale(1.06);
+}
+.appLogoBtn:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}

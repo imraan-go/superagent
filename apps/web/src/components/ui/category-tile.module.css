@@ -6,17 +6,35 @@
   place-items: center;
   border: var(--border) solid color-mix(in srgb, var(--cat, var(--text-2)) 34%, transparent);
   border-radius: 8px;
-  background:
-    linear-gradient(160deg, color-mix(in srgb, var(--cat, var(--text-2)) 22%, transparent), color-mix(in srgb, var(--cat, var(--text-2)) 8%, transparent));
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--cat, var(--text-2)) 22%, transparent),
+    color-mix(in srgb, var(--cat, var(--text-2)) 8%, transparent)
+  );
   color: var(--cat, var(--text-2));
   overflow: hidden;
   isolation: isolate;
 }
 
-.xs { width: 20px; height: 20px; border-radius: 6px; }
-.sm { width: 24px; height: 24px; border-radius: 7px; }
-.md { width: 30px; height: 30px; }
-.lg { width: 38px; height: 38px; border-radius: 11px; }
+.xs {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+}
+.sm {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+}
+.md {
+  width: 30px;
+  height: 30px;
+}
+.lg {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+}
 
 /* Running: a diagonal sheen sweeps the tile and it glows in its own hue. */
 .active {
@@ -24,15 +42,22 @@
 }
 
 .active::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(115deg, transparent 30%, color-mix(in srgb, var(--cat, var(--text-2)) 45%, transparent) 50%, transparent 70%);
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    color-mix(in srgb, var(--cat, var(--text-2)) 45%, transparent) 50%,
+    transparent 70%
+  );
   transform: translateX(-100%);
   animation: tile-sheen 1.4s var(--ease-out) infinite;
 }
 
 @keyframes tile-sheen {
-  to { transform: translateX(100%); }
+  to {
+    transform: translateX(100%);
+  }
 }

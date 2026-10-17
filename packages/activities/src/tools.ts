@@ -25,8 +25,17 @@ import {
   transitionSchedule,
   type ScheduleTransition,
 } from '@superagent/db';
-import { BrowserPolicyError, WorkspacePathError, chromeVersion, ensureController, readBytesForExport, readTextFile, runPython, writeNewFile } from '@superagent/execution';
-import { priceTimes } from "@superagent/observability";
+import {
+  BrowserPolicyError,
+  WorkspacePathError,
+  chromeVersion,
+  ensureController,
+  readBytesForExport,
+  readTextFile,
+  runPython,
+  writeNewFile,
+} from '@superagent/execution';
+import { priceTimes } from '@superagent/observability';
 import { evaluateTool, safeArtifactName } from '@superagent/policy';
 import { ScheduleSpecInput, isIanaTimezone } from '@superagent/contracts';
 import { artifactKey } from '@superagent/storage';
@@ -36,7 +45,10 @@ import { budgetDefaults } from './model';
 import { openQuestion } from './questions';
 import { capabilityOfTool, isConnectorSpec, toolRegistry, type AnyToolSpec } from './registry';
 
-type ToolOutput = { type: 'text'; value: string } | { type: 'error-text'; value: string } | { type: 'content'; value: unknown[] };
+type ToolOutput =
+  | { type: 'text'; value: string }
+  | { type: 'error-text'; value: string }
+  | { type: 'content'; value: unknown[] };
 interface RunOutcome {
   ok: boolean;
   output: ToolOutput;
@@ -64,7 +76,12 @@ async function loadCall(d: Deps, ref: ToolRef) {
   return { tc, spec };
 }
 
-async function writeResult(d: Deps, ref: ToolRef, tc: { step: number; providerToolCallId: string; toolName: string }, output: ToolOutput) {
+async function writeResult(
+  d: Deps,
+  ref: ToolRef,
+  tc: { step: number; providerToolCallId: string; toolName: string },
+  output: ToolOutput,
+) {
   await appendMessage(d.db, {
     ownerId: ref.ownerId,
     taskId: ref.taskId,
@@ -79,7 +96,14 @@ export async function recordToolOutcome(d: Deps, ref: ToolRef & { status: 'denie
   const tc = await getToolCall(d.db, ref.ownerId, ref.toolCallId);
   await writeResult(d, ref, tc, { type: 'error-text', value: ref.summary });
   await setToolCallStatus(d.db, ref.ownerId, ref.toolCallId, ref.status, ref.summary);
-  await emit(d, ref.ownerId, ref.taskId, ref.status === 'denied' ? 'tool.denied' : 'tool.failed', `tool.${ref.status}:${ref.toolCallId}`, { tool: tc.toolName, reason: ref.summary });
+  await emit(
+    d,
+    ref.ownerId,
+    ref.taskId,
+    ref.status === 'denied' ? 'tool.denied' : 'tool.failed',
+    `tool.${ref.status}:${ref.toolCallId}`,
+    { tool: tc.toolName, reason: ref.summary },
+  );
 }
 
 export async function evaluateProposal(d: Deps, ref: ToolRef & { readOnly: boolean }): Promise<ProposalVerdict> {
@@ -89,19 +113,23 @@ export async function evaluateProposal(d: Deps, ref: ToolRef & { readOnly: boole
     return { verdict: 'deny', toolCallId: ref.toolCallId, reason };
   };
   if (!spec) return deny(`unknown tool ${tc.toolName}`);
-  if (tc.status === 'done' || tc.status === 'failed' || tc.status === 'denied') return { verdict: 'deny', toolCallId: ref.toolCallId, reason: `already ${tc.status}` };
+  if (tc.status === 'done' || tc.status === 'failed' || tc.status === 'denied')
+    return { verdict: 'deny', toolCallId: ref.toolCallId, reason: `already ${tc.status}` };
 
   const parsed = spec.schema.safeParse(tc.input);
   if (!parsed.success) return deny('arguments failed validation');
   const task = await getTaskForOwner(d.db, ref.ownerId, ref.taskId);
   const readOnly = ref.readOnly || task.readOnly;
-  if (spec.executor === 'browser' && task.allowedDomains.length === 0) return deny('this task has no approved browsing domains');
+  if (spec.executor === 'browser' && task.allowedDomains.length === 0)
+    return deny('this task has no approved browsing domains');
 
   if (spec.interactiveOnly && task.origin === 'schedule') return deny('routines cannot manage routines');
   const cap = capabilityOfTool(spec);
-  if (task.capabilities?.length && cap && !task.capabilities.includes(cap)) return deny(`${cap} is switched off for this message`);
+  if (task.capabilities?.length && cap && !task.capabilities.includes(cap))
+    return deny(`${cap} is switched off for this message`);
 
-  const conn = isConnectorSpec(spec) && spec.toolkit ? await activeConnection(d.db, ref.ownerId, spec.toolkit) : undefined;
+  const conn =
+    isConnectorSpec(spec) && spec.toolkit ? await activeConnection(d.db, ref.ownerId, spec.toolkit) : undefined;
   const decision = evaluateTool(spec, { readOnly, configured: d.configured(), connectorActive: () => Boolean(conn) });
   if (decision.verdict === 'deny') return deny(decision.reason);
   if (decision.verdict === 'allow' && (spec.name === 'ask_user' || spec.confirm)) {
@@ -137,7 +165,12 @@ export async function evaluateProposal(d: Deps, ref: ToolRef & { readOnly: boole
     account: conn.accountLabel ?? conn.toolkit,
     expiresAt: intent.expiresAt.toISOString(),
   });
-  return { verdict: 'needs_approval', toolCallId: ref.toolCallId, intentId: intent.id, expiresAtMs: intent.expiresAt.getTime() };
+  return {
+    verdict: 'needs_approval',
+    toolCallId: ref.toolCallId,
+    intentId: intent.id,
+    expiresAtMs: intent.expiresAt.getTime(),
+  };
 }
 
 /** Heartbeats while running and turns Activity cancellation into a prompt rejection. */
@@ -154,15 +187,27 @@ async function supervised<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T
   try {
     return await Promise.race([
       fn(c.cancellationSignal),
-      new Promise<never>((_, reject) => c.cancellationSignal.addEventListener('abort', () => reject(new CancelledFailure('activity cancelled')), { once: true })),
+      new Promise<never>((_, reject) =>
+        c.cancellationSignal.addEventListener('abort', () => reject(new CancelledFailure('activity cancelled')), {
+          once: true,
+        }),
+      ),
     ]);
   } finally {
     clearInterval(iv);
   }
 }
 
-async function storeArtifact(d: Deps, ref: ToolRef, name: string, contentType: string, bytes: Uint8Array, source: Record<string, unknown>) {
-  if (bytes.byteLength > d.env.MAX_ARTIFACT_BYTES) throw new WorkspacePathError(`artifact exceeds ${d.env.MAX_ARTIFACT_BYTES} bytes`);
+async function storeArtifact(
+  d: Deps,
+  ref: ToolRef,
+  name: string,
+  contentType: string,
+  bytes: Uint8Array,
+  source: Record<string, unknown>,
+) {
+  if (bytes.byteLength > d.env.MAX_ARTIFACT_BYTES)
+    throw new WorkspacePathError(`artifact exceeds ${d.env.MAX_ARTIFACT_BYTES} bytes`);
   const id = randomUUID();
   const safe = safeArtifactName(name);
   const key = artifactKey(ref.ownerId, ref.taskId, id, safe);
@@ -181,7 +226,13 @@ async function storeArtifact(d: Deps, ref: ToolRef, name: string, contentType: s
     chatId: (await getTaskForOwner(d.db, ref.ownerId, ref.taskId)).chatId,
     expiresAt: new Date(Date.now() + d.env.TASK_RETENTION_DAYS * 86_400_000),
   });
-  await emit(d, ref.ownerId, ref.taskId, 'artifact.created', `artifact.created:${row.id}`, { artifactId: row.id, name: row.name, contentType, sizeBytes: row.sizeBytes, sha256: row.sha256 });
+  await emit(d, ref.ownerId, ref.taskId, 'artifact.created', `artifact.created:${row.id}`, {
+    artifactId: row.id,
+    name: row.name,
+    contentType,
+    sizeBytes: row.sizeBytes,
+    sha256: row.sha256,
+  });
   return row;
 }
 
@@ -191,7 +242,13 @@ async function withSandboxBudget<T>(d: Deps, ref: ToolRef, kind: 'code' | 'brows
   const key = `e2b:${ref.toolCallId}`;
   if (rate) {
     const amount = priceTimes(rate, Math.ceil(TOOL_TIMEOUT_MS / 1000));
-    await reserveBudget(d.db, { ownerId: ref.ownerId, taskId: ref.taskId, dedupeKey: key, amountNanos: amount, limits: await getBudgetLimits(d.db, ref.ownerId, budgetDefaults(d)) });
+    await reserveBudget(d.db, {
+      ownerId: ref.ownerId,
+      taskId: ref.taskId,
+      dedupeKey: key,
+      amountNanos: amount,
+      limits: await getBudgetLimits(d.db, ref.ownerId, budgetDefaults(d)),
+    });
   }
   const started = Date.now();
   try {
@@ -215,13 +272,22 @@ async function withSandboxBudget<T>(d: Deps, ref: ToolRef, kind: 'code' | 'brows
   }
 }
 
-async function runWorkspaceTool(d: Deps, ref: ToolRef, name: string, input: Record<string, unknown>): Promise<RunOutcome> {
+async function runWorkspaceTool(
+  d: Deps,
+  ref: ToolRef,
+  name: string,
+  input: Record<string, unknown>,
+): Promise<RunOutcome> {
   return withSandboxBudget(d, ref, 'code', () =>
     d.workspaces().with(ref.ownerId, 'code', 'user', async (sbx: Sandbox, row) => {
       switch (name) {
         case 'workspace_write_file': {
           const r = await writeNewFile(sbx, input.path as string, input.content as string);
-          return { ok: true, output: { type: 'text', value: `Created ${r.path} (${r.bytes} bytes).` }, summary: `created ${r.path}` };
+          return {
+            ok: true,
+            output: { type: 'text', value: `Created ${r.path} (${r.bytes} bytes).` },
+            summary: `created ${r.path}`,
+          };
         }
         case 'workspace_read_file': {
           const r = await readTextFile(sbx, input.path as string);
@@ -230,13 +296,29 @@ async function runWorkspaceTool(d: Deps, ref: ToolRef, name: string, input: Reco
         case 'workspace_run_python': {
           const r = await runPython(sbx, input.code as string, { timeoutMs: 120_000 });
           const text = `exit code: ${r.exitCode}${r.timedOut ? ' (timed out)' : ''}\n--- stdout ---\n${r.stdout}\n--- stderr ---\n${r.stderr}`;
-          return { ok: r.exitCode === 0, output: { type: 'text', value: text }, summary: `python exit ${r.exitCode} in ${r.durationMs}ms` };
+          return {
+            ok: r.exitCode === 0,
+            output: { type: 'text', value: text },
+            summary: `python exit ${r.exitCode} in ${r.durationMs}ms`,
+          };
         }
         case 'workspace_export_file': {
           const r = await readBytesForExport(sbx, input.path as string, d.env.MAX_ARTIFACT_BYTES);
           const name = r.path.split('/').at(-1) ?? 'file';
-          const a = await storeArtifact(d, ref, name, r.contentType, r.bytes, { kind: 'workspace', path: r.path, workspaceId: row.id, sandboxId: sbx.sandboxId });
-          return { ok: true, output: { type: 'text', value: `Exported ${r.path} as artifact ${a.id} (${a.name}, ${a.sizeBytes} bytes, sha256 ${a.sha256}).` }, summary: `exported ${a.name}` };
+          const a = await storeArtifact(d, ref, name, r.contentType, r.bytes, {
+            kind: 'workspace',
+            path: r.path,
+            workspaceId: row.id,
+            sandboxId: sbx.sandboxId,
+          });
+          return {
+            ok: true,
+            output: {
+              type: 'text',
+              value: `Exported ${r.path} as artifact ${a.id} (${a.name}, ${a.sizeBytes} bytes, sha256 ${a.sha256}).`,
+            },
+            summary: `exported ${a.name}`,
+          };
         }
         default:
           throw new Error(`unhandled workspace tool ${name}`);
@@ -245,7 +327,13 @@ async function runWorkspaceTool(d: Deps, ref: ToolRef, name: string, input: Reco
   );
 }
 
-async function runBrowserTool(d: Deps, ref: ToolRef, name: string, input: Record<string, unknown>, allowed: string[]): Promise<RunOutcome> {
+async function runBrowserTool(
+  d: Deps,
+  ref: ToolRef,
+  name: string,
+  input: Record<string, unknown>,
+  allowed: string[],
+): Promise<RunOutcome> {
   if (name === 'browser_stop') {
     await d.workspaces().kill(ref.ownerId, 'browser', ref.taskId);
     return { ok: true, output: { type: 'text', value: 'Browser closed.' }, summary: 'browser closed' };
@@ -254,16 +342,28 @@ async function runBrowserTool(d: Deps, ref: ToolRef, name: string, input: Record
     d.workspaces().with(ref.ownerId, 'browser', ref.taskId, async (sbx: Sandbox) => {
       await ensureController(sbx);
       const version = await chromeVersion(sbx).catch(() => 'unknown');
-      await emit(d, ref.ownerId, ref.taskId, 'browser.started', `browser.started:${sbx.sandboxId}`, { browser: version, sandboxId: sbx.sandboxId });
+      await emit(d, ref.ownerId, ref.taskId, 'browser.started', `browser.started:${sbx.sandboxId}`, {
+        browser: version,
+        sandboxId: sbx.sandboxId,
+      });
       const b = d.browser;
       switch (name) {
         case 'browser_navigate': {
           const r = await b.navigate(sbx, input.url as string, allowed);
-          return { ok: true, output: { type: 'text', value: `Opened ${r.url} (HTTP ${r.status ?? '?'}) — "${r.title ?? ''}". Use browser_read to see content.` }, summary: `navigated to ${r.url}` };
+          return {
+            ok: true,
+            output: {
+              type: 'text',
+              value: `Opened ${r.url} (HTTP ${r.status ?? '?'}) — "${r.title ?? ''}". Use browser_read to see content.`,
+            },
+            summary: `navigated to ${r.url}`,
+          };
         }
         case 'browser_read': {
           const r = await b.read(sbx, allowed);
-          const els = (r.elements ?? []).map((e) => `[${e.i}] <${e.tag}${e.type ? ` ${e.type}` : ''}> ${e.label}${e.href ? ` -> ${e.href}` : ''}`).join('\n');
+          const els = (r.elements ?? [])
+            .map((e) => `[${e.i}] <${e.tag}${e.type ? ` ${e.type}` : ''}> ${e.label}${e.href ? ` -> ${e.href}` : ''}`)
+            .join('\n');
           const text = `URL: ${r.url}\nTitle: ${r.title}\n\n[UNTRUSTED PAGE CONTENT START]\n${clip(r.text ?? '', 10_000)}\n[UNTRUSTED PAGE CONTENT END]\n\nInteractive elements:\n${clip(els, 4000)}`;
           return { ok: true, output: { type: 'text', value: text }, summary: `read ${r.url}` };
         }
@@ -276,32 +376,70 @@ async function runBrowserTool(d: Deps, ref: ToolRef, name: string, input: Record
               return 'page';
             }
           })();
-          const a = await storeArtifact(d, ref, `screenshot-${host}.png`, 'image/png', r.bytes, { kind: 'browser_screenshot', url: r.url, title: r.title, capturedAt: new Date().toISOString() });
+          const a = await storeArtifact(d, ref, `screenshot-${host}.png`, 'image/png', r.bytes, {
+            kind: 'browser_screenshot',
+            url: r.url,
+            title: r.title,
+            capturedAt: new Date().toISOString(),
+          });
           return {
             ok: true,
-            output: { type: 'content', value: [{ type: 'text', text: `Screenshot of ${r.url} saved as artifact ${a.id} (${a.name}).` }, { type: 'artifact-image', artifactId: a.id }] },
+            output: {
+              type: 'content',
+              value: [
+                { type: 'text', text: `Screenshot of ${r.url} saved as artifact ${a.id} (${a.name}).` },
+                { type: 'artifact-image', artifactId: a.id },
+              ],
+            },
             summary: `screenshot ${a.name}`,
           };
         }
         case 'browser_click': {
           const r = await b.click(sbx, allowed, input.element as number);
-          return { ok: true, output: { type: 'text', value: `Clicked element ${input.element as number}. Now at ${r.url} — "${r.title ?? ''}".` }, summary: `clicked ${input.element as number}` };
+          return {
+            ok: true,
+            output: {
+              type: 'text',
+              value: `Clicked element ${input.element as number}. Now at ${r.url} — "${r.title ?? ''}".`,
+            },
+            summary: `clicked ${input.element as number}`,
+          };
         }
         case 'browser_type': {
           await b.type(sbx, allowed, input.element as number, input.text as string);
-          return { ok: true, output: { type: 'text', value: `Typed into element ${input.element as number} (not submitted).` }, summary: `typed into ${input.element as number}` };
+          return {
+            ok: true,
+            output: { type: 'text', value: `Typed into element ${input.element as number} (not submitted).` },
+            summary: `typed into ${input.element as number}`,
+          };
         }
         case 'browser_scroll': {
           const r = await b.scroll(sbx, allowed, input.direction as 'up' | 'down');
-          return { ok: true, output: { type: 'text', value: `Scrolled ${input.direction as string} on ${r.url ?? 'page'}.` }, summary: `scrolled ${input.direction as string}` };
+          return {
+            ok: true,
+            output: { type: 'text', value: `Scrolled ${input.direction as string} on ${r.url ?? 'page'}.` },
+            summary: `scrolled ${input.direction as string}`,
+          };
         }
         case 'browser_download': {
           const r = await b.download(sbx, allowed, input.url as string);
           const ext = DOWNLOAD_TYPES.get(r.contentType);
-          if (!ext) throw new BrowserPolicyError(`content type ${r.contentType || 'unknown'} is not an allowed download type`);
+          if (!ext)
+            throw new BrowserPolicyError(`content type ${r.contentType || 'unknown'} is not an allowed download type`);
           const base = (new URL(r.url).pathname.split('/').at(-1) || 'download').replace(/\.[A-Za-z0-9]+$/, '');
-          const a = await storeArtifact(d, ref, `${base}.${ext}`, r.contentType, r.bytes, { kind: 'browser_download', url: r.url, downloadedAt: new Date().toISOString() });
-          return { ok: true, output: { type: 'text', value: `Downloaded ${r.url} as artifact ${a.id} (${a.name}, ${a.sizeBytes} bytes).` }, summary: `downloaded ${a.name}` };
+          const a = await storeArtifact(d, ref, `${base}.${ext}`, r.contentType, r.bytes, {
+            kind: 'browser_download',
+            url: r.url,
+            downloadedAt: new Date().toISOString(),
+          });
+          return {
+            ok: true,
+            output: {
+              type: 'text',
+              value: `Downloaded ${r.url} as artifact ${a.id} (${a.name}, ${a.sizeBytes} bytes).`,
+            },
+            summary: `downloaded ${a.name}`,
+          };
         }
         default:
           throw new Error(`unhandled browser tool ${name}`);
@@ -310,18 +448,36 @@ async function runBrowserTool(d: Deps, ref: ToolRef, name: string, input: Record
   );
 }
 
-async function runScheduleTool(d: Deps, ref: ToolRef, name: string, input: Record<string, unknown>, task: Awaited<ReturnType<typeof getTaskForOwner>>): Promise<RunOutcome> {
+async function runScheduleTool(
+  d: Deps,
+  ref: ToolRef,
+  name: string,
+  input: Record<string, unknown>,
+  task: Awaited<ReturnType<typeof getTaskForOwner>>,
+): Promise<RunOutcome> {
   if (name === 'schedule_list') {
     const rows = (await listSchedules(d.db, ref.ownerId)).filter((s) => s.state !== 'deleted');
     const text = rows.length
-      ? rows.map((s) => `- ${s.id} · “${s.name}” · ${describeSpec(s.spec as ScheduleSpecInput)} (${s.timezone}) · ${s.state}${s.chatId === task.chatId ? ' · this chat' : ''}`).join('\n')
+      ? rows
+          .map(
+            (s) =>
+              `- ${s.id} · “${s.name}” · ${describeSpec(s.spec as ScheduleSpecInput)} (${s.timezone}) · ${s.state}${s.chatId === task.chatId ? ' · this chat' : ''}`,
+          )
+          .join('\n')
       : 'No routines yet.';
     return { ok: true, output: { type: 'text', value: text }, summary: `${rows.length} routines` };
   }
   if (name === 'schedule_create') {
     const timezone = (input.timezone as string | undefined) ?? task.timezone ?? 'UTC';
-    if (!isIanaTimezone(timezone)) return { ok: false, output: { type: 'error-text', value: `Unknown timezone ${timezone}.` }, summary: 'bad timezone' };
-    const spec = ScheduleSpecInput.parse(input.cron ? { kind: 'cron', cron: input.cron } : { kind: 'interval', everyMinutes: input.everyMinutes });
+    if (!isIanaTimezone(timezone))
+      return {
+        ok: false,
+        output: { type: 'error-text', value: `Unknown timezone ${timezone}.` },
+        summary: 'bad timezone',
+      };
+    const spec = ScheduleSpecInput.parse(
+      input.cron ? { kind: 'cron', cron: input.cron } : { kind: 'interval', everyMinutes: input.everyMinutes },
+    );
     const s = await createScheduleWithOutbox(d.db, {
       ownerId: ref.ownerId,
       name: input.name as string,
@@ -332,29 +488,85 @@ async function runScheduleTool(d: Deps, ref: ToolRef, name: string, input: Recor
       catchupWindowMinutes: 10,
       chatId: task.chatId,
     });
-    await emit(d, ref.ownerId, ref.taskId, 'schedule.changed', `schedule.changed:${s.id}:created`, { scheduleId: s.id, name: s.name, action: 'created' });
-    return { ok: true, output: { type: 'text', value: `Created routine ${s.id} “${s.name}” (${describeSpec(spec)}, ${timezone}). Its results will be posted in this chat.` }, summary: `created routine ${s.name}` };
+    await emit(d, ref.ownerId, ref.taskId, 'schedule.changed', `schedule.changed:${s.id}:created`, {
+      scheduleId: s.id,
+      name: s.name,
+      action: 'created',
+    });
+    return {
+      ok: true,
+      output: {
+        type: 'text',
+        value: `Created routine ${s.id} “${s.name}” (${describeSpec(spec)}, ${timezone}). Its results will be posted in this chat.`,
+      },
+      summary: `created routine ${s.name}`,
+    };
   }
   const t = name.replace('schedule_', '') as ScheduleTransition;
   const { schedule, state } = await transitionSchedule(d.db, ref.ownerId, input.id as string, t);
-  await emit(d, ref.ownerId, ref.taskId, 'schedule.changed', `schedule.changed:${schedule.id}:${t}:${ref.toolCallId}`, { scheduleId: schedule.id, name: schedule.name, action: t });
-  return { ok: true, output: { type: 'text', value: `Routine “${schedule.name}” is now ${state}.` }, summary: `${t} routine ${schedule.name}` };
+  await emit(d, ref.ownerId, ref.taskId, 'schedule.changed', `schedule.changed:${schedule.id}:${t}:${ref.toolCallId}`, {
+    scheduleId: schedule.id,
+    name: schedule.name,
+    action: t,
+  });
+  return {
+    ok: true,
+    output: { type: 'text', value: `Routine “${schedule.name}” is now ${state}.` },
+    summary: `${t} routine ${schedule.name}`,
+  };
 }
 
-async function runConnectorRead(d: Deps, ref: ToolRef, spec: AnyToolSpec, input: Record<string, unknown>, signal: AbortSignal): Promise<RunOutcome> {
+async function runConnectorRead(
+  d: Deps,
+  ref: ToolRef,
+  spec: AnyToolSpec,
+  input: Record<string, unknown>,
+  signal: AbortSignal,
+): Promise<RunOutcome> {
   if (!isConnectorSpec(spec) || !spec.toolkit || !spec.composioSlug) throw new Error('not a connector tool');
-  if (spec.classification === 'external_write') throw new Error('external writes only run through executeApprovedAction');
+  if (spec.classification === 'external_write')
+    throw new Error('external writes only run through executeApprovedAction');
   const conn = await activeConnection(d.db, ref.ownerId, spec.toolkit);
   if (!conn?.composioConnectedAccountId) throw new Error(`no active ${spec.toolkit} connection`);
-  const res = await d.connector().execute(conn.composioUserId, spec.toolkit as Toolkit, conn.composioConnectedAccountId, spec.composioSlug, input, AbortSignal.any([signal, AbortSignal.timeout(90_000)]));
-  await recordUsage(d.db, { ownerId: ref.ownerId, taskId: ref.taskId, kind: 'composio', provider: 'composio', model: spec.composioSlug, requestId: res.logId, dedupeKey: `composio:${ref.toolCallId}`, quantity: '1 tool call', costNanos: null, costStatus: 'unknown' });
+  const res = await d
+    .connector()
+    .execute(
+      conn.composioUserId,
+      spec.toolkit as Toolkit,
+      conn.composioConnectedAccountId,
+      spec.composioSlug,
+      input,
+      AbortSignal.any([signal, AbortSignal.timeout(90_000)]),
+    );
+  await recordUsage(d.db, {
+    ownerId: ref.ownerId,
+    taskId: ref.taskId,
+    kind: 'composio',
+    provider: 'composio',
+    model: spec.composioSlug,
+    requestId: res.logId,
+    dedupeKey: `composio:${ref.toolCallId}`,
+    quantity: '1 tool call',
+    costNanos: null,
+    costStatus: 'unknown',
+  });
   if (!res.ok) {
     if (/auth|token|expired|revoked|unauthori[sz]ed|401|403/i.test(res.error ?? '')) {
       await updateConnection(d.db, ref.ownerId, conn.id, { status: 'expired' });
-      await emit(d, ref.ownerId, ref.taskId, 'connection.expired', `connection.expired:${conn.id}`, { toolkit: spec.toolkit });
-      return { ok: false, output: { type: 'error-text', value: `The ${spec.toolkit} connection needs to be reconnected by the user.` }, summary: 'connection expired' };
+      await emit(d, ref.ownerId, ref.taskId, 'connection.expired', `connection.expired:${conn.id}`, {
+        toolkit: spec.toolkit,
+      });
+      return {
+        ok: false,
+        output: { type: 'error-text', value: `The ${spec.toolkit} connection needs to be reconnected by the user.` },
+        summary: 'connection expired',
+      };
     }
-    return { ok: false, output: { type: 'error-text', value: `Tool error: ${clip(res.error ?? 'unknown error', 1000)}` }, summary: 'connector error' };
+    return {
+      ok: false,
+      output: { type: 'error-text', value: `Tool error: ${clip(res.error ?? 'unknown error', 1000)}` },
+      summary: 'connector error',
+    };
   }
   const text = `[UNTRUSTED ${spec.toolkit.toUpperCase()} DATA START]\n${clip(JSON.stringify(res.data), 12_000)}\n[UNTRUSTED DATA END]`;
   return { ok: true, output: { type: 'text', value: text }, summary: `${spec.composioSlug} ok` };
@@ -362,7 +574,8 @@ async function runConnectorRead(d: Deps, ref: ToolRef, spec: AnyToolSpec, input:
 
 export async function executeTool(d: Deps, ref: ToolRef): Promise<ToolExecutionResult> {
   const { tc, spec } = await loadCall(d, ref);
-  if (tc.status === 'done' || tc.status === 'failed') return { toolCallId: ref.toolCallId, ok: tc.status === 'done', summary: tc.resultSummary ?? tc.status };
+  if (tc.status === 'done' || tc.status === 'failed')
+    return { toolCallId: ref.toolCallId, ok: tc.status === 'done', summary: tc.resultSummary ?? tc.status };
   if (!spec || tc.status !== 'allowed') throw new NotFoundError('allowed tool call');
   const input = spec.schema.parse(tc.input) as Record<string, unknown>;
   const task = await getTaskForOwner(d.db, ref.ownerId, ref.taskId);
@@ -375,8 +588,16 @@ export async function executeTool(d: Deps, ref: ToolRef): Promise<ToolExecutionR
         switch (spec.executor) {
           case 'local': {
             if (spec.name.startsWith('schedule_')) return runScheduleTool(d, ref, spec.name, input, task);
-            const m = await createMemory(d.db, ref.ownerId, input.content as string, { source: 'agent', taskId: ref.taskId, toolCallId: ref.toolCallId });
-            return { ok: true, output: { type: 'text', value: `Saved memory ${m.id}. The user can review, edit or delete it.` }, summary: 'memory saved' } satisfies RunOutcome;
+            const m = await createMemory(d.db, ref.ownerId, input.content as string, {
+              source: 'agent',
+              taskId: ref.taskId,
+              toolCallId: ref.toolCallId,
+            });
+            return {
+              ok: true,
+              output: { type: 'text', value: `Saved memory ${m.id}. The user can review, edit or delete it.` },
+              summary: 'memory saved',
+            } satisfies RunOutcome;
           }
           case 'workspace':
             return runWorkspaceTool(d, ref, spec.name, input);
@@ -392,13 +613,23 @@ export async function executeTool(d: Deps, ref: ToolRef): Promise<ToolExecutionR
     const expected = err instanceof BrowserPolicyError || err instanceof WorkspacePathError;
     const msg = err instanceof Error ? err.message : String(err);
     d.log.warn('tool.failed', { taskId: ref.taskId, tool: tc.toolName, error: msg });
-    outcome = { ok: false, output: { type: 'error-text', value: expected ? `Blocked: ${msg}` : `Tool failed: ${clip(msg, 500)}` }, summary: clip(msg, 200) };
+    outcome = {
+      ok: false,
+      output: { type: 'error-text', value: expected ? `Blocked: ${msg}` : `Tool failed: ${clip(msg, 500)}` },
+      summary: clip(msg, 200),
+    };
   }
 
   await writeResult(d, ref, tc, outcome.output);
   await setToolCallStatus(d.db, ref.ownerId, ref.toolCallId, outcome.ok ? 'done' : 'failed', outcome.summary);
-  await emit(d, ref.ownerId, ref.taskId, outcome.ok ? 'tool.completed' : 'tool.failed', `tool.result:${ref.toolCallId}`, { tool: tc.toolName, summary: outcome.summary });
+  await emit(
+    d,
+    ref.ownerId,
+    ref.taskId,
+    outcome.ok ? 'tool.completed' : 'tool.failed',
+    `tool.result:${ref.toolCallId}`,
+    { tool: tc.toolName, summary: outcome.summary },
+  );
   if (task.status === 'waiting_approval') await setTaskStatus(d.db, ref.ownerId, ref.taskId, 'running');
   return { toolCallId: ref.toolCallId, ok: outcome.ok, summary: outcome.summary };
 }
-

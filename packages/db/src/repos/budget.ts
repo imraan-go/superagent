@@ -14,7 +14,10 @@ export async function getBudgetLimits(db: DbOrTx, ownerId: string, defaults: Bud
   const s = rows[0];
   // The user's own settings may only tighten the installation-wide caps, never raise them.
   const tighten = (a: bigint | null | undefined, b: bigint | null) => (a == null ? b : b == null ? a : a < b ? a : b);
-  return { perRunNanos: tighten(s?.maxCostPerRunNanos, defaults.perRunNanos), monthlyNanos: tighten(s?.monthlyLimitNanos, defaults.monthlyNanos) };
+  return {
+    perRunNanos: tighten(s?.maxCostPerRunNanos, defaults.perRunNanos),
+    monthlyNanos: tighten(s?.monthlyLimitNanos, defaults.monthlyNanos),
+  };
 }
 
 export function monthStartUtc(now = new Date()): Date {
@@ -42,16 +45,24 @@ export async function reserveBudget(db: Db, input: ReserveInput) {
   }
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${input.ownerId}, 0))`);
-    const existing = await tx.select().from(budgetReservations).where(eq(budgetReservations.dedupeKey, input.dedupeKey)).limit(1);
+    const existing = await tx
+      .select()
+      .from(budgetReservations)
+      .where(eq(budgetReservations.dedupeKey, input.dedupeKey))
+      .limit(1);
     if (existing[0]) return existing[0];
     const active = inArray(budgetReservations.status, ['reserved', 'settled']);
     const [month] = await tx
       .select({ total: committed })
       .from(budgetReservations)
-      .where(and(eq(budgetReservations.ownerId, input.ownerId), active, gte(budgetReservations.createdAt, monthStartUtc())));
+      .where(
+        and(eq(budgetReservations.ownerId, input.ownerId), active, gte(budgetReservations.createdAt, monthStartUtc())),
+      );
     const monthTotal = BigInt(month?.total ?? '0');
     if (monthTotal + input.amountNanos > input.limits.monthlyNanos!) {
-      throw new BudgetExceededError(`Monthly limit ${nanosToUsd(input.limits.monthlyNanos!)} USD would be exceeded (committed ${nanosToUsd(monthTotal)} USD).`);
+      throw new BudgetExceededError(
+        `Monthly limit ${nanosToUsd(input.limits.monthlyNanos!)} USD would be exceeded (committed ${nanosToUsd(monthTotal)} USD).`,
+      );
     }
     if (input.taskId) {
       const [run] = await tx
@@ -60,12 +71,19 @@ export async function reserveBudget(db: Db, input: ReserveInput) {
         .where(and(eq(budgetReservations.ownerId, input.ownerId), eq(budgetReservations.taskId, input.taskId), active));
       const runTotal = BigInt(run?.total ?? '0');
       if (runTotal + input.amountNanos > input.limits.perRunNanos!) {
-        throw new BudgetExceededError(`Per-run limit ${nanosToUsd(input.limits.perRunNanos!)} USD would be exceeded (committed ${nanosToUsd(runTotal)} USD).`);
+        throw new BudgetExceededError(
+          `Per-run limit ${nanosToUsd(input.limits.perRunNanos!)} USD would be exceeded (committed ${nanosToUsd(runTotal)} USD).`,
+        );
       }
     }
     const [row] = await tx
       .insert(budgetReservations)
-      .values({ ownerId: input.ownerId, taskId: input.taskId, dedupeKey: input.dedupeKey, amountNanos: input.amountNanos })
+      .values({
+        ownerId: input.ownerId,
+        taskId: input.taskId,
+        dedupeKey: input.dedupeKey,
+        amountNanos: input.amountNanos,
+      })
       .returning();
     return row!;
   });
@@ -75,7 +93,11 @@ export async function reserveBudget(db: Db, input: ReserveInput) {
 export async function settleReservation(db: DbOrTx, dedupeKey: string, actualNanos: bigint | null) {
   await db
     .update(budgetReservations)
-    .set({ status: 'settled', actualNanos: actualNanos ?? sql`${budgetReservations.amountNanos}`, settledAt: new Date() })
+    .set({
+      status: 'settled',
+      actualNanos: actualNanos ?? sql`${budgetReservations.amountNanos}`,
+      settledAt: new Date(),
+    })
     .where(and(eq(budgetReservations.dedupeKey, dedupeKey), eq(budgetReservations.status, 'reserved')));
 }
 
@@ -105,11 +127,22 @@ export async function usageSummary(db: DbOrTx, ownerId: string, since = monthSta
   const [reserved] = await db
     .select({ total: committed })
     .from(budgetReservations)
-    .where(and(eq(budgetReservations.ownerId, ownerId), inArray(budgetReservations.status, ['reserved', 'settled']), gte(budgetReservations.createdAt, since)));
+    .where(
+      and(
+        eq(budgetReservations.ownerId, ownerId),
+        inArray(budgetReservations.status, ['reserved', 'settled']),
+        gte(budgetReservations.createdAt, since),
+      ),
+    );
   return {
     currency: 'USD' as const,
     since: since.toISOString(),
     committedUsd: nanosToUsd(BigInt(reserved?.total ?? '0')),
-    byKind: rows.map((r) => ({ kind: r.kind, costStatus: r.costStatus, usd: nanosToUsd(BigInt(r.total)), count: r.count })),
+    byKind: rows.map((r) => ({
+      kind: r.kind,
+      costStatus: r.costStatus,
+      usd: nanosToUsd(BigInt(r.total)),
+      count: r.count,
+    })),
   };
 }

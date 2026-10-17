@@ -12,5 +12,5 @@ export function pickModel(input: {
 }): string {
   if (input.chosen) return input.chosen;
   if (input.chatModel && input.ready.includes(input.chatModel)) return input.chatModel;
-  return input.defaultModel ?? "";
+  return input.defaultModel ?? '';
 }

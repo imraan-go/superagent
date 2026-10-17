@@ -1,12 +1,7 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import {
-  ArrowClockwise,
-  Gear,
-  PaperPlaneRight,
-  Trash,
-} from "@phosphor-icons/react/dist/ssr";
+import { useState } from 'react';
+import { ArrowClockwise, Gear, PaperPlaneRight, Trash } from '@phosphor-icons/react/dist/ssr';
 import {
   Button,
   Dot,
@@ -23,29 +18,15 @@ import {
   SkeletonText,
   ToastProvider,
   useToast,
-} from "@/components/ui";
-import type { ButtonVariant, DotStatus, LiveGlyphState } from "@/components/ui";
-import styles from "./gallery.module.css";
+} from '@/components/ui';
+import type { ButtonVariant, DotStatus, LiveGlyphState } from '@/components/ui';
+import styles from './gallery.module.css';
 
-const VARIANTS: ButtonVariant[] = [
-  "primary",
-  "secondary",
-  "ghost",
-  "outline",
-  "danger",
-  "attention",
-];
+const VARIANTS: ButtonVariant[] = ['primary', 'secondary', 'ghost', 'outline', 'danger', 'attention'];
 
-const GLYPH_STATES: LiveGlyphState[] = [
-  "idle",
-  "thinking",
-  "tool",
-  "approval",
-  "done",
-  "error",
-];
+const GLYPH_STATES: LiveGlyphState[] = ['idle', 'thinking', 'tool', 'approval', 'done', 'error'];
 
-const DOT_STATES: DotStatus[] = ["ok", "live", "warn", "error", "idle", "pending"];
+const DOT_STATES: DotStatus[] = ['ok', 'live', 'warn', 'error', 'idle', 'pending'];
 
 export function PrimitivesGallery() {
   return (
@@ -56,8 +37,8 @@ export function PrimitivesGallery() {
 }
 
 function Gallery() {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [mode, setMode] = useState<"agent" | "manage">("agent");
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [mode, setMode] = useState<'agent' | 'manage'>('agent');
   const [modalOpen, setModalOpen] = useState(false);
   const [tokens, setTokens] = useState(12480);
   const toast = useToast();
@@ -73,8 +54,8 @@ function Gallery() {
             value={mode}
             onChange={setMode}
             options={[
-              { value: "agent", label: "Agent" },
-              { value: "manage", label: "Manage" },
+              { value: 'agent', label: 'Agent' },
+              { value: 'manage', label: 'Manage' },
             ]}
           />
           <SegmentedSwitch
@@ -83,8 +64,8 @@ function Gallery() {
             value={theme}
             onChange={setTheme}
             options={[
-              { value: "dark", label: "Dark" },
-              { value: "light", label: "Light" },
+              { value: 'dark', label: 'Dark' },
+              { value: 'light', label: 'Light' },
             ]}
           />
         </div>
@@ -93,7 +74,7 @@ function Gallery() {
       <div className={styles.grid}>
         <Panel title="Button — variants × sizes">
           <div className={styles.stack}>
-            {(["sm", "md", "lg"] as const).map((size) => (
+            {(['sm', 'md', 'lg'] as const).map((size) => (
               <div key={size} className={styles.row}>
                 {VARIANTS.map((variant) => (
                   <Button key={variant} variant={variant} size={size}>
@@ -121,7 +102,7 @@ function Gallery() {
 
         <Panel title="IconButton">
           <div className={styles.row}>
-            {(["sm", "md", "lg"] as const).map((size) => (
+            {(['sm', 'md', 'lg'] as const).map((size) => (
               <IconButton key={size} size={size} label={`Settings ${size}`} icon={<Gear size={16} />} />
             ))}
             <IconButton label="Active" active icon={<Gear size={16} />} />
@@ -140,7 +121,7 @@ function Gallery() {
               </div>
             ))}
           </div>
-          <div className={styles.row} style={{ marginTop: "var(--sp-4)" }}>
+          <div className={styles.row} style={{ marginTop: 'var(--sp-4)' }}>
             <LiveGlyph state="thinking" size={20} />
             <LiveGlyph state="thinking" size={28} />
             <LiveGlyph state="thinking" size={96} />
@@ -156,7 +137,7 @@ function Gallery() {
             <Readout label="streaming" value={940} estimate size="sm" />
             <Readout label="status" value="PAUSED" size="sm" tone="amber" />
           </div>
-          <div className={styles.row} style={{ marginTop: "var(--sp-4)" }}>
+          <div className={styles.row} style={{ marginTop: 'var(--sp-4)' }}>
             <Readout label="cpu" value={62.4} unit="%" size="lg" tone="ok" />
             <Button size="sm" onClick={() => setTokens((t) => t + 1820)}>
               add tokens
@@ -181,14 +162,14 @@ function Gallery() {
 
         <Panel title="HoldToConfirm" tone="attention" badge={<Dot status="warn" />}>
           <div className={styles.row}>
-            <HoldToConfirm onConfirm={() => toast.push({ title: "Took control", tone: "warning" })}>
+            <HoldToConfirm onConfirm={() => toast.push({ title: 'Took control', tone: 'warning' })}>
               Take control
             </HoldToConfirm>
             <HoldToConfirm
               tone="danger"
               size="sm"
               icon={<Trash size={14} />}
-              onConfirm={() => toast.push({ title: "Deleted", tone: "error" })}
+              onConfirm={() => toast.push({ title: 'Deleted', tone: 'error' })}
             >
               Delete
             </HoldToConfirm>
@@ -199,7 +180,7 @@ function Gallery() {
         </Panel>
 
         <Panel title="Panel tones" bodyFlush>
-          <div className={styles.stack} style={{ padding: "var(--sp-4)" }}>
+          <div className={styles.stack} style={{ padding: 'var(--sp-4)' }}>
             <Panel title="live" tone="live" badge={<LiveGlyph state="thinking" size={16} />}>
               A panel owned by an active run.
             </Panel>
@@ -231,19 +212,21 @@ function Gallery() {
             <Button variant="primary" onClick={() => setModalOpen(true)}>
               Open modal
             </Button>
-            <Button onClick={() => toast.push({ title: "Run finished", message: "4 steps, $0.0182", tone: "success" })}>
+            <Button onClick={() => toast.push({ title: 'Run finished', message: '4 steps, $0.0182', tone: 'success' })}>
               success
             </Button>
-            <Button onClick={() => toast.push({ title: "Approval needed", message: "Post to LinkedIn", tone: "warning" })}>
+            <Button
+              onClick={() => toast.push({ title: 'Approval needed', message: 'Post to LinkedIn', tone: 'warning' })}
+            >
               warning
             </Button>
             <Button
               onClick={() =>
                 toast.push({
-                  title: "Computer waking up",
-                  message: "The desktop is restoring — retrying in 30 s.",
-                  tone: "error",
-                  action: { label: "Retry now", onClick: () => undefined },
+                  title: 'Computer waking up',
+                  message: 'The desktop is restoring — retrying in 30 s.',
+                  tone: 'error',
+                  action: { label: 'Retry now', onClick: () => undefined },
                 })
               }
             >
@@ -261,13 +244,13 @@ function Gallery() {
                 value={theme}
                 onChange={setTheme}
                 options={[
-                  { value: "dark", label: "Dark" },
-                  { value: "light", label: "Light" },
+                  { value: 'dark', label: 'Dark' },
+                  { value: 'light', label: 'Light' },
                 ]}
               />
             </SettingRow>
             <SettingRow label="Check spelling" description="Placeholder control for the row layout.">
-              <span style={{ color: "var(--text-3)", fontSize: "var(--fs-micro)" }}>Soon</span>
+              <span style={{ color: 'var(--text-3)', fontSize: 'var(--fs-micro)' }}>Soon</span>
             </SettingRow>
           </SettingSection>
         </Panel>
@@ -289,9 +272,8 @@ function Gallery() {
           </>
         }
       >
-        <p style={{ margin: 0, color: "var(--text-2)" }}>
-          Native <code>&lt;dialog&gt;</code> gives focus trapping and an inert
-          background without a portal.
+        <p style={{ margin: 0, color: 'var(--text-2)' }}>
+          Native <code>&lt;dialog&gt;</code> gives focus trapping and an inert background without a portal.
         </p>
       </Modal>
     </div>

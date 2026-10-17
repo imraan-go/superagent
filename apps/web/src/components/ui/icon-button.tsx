@@ -1,26 +1,26 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { cn } from "@/lib/cn";
-import styles from "./icon-button.module.css";
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { cn } from '@/lib/cn';
+import styles from './icon-button.module.css';
 
 export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Required — icon-only controls carry no visible text. */
   label: string;
   icon: ReactNode;
-  size?: "sm" | "md" | "lg";
+  size?: 'sm' | 'md' | 'lg';
   pill?: boolean;
   active?: boolean;
-  tone?: "default" | "danger";
+  tone?: 'default' | 'danger';
 }
 
 export function IconButton({
   label,
   icon,
-  size = "md",
+  size = 'md',
   pill = false,
   active = false,
-  tone = "default",
+  tone = 'default',
   className,
-  type = "button",
+  type = 'button',
   ...rest
 }: IconButtonProps) {
   return (
@@ -34,7 +34,7 @@ export function IconButton({
         styles[size],
         pill && styles.pill,
         active && styles.active,
-        tone === "danger" && styles.danger,
+        tone === 'danger' && styles.danger,
         className,
       )}
       {...rest}

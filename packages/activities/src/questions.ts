@@ -22,7 +22,13 @@ function expiryMs(d: Deps) {
   return d.env.APPROVAL_EXPIRY_HOURS * 3_600_000;
 }
 
-async function confirmPrompt(d: Deps, ownerId: string, toolName: string, input: Record<string, unknown>, timezone: string | null): Promise<string> {
+async function confirmPrompt(
+  d: Deps,
+  ownerId: string,
+  toolName: string,
+  input: Record<string, unknown>,
+  timezone: string | null,
+): Promise<string> {
   if (toolName === 'schedule_create') {
     const when = input.cron ? `on cron \`${String(input.cron)}\`` : `every ${String(input.everyMinutes)} minutes`;
     const tz = (input.timezone as string | undefined) ?? timezone ?? 'UTC';
@@ -41,14 +47,27 @@ async function confirmPrompt(d: Deps, ownerId: string, toolName: string, input: 
  * Called from evaluateProposal once policy allowed the call. `ask_user` always waits for the
  * user; a confirm-gated tool waits for an explicit Yes before it may run.
  */
-export async function openQuestion(d: Deps, ref: ToolRef, toolName: string, input: Record<string, unknown>, gate: boolean): Promise<ProposalVerdict | null> {
+export async function openQuestion(
+  d: Deps,
+  ref: ToolRef,
+  toolName: string,
+  input: Record<string, unknown>,
+  gate: boolean,
+): Promise<ProposalVerdict | null> {
   const task = await getTaskForOwner(d.db, ref.ownerId, ref.taskId);
   const ask = gate
-    ? { kind: 'confirm', prompt: await confirmPrompt(d, ref.ownerId, toolName, input, task.timezone), options: CONFIRM_OPTIONS }
+    ? {
+        kind: 'confirm',
+        prompt: await confirmPrompt(d, ref.ownerId, toolName, input, task.timezone),
+        options: CONFIRM_OPTIONS,
+      }
     : {
         kind: input.kind as string,
         prompt: input.question as string,
-        options: input.kind === 'confirm' ? CONFIRM_OPTIONS : ((input.options as Array<{ id: string; label: string }> | undefined) ?? []),
+        options:
+          input.kind === 'confirm'
+            ? CONFIRM_OPTIONS
+            : ((input.options as Array<{ id: string; label: string }> | undefined) ?? []),
       };
   // A choice question with no real choices would stall the run; the caller denies it so the model rephrases.
   if ((ask.kind === 'single' || ask.kind === 'multi') && ask.options.length < 2) return null;
@@ -64,7 +83,13 @@ export async function openQuestion(d: Deps, ref: ToolRef, toolName: string, inpu
     expiresAt: new Date(Date.now() + expiryMs(d)),
   });
   await setToolCallStatus(d.db, ref.ownerId, ref.toolCallId, 'awaiting_answer');
-  return { verdict: 'needs_answer', toolCallId: ref.toolCallId, questionId: q.id, expiresAtMs: q.expiresAt.getTime(), gate };
+  return {
+    verdict: 'needs_answer',
+    toolCallId: ref.toolCallId,
+    questionId: q.id,
+    expiresAtMs: q.expiresAt.getTime(),
+    gate,
+  };
 }
 
 export async function prepareForQuestionWait(d: Deps, ref: QuestionRef) {
@@ -90,15 +115,25 @@ export async function checkQuestion(d: Deps, ref: QuestionRef): Promise<Question
   return { state: 'pending' };
 }
 
-export async function recordQuestionOutcome(d: Deps, ref: QuestionRef & { gate: boolean; state: 'answered' | 'expired' | 'cancelled' }): Promise<{ runGatedTool: boolean }> {
+export async function recordQuestionOutcome(
+  d: Deps,
+  ref: QuestionRef & { gate: boolean; state: 'answered' | 'expired' | 'cancelled' },
+): Promise<{ runGatedTool: boolean }> {
   const q = await getQuestionForOwner(d.db, ref.ownerId, ref.questionId);
   const tc = await getToolCall(d.db, ref.ownerId, ref.toolCallId);
   await setTaskStatus(d.db, ref.ownerId, ref.taskId, 'running');
   if (ref.state !== 'answered') await setQuestionStatus(d.db, ref.ownerId, q.id, ref.state);
-  await emit(d, ref.ownerId, ref.taskId, ref.state === 'answered' ? 'question.answered' : 'question.expired', `question.${ref.state}:${q.id}`, {
-    questionId: q.id,
-    ...(ref.state === 'answered' ? { answer: q.answer } : {}),
-  });
+  await emit(
+    d,
+    ref.ownerId,
+    ref.taskId,
+    ref.state === 'answered' ? 'question.answered' : 'question.expired',
+    `question.${ref.state}:${q.id}`,
+    {
+      questionId: q.id,
+      ...(ref.state === 'answered' ? { answer: q.answer } : {}),
+    },
+  );
 
   const confirmed = ref.state === 'answered' && (q.answer?.choices.includes('yes') ?? false);
   if (ref.gate && confirmed) {
@@ -119,8 +154,18 @@ export async function recordQuestionOutcome(d: Deps, ref: QuestionRef & { gate: 
     step: tc.step,
     kind: 'tool_result',
     dedupeKey: `tool:${ref.toolCallId}`,
-    content: toolResultMessage(tc.providerToolCallId, tc.toolName, ref.state === 'answered' && !ref.gate ? { type: 'text', value: text } : { type: 'error-text', value: text }),
+    content: toolResultMessage(
+      tc.providerToolCallId,
+      tc.toolName,
+      ref.state === 'answered' && !ref.gate ? { type: 'text', value: text } : { type: 'error-text', value: text },
+    ),
   });
-  await setToolCallStatus(d.db, ref.ownerId, ref.toolCallId, ref.state === 'answered' && !ref.gate ? 'done' : 'failed', ref.state === 'answered' ? describeAnswer(q).slice(0, 200) : 'no answer');
+  await setToolCallStatus(
+    d.db,
+    ref.ownerId,
+    ref.toolCallId,
+    ref.state === 'answered' && !ref.gate ? 'done' : 'failed',
+    ref.state === 'answered' ? describeAnswer(q).slice(0, 200) : 'no answer',
+  );
   return { runGatedTool: false };
 }

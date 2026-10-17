@@ -58,7 +58,11 @@ import { registerAppRoutes } from './routes/apps';
 import { budgetDefaultsFor } from './budget';
 
 export interface ConnectionsPort {
-  initiate(composioUserId: string, toolkit: Toolkit, callbackUrl: string): Promise<{ redirectUrl: string; connectedAccountId: string }>;
+  initiate(
+    composioUserId: string,
+    toolkit: Toolkit,
+    callbackUrl: string,
+  ): Promise<{ redirectUrl: string; connectedAccountId: string }>;
   verify(composioUserId: string, toolkit: Toolkit, connectedAccountId: string): Promise<VerifiedConnection>;
   disconnect(connectedAccountId: string): Promise<void>;
 }
@@ -112,7 +116,10 @@ function allowedOrigins(env: AppEnv): Set<string> {
   return s;
 }
 
-function intentPreview(i: typeof schema.actionIntents.$inferSelect, conn?: typeof schema.connectedAccounts.$inferSelect) {
+function intentPreview(
+  i: typeof schema.actionIntents.$inferSelect,
+  conn?: typeof schema.connectedAccounts.$inferSelect,
+) {
   return {
     id: i.id,
     taskId: i.taskId,
@@ -154,8 +161,13 @@ export function createApp(d: ApiDeps) {
     if (err instanceof ApprovalError) return c.json({ error: err.code, message: err.message }, 409);
     if (err instanceof ConflictError) return c.json({ error: 'conflict', message: err.message }, 409);
     if (err instanceof BudgetExceededError) return c.json({ error: 'budget', message: err.message }, 402);
-    if (err instanceof ZodError) return c.json({ error: 'invalid_request', issues: err.issues.map((i) => ({ path: i.path.join('.'), message: i.message })) }, 400);
-    if (err instanceof SetupRequiredError) return c.json({ error: 'setup_required', capability: err.capability, missing: err.missing }, 503);
+    if (err instanceof ZodError)
+      return c.json(
+        { error: 'invalid_request', issues: err.issues.map((i) => ({ path: i.path.join('.'), message: i.message })) },
+        400,
+      );
+    if (err instanceof SetupRequiredError)
+      return c.json({ error: 'setup_required', capability: err.capability, missing: err.missing }, 503);
     d.log.error('api.error', { path: c.req.path, error: err instanceof Error ? err.message : String(err) });
     return c.json({ error: 'internal' }, 500);
   });
@@ -181,21 +193,35 @@ export function createApp(d: ApiDeps) {
   });
 
   const uid = (c: Context<Env>) => c.get('user').id;
-  const body = async <T>(c: Context<Env>, schemaParse: { parse: (v: unknown) => T }) => schemaParse.parse(await c.req.json().catch(() => ({})));
+  const body = async <T>(c: Context<Env>, schemaParse: { parse: (v: unknown) => T }) =>
+    schemaParse.parse(await c.req.json().catch(() => ({})));
   const helpers: RouteHelpers = { uid, body, taskLimiter };
 
   /* ---------- session / setup ---------- */
   app.get('/api/me', (c) => c.json({ user: c.get('user') }));
   app.get('/api/setup/status', (c) => {
     const s = capabilityStatus(d.env);
-    return c.json({ capabilities: Object.fromEntries(Object.entries(s).map(([k, v]) => [k, { configured: v.configured, missing: v.missing }])), temporalMode: d.env.TEMPORAL_MODE });
+    return c.json({
+      capabilities: Object.fromEntries(
+        Object.entries(s).map(([k, v]) => [k, { configured: v.configured, missing: v.missing }]),
+      ),
+      temporalMode: d.env.TEMPORAL_MODE,
+    });
   });
 
   /* ---------- tasks ---------- */
   app.post('/api/tasks', async (c) => {
     if (!taskLimiter.take(uid(c))) return c.json({ error: 'rate_limited' }, 429);
     const req = await body(c, CreateTaskRequest);
-    const { task, created } = await createTaskWithOutbox(d.db, { ownerId: uid(c), prompt: req.prompt, title: req.title, allowedDomains: req.allowedDomains, idempotencyKey: req.idempotencyKey, timezone: req.timezone, retentionDays: d.env.TASK_RETENTION_DAYS });
+    const { task, created } = await createTaskWithOutbox(d.db, {
+      ownerId: uid(c),
+      prompt: req.prompt,
+      title: req.title,
+      allowedDomains: req.allowedDomains,
+      idempotencyKey: req.idempotencyKey,
+      timezone: req.timezone,
+      retentionDays: d.env.TASK_RETENTION_DAYS,
+    });
     return c.json({ task, created }, created ? 201 : 200);
   });
 
@@ -206,10 +232,24 @@ export function createApp(d: ApiDeps) {
     const [events, artifacts, intents] = await Promise.all([
       listEvents(d.db, uid(c), task.id),
       listArtifacts(d.db, uid(c), task.id),
-      d.db.select().from(schema.actionIntents).where(and(eq(schema.actionIntents.ownerId, uid(c)), eq(schema.actionIntents.taskId, task.id))).orderBy(asc(schema.actionIntents.createdAt)),
+      d.db
+        .select()
+        .from(schema.actionIntents)
+        .where(and(eq(schema.actionIntents.ownerId, uid(c)), eq(schema.actionIntents.taskId, task.id)))
+        .orderBy(asc(schema.actionIntents.createdAt)),
     ]);
     const conns = await listConnections(d.db, uid(c));
-    return c.json({ task, events, artifacts, intents: intents.map((i) => intentPreview(i, conns.find((x) => x.id === i.connectedAccountId))) });
+    return c.json({
+      task,
+      events,
+      artifacts,
+      intents: intents.map((i) =>
+        intentPreview(
+          i,
+          conns.find((x) => x.id === i.connectedAccountId),
+        ),
+      ),
+    });
   });
 
   app.get('/api/tasks/:id/stream', async (c) => {
@@ -226,7 +266,11 @@ export function createApp(d: ApiDeps) {
         const events = await listEvents(d.db, ownerId, task.id, after);
         for (const e of events) {
           after = e.id;
-          await stream.writeSSE({ id: String(e.id), event: 'task', data: JSON.stringify({ id: e.id, type: e.type, data: e.data, createdAt: e.createdAt }) });
+          await stream.writeSSE({
+            id: String(e.id),
+            event: 'task',
+            data: JSON.stringify({ id: e.id, type: e.type, data: e.data, createdAt: e.createdAt }),
+          });
         }
         const cur = await getTaskForOwner(d.db, ownerId, task.id);
         await stream.writeSSE({ event: 'status', data: JSON.stringify({ status: cur.status }) });
@@ -246,13 +290,21 @@ export function createApp(d: ApiDeps) {
   app.delete('/api/tasks/:id', async (c) => {
     const task = await getTaskForOwner(d.db, uid(c), c.req.param('id'));
     if (!TERMINAL.includes(task.status)) throw new ConflictError('cancel the task before deleting it');
-    const arts = await d.db.select().from(schema.artifacts).where(and(eq(schema.artifacts.ownerId, uid(c)), eq(schema.artifacts.taskId, task.id)));
+    const arts = await d.db
+      .select()
+      .from(schema.artifacts)
+      .where(and(eq(schema.artifacts.ownerId, uid(c)), eq(schema.artifacts.taskId, task.id)));
     for (const a of arts) {
       if (!a.deletedAt) await d.store().delete(a.objectKey);
     }
-    await d.db.delete(schema.artifacts).where(and(eq(schema.artifacts.ownerId, uid(c)), eq(schema.artifacts.taskId, task.id)));
+    await d.db
+      .delete(schema.artifacts)
+      .where(and(eq(schema.artifacts.ownerId, uid(c)), eq(schema.artifacts.taskId, task.id)));
     await d.db.delete(schema.tasks).where(and(eq(schema.tasks.id, task.id), eq(schema.tasks.ownerId, uid(c))));
-    return c.json({ ok: true, residual: ['Temporal workflow history for this task is kept until the namespace retention period ends.'] });
+    return c.json({
+      ok: true,
+      residual: ['Temporal workflow history for this task is kept until the namespace retention period ends.'],
+    });
   });
 
   /* ---------- approvals ---------- */
@@ -263,7 +315,16 @@ export function createApp(d: ApiDeps) {
       .where(and(eq(schema.actionIntents.ownerId, uid(c)), eq(schema.actionIntents.status, 'pending_approval')))
       .orderBy(desc(schema.actionIntents.createdAt));
     const conns = await listConnections(d.db, uid(c));
-    return c.json({ approvals: rows.filter((r) => r.expiresAt.getTime() > Date.now()).map((r) => intentPreview(r, conns.find((x) => x.id === r.connectedAccountId))) });
+    return c.json({
+      approvals: rows
+        .filter((r) => r.expiresAt.getTime() > Date.now())
+        .map((r) =>
+          intentPreview(
+            r,
+            conns.find((x) => x.id === r.connectedAccountId),
+          ),
+        ),
+    });
   });
 
   app.post('/api/approvals/:id', async (c) => {
@@ -286,7 +347,12 @@ export function createApp(d: ApiDeps) {
     const { schedule, state } = await transitionSchedule(d.db, uid(c), c.req.param('id')!, t);
     if (schedule.chatId) {
       const verb = { pause: 'paused', resume: 'resumed', delete: 'deleted' }[t];
-      await appendChatMessage(d.db, { ownerId: uid(c), chatId: schedule.chatId, role: 'system', content: [{ type: 'text', text: `Routine “${schedule.name}” ${verb} from Settings.` }] }).catch(() => undefined);
+      await appendChatMessage(d.db, {
+        ownerId: uid(c),
+        chatId: schedule.chatId,
+        role: 'system',
+        content: [{ type: 'text', text: `Routine “${schedule.name}” ${verb} from Settings.` }],
+      }).catch(() => undefined);
     }
     return c.json({ ok: true, state });
   };
@@ -304,7 +370,9 @@ export function createApp(d: ApiDeps) {
     createdAt: x.createdAt.toISOString(),
   });
 
-  app.get('/api/connections', async (c) => c.json({ connections: (await listConnections(d.db, uid(c))).map(publicConn) }));
+  app.get('/api/connections', async (c) =>
+    c.json({ connections: (await listConnections(d.db, uid(c))).map(publicConn) }),
+  );
 
   app.post('/api/connections', async (c) => {
     if (!connectLimiter.take(uid(c))) return c.json({ error: 'rate_limited' }, 429);
@@ -325,10 +393,16 @@ export function createApp(d: ApiDeps) {
   const verifyConnection = async (ownerId: string, id: string) => {
     const conn = await getConnectionForOwner(d.db, ownerId, id);
     if (!conn.composioConnectedAccountId) return conn;
-    const v = await d.connections().verify(conn.composioUserId, conn.toolkit as Toolkit, conn.composioConnectedAccountId);
+    const v = await d
+      .connections()
+      .verify(conn.composioUserId, conn.toolkit as Toolkit, conn.composioConnectedAccountId);
     const toolkitMismatch = v.toolkit !== null && v.toolkit !== conn.toolkit;
     const status = toolkitMismatch ? 'failed' : v.state;
-    await updateConnection(d.db, ownerId, conn.id, { status, lastVerifiedAt: new Date(), authConfigId: v.authConfigId ?? conn.authConfigId });
+    await updateConnection(d.db, ownerId, conn.id, {
+      status,
+      lastVerifiedAt: new Date(),
+      authConfigId: v.authConfigId ?? conn.authConfigId,
+    });
     return { ...conn, status };
   };
 
@@ -339,7 +413,10 @@ export function createApp(d: ApiDeps) {
     try {
       const conn = await verifyConnection(uid(c), cid);
       // Back to the app's page in the Connect Apps modal.
-      return c.redirect(`${d.env.WEB_ORIGIN}/?app=${encodeURIComponent(conn.toolkit)}&result=${encodeURIComponent(conn.status)}`, 302);
+      return c.redirect(
+        `${d.env.WEB_ORIGIN}/?app=${encodeURIComponent(conn.toolkit)}&result=${encodeURIComponent(conn.status)}`,
+        302,
+      );
     } catch (err) {
       if (err instanceof NotFoundError) return c.redirect(`${d.env.WEB_ORIGIN}/?result=not_found`, 302);
       throw err;
@@ -353,7 +430,8 @@ export function createApp(d: ApiDeps) {
 
   app.delete('/api/connections/:id', async (c) => {
     const conn = await getConnectionForOwner(d.db, uid(c), c.req.param('id'));
-    if (conn.composioConnectedAccountId && conn.status !== 'disconnected') await d.connections().disconnect(conn.composioConnectedAccountId);
+    if (conn.composioConnectedAccountId && conn.status !== 'disconnected')
+      await d.connections().disconnect(conn.composioConnectedAccountId);
     await updateConnection(d.db, uid(c), conn.id, { status: 'disconnected' });
     return c.json({ ok: true });
   });
@@ -374,7 +452,9 @@ export function createApp(d: ApiDeps) {
   });
 
   /* ---------- artifacts ---------- */
-  app.get('/api/artifacts', async (c) => c.json({ artifacts: await listArtifacts(d.db, uid(c), c.req.query('taskId') || undefined) }));
+  app.get('/api/artifacts', async (c) =>
+    c.json({ artifacts: await listArtifacts(d.db, uid(c), c.req.query('taskId') || undefined) }),
+  );
 
   app.get('/api/artifacts/:id/download', async (c) => {
     const a = await getArtifactForOwner(d.db, uid(c), c.req.param('id'));
@@ -412,16 +492,27 @@ export function createApp(d: ApiDeps) {
     const summary = await usageSummary(d.db, uid(c));
     return c.json({
       ...summary,
-      limits: { perRunUsd: limits.perRunNanos !== null ? nanosToUsd(limits.perRunNanos) : null, monthlyUsd: limits.monthlyNanos !== null ? nanosToUsd(limits.monthlyNanos) : null },
+      limits: {
+        perRunUsd: limits.perRunNanos !== null ? nanosToUsd(limits.perRunNanos) : null,
+        monthlyUsd: limits.monthlyNanos !== null ? nanosToUsd(limits.monthlyNanos) : null,
+      },
       note: 'Costs are measured (Gateway-reported), estimated (from a configured rate) or unknown. These are not a vendor invoice.',
     });
   });
 
   app.put('/api/settings/budget', async (c) => {
     const req = await body(c, BudgetSettingsRequest);
-    await upsertSettings(d.db, uid(c), { maxCostPerRunNanos: usdToNanos(req.maxCostPerRunUsd), monthlyLimitNanos: usdToNanos(req.monthlyLimitUsd) });
+    await upsertSettings(d.db, uid(c), {
+      maxCostPerRunNanos: usdToNanos(req.maxCostPerRunUsd),
+      monthlyLimitNanos: usdToNanos(req.monthlyLimitUsd),
+    });
     const limits = await getBudgetLimits(d.db, uid(c), defaults());
-    return c.json({ effective: { perRunUsd: limits.perRunNanos !== null ? nanosToUsd(limits.perRunNanos) : null, monthlyUsd: limits.monthlyNanos !== null ? nanosToUsd(limits.monthlyNanos) : null } });
+    return c.json({
+      effective: {
+        perRunUsd: limits.perRunNanos !== null ? nanosToUsd(limits.perRunNanos) : null,
+        monthlyUsd: limits.monthlyNanos !== null ? nanosToUsd(limits.monthlyNanos) : null,
+      },
+    });
   });
 
   app.get('/api/settings', async (c) => {
@@ -429,7 +520,11 @@ export function createApp(d: ApiDeps) {
     return c.json({
       maxCostPerRunUsd: s?.maxCostPerRunNanos != null ? nanosToUsd(s.maxCostPerRunNanos) : null,
       monthlyLimitUsd: s?.monthlyLimitNanos != null ? nanosToUsd(s.monthlyLimitNanos) : null,
-      retention: { taskDays: d.env.TASK_RETENTION_DAYS, operationalLogDays: d.env.OPERATIONAL_LOG_RETENTION_DAYS, approvalExpiryHours: d.env.APPROVAL_EXPIRY_HOURS },
+      retention: {
+        taskDays: d.env.TASK_RETENTION_DAYS,
+        operationalLogDays: d.env.OPERATIONAL_LOG_RETENTION_DAYS,
+        approvalExpiryHours: d.env.APPROVAL_EXPIRY_HOURS,
+      },
     });
   });
 
@@ -445,11 +540,24 @@ export function createApp(d: ApiDeps) {
     const tasks = await d.db.select().from(schema.tasks).where(eq(schema.tasks.ownerId, ownerId));
     const ids = tasks.map((t) => t.id);
     const [messages, events, memories, connections, artifacts, schedules] = await Promise.all([
-      ids.length ? d.db.select().from(schema.taskMessages).where(and(eq(schema.taskMessages.ownerId, ownerId), inArray(schema.taskMessages.taskId, ids))) : [],
-      ids.length ? d.db.select().from(schema.taskEvents).where(and(eq(schema.taskEvents.ownerId, ownerId), inArray(schema.taskEvents.taskId, ids))) : [],
+      ids.length
+        ? d.db
+            .select()
+            .from(schema.taskMessages)
+            .where(and(eq(schema.taskMessages.ownerId, ownerId), inArray(schema.taskMessages.taskId, ids)))
+        : [],
+      ids.length
+        ? d.db
+            .select()
+            .from(schema.taskEvents)
+            .where(and(eq(schema.taskEvents.ownerId, ownerId), inArray(schema.taskEvents.taskId, ids)))
+        : [],
       listMemories(d.db, ownerId),
       listConnections(d.db, ownerId),
-      d.db.select().from(schema.artifacts).where(and(eq(schema.artifacts.ownerId, ownerId), isNull(schema.artifacts.deletedAt))),
+      d.db
+        .select()
+        .from(schema.artifacts)
+        .where(and(eq(schema.artifacts.ownerId, ownerId), isNull(schema.artifacts.deletedAt))),
       listSchedules(d.db, ownerId),
     ]);
     c.header('Content-Disposition', 'attachment; filename="superagent-export.json"');
@@ -463,7 +571,15 @@ export function createApp(d: ApiDeps) {
         memories,
         schedules,
         connections: connections.map(publicConn),
-        artifacts: artifacts.map((a) => ({ id: a.id, taskId: a.taskId, name: a.name, contentType: a.contentType, sizeBytes: a.sizeBytes, sha256: a.sha256, createdAt: a.createdAt })),
+        artifacts: artifacts.map((a) => ({
+          id: a.id,
+          taskId: a.taskId,
+          name: a.name,
+          contentType: a.contentType,
+          sizeBytes: a.sizeBytes,
+          sha256: a.sha256,
+          createdAt: a.createdAt,
+        })),
       }) as Record<string, unknown>,
     );
   });
@@ -473,7 +589,9 @@ export function createApp(d: ApiDeps) {
     const running = await d.db
       .select({ n: sql<number>`count(*)::int` })
       .from(schema.tasks)
-      .where(and(eq(schema.tasks.ownerId, ownerId), inArray(schema.tasks.status, ['queued', 'running', 'waiting_approval'])));
+      .where(
+        and(eq(schema.tasks.ownerId, ownerId), inArray(schema.tasks.status, ['queued', 'running', 'waiting_approval'])),
+      );
     if ((running[0]?.n ?? 0) > 0) throw new ConflictError('cancel running tasks before deleting your data');
     const residual: string[] = [
       'Temporal workflow histories remain until the namespace retention period ends (local dev server: until .local/temporal.db is reset).',
@@ -485,12 +603,18 @@ export function createApp(d: ApiDeps) {
         try {
           await d.connections().disconnect(conn.composioConnectedAccountId);
         } catch {
-          residual.push(`Could not revoke ${conn.toolkit} connection at Composio; revoke it in your provider account settings.`);
+          residual.push(
+            `Could not revoke ${conn.toolkit} connection at Composio; revoke it in your provider account settings.`,
+          );
         }
       }
     }
     for (const a of await d.db.select().from(schema.artifacts).where(eq(schema.artifacts.ownerId, ownerId))) {
-      if (!a.deletedAt) await d.store().delete(a.objectKey).catch(() => residual.push(`artifact ${a.id} object could not be deleted`));
+      if (!a.deletedAt)
+        await d
+          .store()
+          .delete(a.objectKey)
+          .catch(() => residual.push(`artifact ${a.id} object could not be deleted`));
     }
     for (const s of await listSchedules(d.db, ownerId)) {
       await d.db.update(schema.schedules).set({ state: 'deleted' }).where(eq(schema.schedules.id, s.id));
@@ -502,7 +626,9 @@ export function createApp(d: ApiDeps) {
       await tx.delete(schema.memories).where(eq(schema.memories.ownerId, ownerId));
       await tx.delete(schema.connectedAccounts).where(eq(schema.connectedAccounts.ownerId, ownerId));
       await tx.delete(schema.workspaces).where(eq(schema.workspaces.ownerId, ownerId));
-      await tx.insert(schema.deletionRequests).values({ ownerId, scope: 'all', status: 'completed', residual, completedAt: new Date() });
+      await tx
+        .insert(schema.deletionRequests)
+        .values({ ownerId, scope: 'all', status: 'completed', residual, completedAt: new Date() });
     });
     return c.json({ ok: true, residual });
   });

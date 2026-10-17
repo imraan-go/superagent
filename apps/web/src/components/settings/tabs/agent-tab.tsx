@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { X } from "@phosphor-icons/react/dist/ssr";
-import { Button, SettingRow, SettingSection, SkeletonText } from "@/components/ui";
-import { settingsFetch, useSettingsSection } from "@/hooks/use-settings";
-import { cn } from "@/lib/cn";
-import { InlineError } from "../controls";
-import styles from "../settings-tabs.module.css";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { X } from '@phosphor-icons/react/dist/ssr';
+import { Button, SettingRow, SettingSection, SkeletonText } from '@/components/ui';
+import { settingsFetch, useSettingsSection } from '@/hooks/use-settings';
+import { cn } from '@/lib/cn';
+import { InlineError } from '../controls';
+import styles from '../settings-tabs.module.css';
 
 export interface ToolInfo {
   name: string;
   description: string;
   classification: string;
-  executor: "local" | "workspace" | "browser" | "connector";
+  executor: 'local' | 'workspace' | 'browser' | 'connector';
   toolkit: string | null;
   needsApproval: boolean;
   confirms: boolean;
@@ -26,25 +26,29 @@ export interface ToolsView {
   capabilities: Record<string, { configured: boolean; missing: string[] }>;
 }
 
-export const TOOLS_KEY = ["tools"] as const;
+export const TOOLS_KEY = ['tools'] as const;
 
-const GROUPS: Array<{ executor: ToolInfo["executor"]; label: string; hint: string }> = [
-  { executor: "local", label: "Built in", hint: "Questions, memory and routines" },
-  { executor: "workspace", label: "Cloud workspace", hint: "Python and files in your private E2B sandbox" },
-  { executor: "browser", label: "Cloud browser", hint: "Google Chrome in E2B, limited to approved sites" },
-  { executor: "connector", label: "Connected apps", hint: "Your Composio connections" },
+const GROUPS: Array<{ executor: ToolInfo['executor']; label: string; hint: string }> = [
+  { executor: 'local', label: 'Built in', hint: 'Questions, memory and routines' },
+  { executor: 'workspace', label: 'Cloud workspace', hint: 'Python and files in your private E2B sandbox' },
+  { executor: 'browser', label: 'Cloud browser', hint: 'Google Chrome in E2B, limited to approved sites' },
+  { executor: 'connector', label: 'Connected apps', hint: 'Your Composio connections' },
 ];
 
 const HOST = /^(\*\.)?[a-z0-9-]+(\.[a-z0-9-]+)+$/;
 
 /** Settings → Agent: standing instructions, browsing sites, and what the agent can do. */
 export function AgentTab() {
-  const agent = useSettingsSection("agent");
-  const tools = useQuery({ queryKey: TOOLS_KEY, queryFn: () => settingsFetch<ToolsView>("/api/tools") });
+  const agent = useSettingsSection('agent');
+  const tools = useQuery({ queryKey: TOOLS_KEY, queryFn: () => settingsFetch<ToolsView>('/api/tools') });
   const [prompt, setPrompt] = useState<string | null>(null);
-  const [domain, setDomain] = useState("");
+  const [domain, setDomain] = useState('');
   const domains = agent.value.browsingDomains;
-  const candidate = domain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  const candidate = domain
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/\/.*$/, '');
   const validDomain = HOST.test(candidate) && !domains.includes(candidate);
 
   return (
@@ -100,7 +104,7 @@ export function AgentTab() {
               e.preventDefault();
               if (!validDomain) return;
               void agent.save({ browsingDomains: [...domains, candidate] });
-              setDomain("");
+              setDomain('');
             }}
           >
             <input
@@ -123,7 +127,11 @@ export function AgentTab() {
           Set by the application, not by settings. Anything that changes something outside the app (sending email,
           editing a calendar) stops for your exact approval; creating or changing a routine asks you first.
         </p>
-        {tools.isPending && <div className={styles.pad}><SkeletonText lines={4} /></div>}
+        {tools.isPending && (
+          <div className={styles.pad}>
+            <SkeletonText lines={4} />
+          </div>
+        )}
         <InlineError error={tools.error} />
         {tools.data &&
           GROUPS.map((g) => {
@@ -144,7 +152,7 @@ export function AgentTab() {
                       {t.confirms && <span className={styles.badge}>asks first</span>}
                       {!t.available && (
                         <span className={cn(styles.badge, styles.badgeLock)}>
-                          {t.executor === "connector" ? "connect the app" : `needs ${t.missing.join(", ") || "setup"}`}
+                          {t.executor === 'connector' ? 'connect the app' : `needs ${t.missing.join(', ') || 'setup'}`}
                         </span>
                       )}
                     </li>

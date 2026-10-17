@@ -30,12 +30,26 @@ import {
   type ScheduledTaskInput,
 } from '@superagent/contracts/workflow';
 
-const NON_RETRYABLE = ['BudgetExceededError', 'SetupRequiredError', 'PartialOutputError', 'ModelConfigError', 'NotFoundError', 'ApprovalError', 'PolicyError'];
+const NON_RETRYABLE = [
+  'BudgetExceededError',
+  'SetupRequiredError',
+  'PartialOutputError',
+  'ModelConfigError',
+  'NotFoundError',
+  'ApprovalError',
+  'PolicyError',
+];
 
 /** Quick DB/projection Activities: idempotent, safe to retry. */
 const db = proxyActivities<AgentActivities>({
   startToCloseTimeout: '30 seconds',
-  retry: { initialInterval: '1 second', backoffCoefficient: 2, maximumInterval: '30 seconds', maximumAttempts: 8, nonRetryableErrorTypes: NON_RETRYABLE },
+  retry: {
+    initialInterval: '1 second',
+    backoffCoefficient: 2,
+    maximumInterval: '30 seconds',
+    maximumAttempts: 8,
+    nonRetryableErrorTypes: NON_RETRYABLE,
+  },
 });
 
 /** Model decisions cost money: one retry at most (the Activity itself dedupes per step). */
@@ -101,11 +115,21 @@ export async function agentTaskWorkflow(input: AgentTaskInput): Promise<string> 
     for (;;) {
       tick();
       if (step >= limits.maxDecisions) {
-        await db.finalizeTask({ taskId, ownerId, status: 'failed', reason: `stopped: reached the ${limits.maxDecisions}-decision limit for one run` });
+        await db.finalizeTask({
+          taskId,
+          ownerId,
+          status: 'failed',
+          reason: `stopped: reached the ${limits.maxDecisions}-decision limit for one run`,
+        });
         return 'failed';
       }
       if (activeMs >= limits.maxActiveMs) {
-        await db.finalizeTask({ taskId, ownerId, status: 'failed', reason: 'stopped: reached the active execution time limit for one run' });
+        await db.finalizeTask({
+          taskId,
+          ownerId,
+          status: 'failed',
+          reason: 'stopped: reached the active execution time limit for one run',
+        });
         return 'failed';
       }
 
@@ -123,7 +147,11 @@ export async function agentTaskWorkflow(input: AgentTaskInput): Promise<string> 
         const ref = { taskId, ownerId, toolCallId: p.toolCallId };
         toolCalls += 1;
         if (toolCalls > limits.maxToolCalls) {
-          await db.recordToolOutcome({ ...ref, status: 'denied', summary: `tool-call limit (${limits.maxToolCalls}) reached for this run` });
+          await db.recordToolOutcome({
+            ...ref,
+            status: 'denied',
+            summary: `tool-call limit (${limits.maxToolCalls}) reached for this run`,
+          });
           continue;
         }
         const verdict = await db.evaluateProposal({ ...ref, readOnly: ctx.readOnly });
@@ -204,7 +232,11 @@ export async function agentTaskWorkflow(input: AgentTaskInput): Promise<string> 
       if (workflowInfo().continueAsNewSuggested) {
         tick();
         continuing = true;
-        await continueAsNew<typeof agentTaskWorkflow>({ taskId, ownerId, carry: { step, toolCalls, activeMs, pendingIntentIds: [] } });
+        await continueAsNew<typeof agentTaskWorkflow>({
+          taskId,
+          ownerId,
+          carry: { step, toolCalls, activeMs, pendingIntentIds: [] },
+        });
       }
     }
   } catch (err) {
@@ -213,7 +245,9 @@ export async function agentTaskWorkflow(input: AgentTaskInput): Promise<string> 
       await CancellationScope.nonCancellable(() => db.finalizeTask({ taskId, ownerId, status: 'cancelled' }));
       throw err;
     }
-    await CancellationScope.nonCancellable(() => db.finalizeTask({ taskId, ownerId, status: 'failed', reason: reasonOf(err) }));
+    await CancellationScope.nonCancellable(() =>
+      db.finalizeTask({ taskId, ownerId, status: 'failed', reason: reasonOf(err) }),
+    );
     return 'failed';
   } finally {
     if (!continuing) await CancellationScope.nonCancellable(() => db.releaseTaskResources({ taskId, ownerId }));

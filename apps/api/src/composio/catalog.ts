@@ -1,4 +1,4 @@
-import type { ComposioToolkit } from "./client";
+import type { ComposioToolkit } from './client';
 
 /**
  * Pure catalog helpers (no I/O): normalise Composio toolkits into the browser
@@ -22,31 +22,31 @@ export interface CatalogToolkit {
 
 /** Owner's priority apps, in display order. Slugs are Composio toolkit slugs (the first match in a group wins per slug). */
 export const PRIORITY_TOOLKITS: ReadonlyArray<readonly string[]> = [
-  ["gmail"],
-  ["googledrive"],
-  ["googlecalendar"],
-  ["googledocs"],
-  ["googlesheets"],
-  ["notion"],
-  ["linkedin"],
-  ["whatsapp"],
-  ["slack"],
-  ["github"],
-  ["facebook"],
-  ["instagram"],
-  ["metaads", "meta_ads"],
-  ["twitter"],
-  ["outlook"],
-  ["hubspot"],
+  ['gmail'],
+  ['googledrive'],
+  ['googlecalendar'],
+  ['googledocs'],
+  ['googlesheets'],
+  ['notion'],
+  ['linkedin'],
+  ['whatsapp'],
+  ['slack'],
+  ['github'],
+  ['facebook'],
+  ['instagram'],
+  ['metaads', 'meta_ads'],
+  ['twitter'],
+  ['outlook'],
+  ['hubspot'],
 ];
 
 const PRIORITY_INDEX = new Map<string, number>(PRIORITY_TOOLKITS.flatMap((g, i) => g.map((s) => [s, i] as const)));
 
-export const OTHER_CATEGORY = "Other";
+export const OTHER_CATEGORY = 'Other';
 
 /** Tool names carry `_` where Composio slugs may carry `-` or nothing; compare on letters+digits only. */
 export function normSlug(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return s.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 /** Exact slug first, then the model-facing normalised form (`google_drive` -> `googledrive`). */
@@ -59,7 +59,7 @@ export function normalizeToolkit(t: ComposioToolkit): CatalogToolkit {
   return {
     slug: t.slug,
     name: t.name ?? t.slug,
-    description: t.meta?.description ?? "",
+    description: t.meta?.description ?? '',
     logo: t.meta?.logo ?? null,
     // Every toolkit lands in at least one category so no app is unreachable by browsing.
     categories: named.length > 0 ? named : [OTHER_CATEGORY],
@@ -77,7 +77,9 @@ export function normalizeToolkit(t: ComposioToolkit): CatalogToolkit {
 export function orderCatalog(list: CatalogToolkit[]): CatalogToolkit[] {
   const pinned = list
     .filter((t) => t.pinned)
-    .sort((a, b) => (PRIORITY_INDEX.get(a.slug.toLowerCase()) ?? 99) - (PRIORITY_INDEX.get(b.slug.toLowerCase()) ?? 99));
+    .sort(
+      (a, b) => (PRIORITY_INDEX.get(a.slug.toLowerCase()) ?? 99) - (PRIORITY_INDEX.get(b.slug.toLowerCase()) ?? 99),
+    );
   return [...pinned, ...list.filter((t) => !t.pinned)];
 }
 
@@ -97,8 +99,9 @@ export function searchRank(t: CatalogToolkit, needle: string): number | null {
   const desc = t.description.toLowerCase();
   const compact = normSlug(needle);
   const tokens = needle.split(/\s+/).filter(Boolean);
-  const hay = `${slug} ${name} ${desc} ${t.categories.join(" ").toLowerCase()}`;
-  if (!tokens.every((tok) => hay.includes(tok)) && !(compact && normSlug(`${slug}${name}`).includes(compact))) return null;
+  const hay = `${slug} ${name} ${desc} ${t.categories.join(' ').toLowerCase()}`;
+  if (!tokens.every((tok) => hay.includes(tok)) && !(compact && normSlug(`${slug}${name}`).includes(compact)))
+    return null;
   if (name === needle || slug === compact) return 0;
   if (name.startsWith(needle) || slug.startsWith(compact)) return 1;
   if (name.includes(needle) || normSlug(name).includes(compact)) return 2;
@@ -108,7 +111,7 @@ export function searchRank(t: CatalogToolkit, needle: string): number | null {
 }
 
 export function queryCatalog(all: CatalogToolkit[], q: CatalogQuery): { items: CatalogToolkit[]; total: number } {
-  const needle = (q.search ?? "").trim().toLowerCase();
+  const needle = (q.search ?? '').trim().toLowerCase();
   const cat = q.category?.toLowerCase();
   const only = q.slugs ? new Set(q.slugs.map(normSlug)) : null;
   let rows: Array<{ t: CatalogToolkit; rank: number }> = [];
@@ -143,7 +146,13 @@ export function facetsOf(all: CatalogToolkit[]): Facet[] {
   for (const t of all) for (const c of t.categories) counts.set(c, (counts.get(c) ?? 0) + 1);
   return [...counts.entries()]
     .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => (a.name === OTHER_CATEGORY ? 1 : b.name === OTHER_CATEGORY ? -1 : b.count - a.count || a.name.localeCompare(b.name)));
+    .sort((a, b) =>
+      a.name === OTHER_CATEGORY
+        ? 1
+        : b.name === OTHER_CATEGORY
+          ? -1
+          : b.count - a.count || a.name.localeCompare(b.name),
+    );
 }
 
 export interface CatalogSections {
@@ -199,11 +208,18 @@ export interface ToolkitDetail {
 export function buildDetail(
   toolkit: CatalogToolkit,
   rows: Array<{ slug: string; action: string; name: string; description: string; readOnly: boolean }>,
-  triggers: Array<{ slug: string; name?: string | undefined; description?: string | undefined; type?: string | undefined }>,
+  triggers: Array<{
+    slug: string;
+    name?: string | undefined;
+    description?: string | undefined;
+    type?: string | undefined;
+  }>,
   enabled: ReadonlySet<string>,
   customized: boolean,
 ): ToolkitDetail {
-  const tools = rows.map((r) => ({ ...r, needsApproval: !r.readOnly, enabled: enabled.has(r.slug) })).sort((a, b) => Number(b.readOnly) - Number(a.readOnly));
+  const tools = rows
+    .map((r) => ({ ...r, needsApproval: !r.readOnly, enabled: enabled.has(r.slug) }))
+    .sort((a, b) => Number(b.readOnly) - Number(a.readOnly));
   return {
     toolkit,
     tools,
@@ -212,8 +228,8 @@ export function buildDetail(
     triggers: triggers.map((t) => ({
       slug: t.slug,
       name: t.name ?? t.slug,
-      description: (t.description ?? "").slice(0, 280),
-      kind: t.type ?? "webhook",
+      description: (t.description ?? '').slice(0, 280),
+      kind: t.type ?? 'webhook',
     })),
     composioUrl: `https://composio.dev/toolkits/${encodeURIComponent(toolkit.slug.toLowerCase())}`,
   };

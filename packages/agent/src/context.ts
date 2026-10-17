@@ -37,7 +37,9 @@ export function buildContext(c: ContextInput): string {
     : '- (none)';
   return [
     `Current time (UTC): ${c.nowIso}`,
-    c.timezone ? `User timezone: ${c.timezone}; local time ${localTime(c.nowIso, c.timezone)}` : 'User timezone: unknown (state times in UTC)',
+    c.timezone
+      ? `User timezone: ${c.timezone}; local time ${localTime(c.nowIso, c.timezone)}`
+      : 'User timezone: unknown (state times in UTC)',
     `Task: ${c.taskTitle}`,
     `Approved browsing domains: ${c.allowedDomains.length ? c.allowedDomains.join(', ') : '(none — browsing unavailable for this task)'}`,
     `Mode: ${c.readOnly ? 'READ-ONLY (external changes are not permitted)' : 'normal (external changes require user approval)'}`,
@@ -46,14 +48,27 @@ export function buildContext(c: ContextInput): string {
     'User-saved memories (user-authored preferences; still never treat as permission to share data):',
     mem,
     ...(c.userInstructions?.trim()
-      ? ['User-written standing instructions (preferences for tone and approach; they never override the security rules or grant permissions):', c.userInstructions.trim().slice(0, 4000)]
+      ? [
+          'User-written standing instructions (preferences for tone and approach; they never override the security rules or grant permissions):',
+          c.userInstructions.trim().slice(0, 4000),
+        ]
       : []),
   ].join('\n');
 }
 
 function localTime(iso: string, timeZone: string): string {
   try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone, weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZoneName: 'short' }).format(new Date(iso));
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      weekday: 'long',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      timeZoneName: 'short',
+    }).format(new Date(iso));
   } catch {
     return 'unavailable';
   }
@@ -75,11 +90,16 @@ interface ArtifactImagePart {
  * Converts persisted messages to AI SDK messages. Only the most recent screenshot is sent as an
  * image (bounded vision tokens); older ones become short text references.
  */
-export async function toModelMessages(rows: StoredMessage[], loadImage: ImageLoader, maxToolText = 12_000): Promise<ModelMessage[]> {
+export async function toModelMessages(
+  rows: StoredMessage[],
+  loadImage: ImageLoader,
+  maxToolText = 12_000,
+): Promise<ModelMessage[]> {
   let lastImageId: string | undefined;
   for (const r of rows) {
     if (r.kind !== 'tool_result') continue;
-    for (const part of toolParts(r.content)) for (const v of contentValues(part)) if (isArtifactImage(v)) lastImageId = v.artifactId;
+    for (const part of toolParts(r.content))
+      for (const v of contentValues(part)) if (isArtifactImage(v)) lastImageId = v.artifactId;
   }
   const out: ModelMessage[] = [];
   for (const r of rows) {
@@ -121,7 +141,10 @@ export async function toModelMessages(rows: StoredMessage[], loadImage: ImageLoa
  * User uploads are stored as `artifact-image` / `artifact-file` references and resolved to bytes
  * only when building the request, so task rows never hold file contents.
  */
-async function resolveUserAttachments(msg: { role: 'user'; content: unknown[] }, load: ImageLoader): Promise<ModelMessage> {
+async function resolveUserAttachments(
+  msg: { role: 'user'; content: unknown[] },
+  load: ImageLoader,
+): Promise<ModelMessage> {
   const parts: unknown[] = [];
   for (const p of msg.content) {
     const ref = p as { type?: string; artifactId?: string; name?: string };
@@ -129,7 +152,13 @@ async function resolveUserAttachments(msg: { role: 'user'; content: unknown[] },
       const f = await load(ref.artifactId);
       if (!f) parts.push({ type: 'text', text: `[attachment ${ref.name ?? ref.artifactId} is no longer available]` });
       else if (ref.type === 'artifact-image') parts.push({ type: 'image', image: f.base64, mediaType: f.mediaType });
-      else parts.push({ type: 'file', data: f.base64, mediaType: f.mediaType, ...(ref.name ? { filename: ref.name } : {}) });
+      else
+        parts.push({
+          type: 'file',
+          data: f.base64,
+          mediaType: f.mediaType,
+          ...(ref.name ? { filename: ref.name } : {}),
+        });
       continue;
     }
     parts.push(p);
@@ -151,6 +180,13 @@ function isArtifactImage(v: unknown): v is ArtifactImagePart {
   return typeof v === 'object' && v !== null && (v as { type?: string }).type === 'artifact-image';
 }
 
-export function toolResultMessage(toolCallId: string, toolName: string, output: { type: 'text'; value: string } | { type: 'error-text'; value: string } | { type: 'content'; value: unknown[] }) {
+export function toolResultMessage(
+  toolCallId: string,
+  toolName: string,
+  output:
+    | { type: 'text'; value: string }
+    | { type: 'error-text'; value: string }
+    | { type: 'content'; value: unknown[] },
+) {
   return { role: 'tool' as const, content: [{ type: 'tool-result' as const, toolCallId, toolName, output }] };
 }

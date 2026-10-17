@@ -18,7 +18,9 @@ let failed = 0;
 for (const [role, id, req] of roles) {
   const c = checkModel(catalog, id, allow, req);
   const entry = id ? catalog.get(id) : undefined;
-  const price = entry?.pricing ? `in $${entry.pricing.input}/tok, out $${entry.pricing.output}/tok${entry.pricing.input_cache_read ? `, cache read $${entry.pricing.input_cache_read}/tok` : ''}` : 'no pricing';
+  const price = entry?.pricing
+    ? `in $${entry.pricing.input}/tok, out $${entry.pricing.output}/tok${entry.pricing.input_cache_read ? `, cache read $${entry.pricing.input_cache_read}/tok` : ''}`
+    : 'no pricing';
   if (c.ok) console.log(`OK    ${role.padEnd(8)} ${c.modelId}  (${price}; context ${entry?.context_window ?? '?'})`);
   else {
     failed++;

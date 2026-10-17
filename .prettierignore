@@ -1,0 +1,12 @@
+# Generated or vendored output
+pnpm-lock.yaml
+packages/db/migrations/
+**/.next/
+**/dist/
+coverage/
+.local/
+test-results/
+playwright-report/
+next-env.d.ts
+# Prose is formatted by hand
+*.md

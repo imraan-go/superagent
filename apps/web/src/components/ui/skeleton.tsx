@@ -1,22 +1,22 @@
-import { cn } from "@/lib/cn";
-import styles from "./skeleton.module.css";
+import { cn } from '@/lib/cn';
+import styles from './skeleton.module.css';
 
 export interface SkeletonProps {
   /** `text` sizes itself from the font; the rest take explicit dimensions. */
-  shape?: "text" | "rect" | "circle" | "panel";
+  shape?: 'text' | 'rect' | 'circle' | 'panel';
   width?: number | string;
   height?: number | string;
   className?: string;
 }
 
-export function Skeleton({ shape = "rect", width, height, className }: SkeletonProps) {
+export function Skeleton({ shape = 'rect', width, height, className }: SkeletonProps) {
   return (
     <span
       className={cn(
         styles.skeleton,
-        shape === "text" && styles.text,
-        shape === "circle" && styles.circle,
-        shape === "panel" && styles.panel,
+        shape === 'text' && styles.text,
+        shape === 'circle' && styles.circle,
+        shape === 'panel' && styles.panel,
         className,
       )}
       style={{ width, height }}

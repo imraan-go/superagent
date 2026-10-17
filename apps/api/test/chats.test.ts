@@ -36,7 +36,10 @@ async function signUp(name: string) {
     body: JSON.stringify({ email: `${name}@example.com`, password: 'correct horse battery staple', name }),
   });
   expect(res.status).toBe(200);
-  cookies[name] = res.headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
+  cookies[name] = res.headers
+    .getSetCookie()
+    .map((c) => c.split(';')[0])
+    .join('; ');
   return ((await res.json()) as { user: { id: string } }).user.id;
 }
 
@@ -44,8 +47,22 @@ let aliceId: string;
 
 beforeAll(async () => {
   ({ db, close } = await createTestDb());
-  const env = EnvSchema.parse({ APP_ENV: 'test', BETTER_AUTH_SECRET: 'x'.repeat(40), DATABASE_URL: 'postgres://unused', AI_GATEWAY_API_KEY: 'k', AI_MODEL_PRIMARY: MODEL, AI_MODEL_ALLOWLIST: `${MODEL},openai/gpt-5.5` });
-  app = createApp({ db, env, auth: createAuth(db, env), log: createLogger('test'), store: () => store, connections: () => noConnections });
+  const env = EnvSchema.parse({
+    APP_ENV: 'test',
+    BETTER_AUTH_SECRET: 'x'.repeat(40),
+    DATABASE_URL: 'postgres://unused',
+    AI_GATEWAY_API_KEY: 'k',
+    AI_MODEL_PRIMARY: MODEL,
+    AI_MODEL_ALLOWLIST: `${MODEL},openai/gpt-5.5`,
+  });
+  app = createApp({
+    db,
+    env,
+    auth: createAuth(db, env),
+    log: createLogger('test'),
+    store: () => store,
+    connections: () => noConnections,
+  });
   aliceId = await signUp('alice');
   await signUp('mallory');
 });
@@ -54,14 +71,23 @@ afterAll(async () => {
   await close();
 });
 
-type Chat = { id: string; title: string; status: string | null; activeRunId: string | null; pendingQuestion: { questionId: string } | null; messages: Array<{ role: string; content: Array<{ type: string; text?: string }>; runId: string | null }> };
+type Chat = {
+  id: string;
+  title: string;
+  status: string | null;
+  activeRunId: string | null;
+  pendingQuestion: { questionId: string } | null;
+  messages: Array<{ role: string; content: Array<{ type: string; text?: string }>; runId: string | null }>;
+};
 
 describe('chats', () => {
   let chatId: string;
   let runId: string;
 
   it('lists models from the installation allowlist', async () => {
-    const r = await json<{ models: Array<{ id: string; ready: boolean }>; defaultModel: string }>(await req('alice', 'GET', '/api/models'));
+    const r = await json<{ models: Array<{ id: string; ready: boolean }>; defaultModel: string }>(
+      await req('alice', 'GET', '/api/models'),
+    );
     expect(r.models.map((m) => m.id)).toEqual([MODEL, 'openai/gpt-5.5']);
     expect(r.defaultModel).toBe(MODEL);
   });
@@ -75,7 +101,10 @@ describe('chats', () => {
   });
 
   it('a message starts one run (task + outbox start), titles the chat and shows as running', async () => {
-    const r = await req('alice', 'POST', `/api/chats/${chatId}/messages`, { text: 'Find me a good sushi place nearby', model: 'openai/gpt-5.5' });
+    const r = await req('alice', 'POST', `/api/chats/${chatId}/messages`, {
+      text: 'Find me a good sushi place nearby',
+      model: 'openai/gpt-5.5',
+    });
     expect(r.status).toBe(201);
     const body = await json<{ runId: string; model: string }>(r);
     runId = body.runId;
@@ -92,7 +121,9 @@ describe('chats', () => {
 
   it('refuses a model that is not enabled and a second run while one is active', async () => {
     const other = (await json<{ chat: { id: string } }>(await req('alice', 'POST', '/api/chats', {}))).chat.id;
-    expect((await req('alice', 'POST', `/api/chats/${other}/messages`, { text: 'hi', model: 'evil/model' })).status).toBe(400);
+    expect(
+      (await req('alice', 'POST', `/api/chats/${other}/messages`, { text: 'hi', model: 'evil/model' })).status,
+    ).toBe(400);
     expect((await req('alice', 'POST', `/api/chats/${chatId}/messages`, { text: 'and another' })).status).toBe(409);
     expect((await req('mallory', 'POST', `/api/chats/${chatId}/messages`, { text: 'hijack' })).status).toBe(404);
   });
@@ -101,25 +132,70 @@ describe('chats', () => {
     await setTaskStatus(db, aliceId, runId, 'waiting_approval');
     const [tc] = await db
       .insert(schema.toolCalls)
-      .values({ id: `${runId}:q`, taskId: runId, ownerId: aliceId, step: 0, providerToolCallId: 'q', toolName: 'ask_user', input: {}, status: 'awaiting_answer' })
+      .values({
+        id: `${runId}:q`,
+        taskId: runId,
+        ownerId: aliceId,
+        step: 0,
+        providerToolCallId: 'q',
+        toolName: 'ask_user',
+        input: {},
+        status: 'awaiting_answer',
+      })
       .returning();
-    const q = await createQuestion(db, { ownerId: aliceId, taskId: runId, chatId, toolCallId: tc!.id, kind: 'single', prompt: 'Which area?', options: [{ id: 'a', label: 'Downtown' }, { id: 'b', label: 'Uptown' }], gate: false, expiresAt: new Date(Date.now() + 60_000) });
+    const q = await createQuestion(db, {
+      ownerId: aliceId,
+      taskId: runId,
+      chatId,
+      toolCallId: tc!.id,
+      kind: 'single',
+      prompt: 'Which area?',
+      options: [
+        { id: 'a', label: 'Downtown' },
+        { id: 'b', label: 'Uptown' },
+      ],
+      gate: false,
+      expiresAt: new Date(Date.now() + 60_000),
+    });
     const chat = (await json<{ chat: Chat }>(await req('alice', 'GET', `/api/chats/${chatId}`))).chat;
     expect(chat.status).toBe('paused_question');
     expect(chat.pendingQuestion?.questionId).toBe(q.id);
 
-    const r = await json<{ runId: string; answered: string }>(await req('alice', 'POST', `/api/chats/${chatId}/messages`, { text: 'Somewhere near the waterfront' }));
+    const r = await json<{ runId: string; answered: string }>(
+      await req('alice', 'POST', `/api/chats/${chatId}/messages`, { text: 'Somewhere near the waterfront' }),
+    );
     expect(r).toMatchObject({ runId, answered: q.id });
     const [row] = await db.select().from(schema.questions).where(eq(schema.questions.id, q.id));
     expect(row).toMatchObject({ status: 'answered', answer: { choices: [], text: 'Somewhere near the waterfront' } });
     expect(await db.select().from(schema.tasks).where(eq(schema.tasks.chatId, chatId))).toHaveLength(1);
-    expect((await req('alice', 'POST', `/api/chats/${chatId}/answer`, { questionId: q.id, choices: ['a'] })).status).toBe(409);
+    expect(
+      (await req('alice', 'POST', `/api/chats/${chatId}/answer`, { questionId: q.id, choices: ['a'] })).status,
+    ).toBe(409);
   });
 
   it('streams a run as UI frames and ends with the persisted answer', async () => {
-    await appendEvent(db, { ownerId: aliceId, taskId: runId, type: 'tool.started', dedupeKey: 't1', data: { tool: 'browser_navigate' } });
-    await appendEvent(db, { ownerId: aliceId, taskId: runId, type: 'tool.completed', dedupeKey: 't2', data: { tool: 'browser_navigate', summary: 'navigated' } });
-    await db.insert(schema.chatMessages).values({ chatId, ownerId: aliceId, role: 'assistant', taskId: runId, content: [{ type: 'text', text: 'Try Sushi Nori.' }], dedupeKey: `final:${runId}` });
+    await appendEvent(db, {
+      ownerId: aliceId,
+      taskId: runId,
+      type: 'tool.started',
+      dedupeKey: 't1',
+      data: { tool: 'browser_navigate' },
+    });
+    await appendEvent(db, {
+      ownerId: aliceId,
+      taskId: runId,
+      type: 'tool.completed',
+      dedupeKey: 't2',
+      data: { tool: 'browser_navigate', summary: 'navigated' },
+    });
+    await db.insert(schema.chatMessages).values({
+      chatId,
+      ownerId: aliceId,
+      role: 'assistant',
+      taskId: runId,
+      content: [{ type: 'text', text: 'Try Sushi Nori.' }],
+      dedupeKey: `final:${runId}`,
+    });
     await setTaskStatus(db, aliceId, runId, 'completed');
     await appendEvent(db, { ownerId: aliceId, taskId: runId, type: 'task.completed', dedupeKey: 'task.completed' });
     const text = await (await req('alice', 'GET', `/api/runs/${runId}/events`)).text();
@@ -139,7 +215,11 @@ describe('chats', () => {
       const form = new FormData();
       form.set('file', new File([bytes], name));
       form.set('chatId', chatId);
-      return app.request('/api/uploads', { method: 'POST', headers: { origin: ORIGIN, cookie: cookies[who]! }, body: form });
+      return app.request('/api/uploads', {
+        method: 'POST',
+        headers: { origin: ORIGIN, cookie: cookies[who]! },
+        body: form,
+      });
     };
     expect((await upload('alice', 'fake.png', new TextEncoder().encode('not a png'))).status).toBe(400);
     expect((await upload('alice', 'run.exe', png)).status).toBe(400);
@@ -152,7 +232,11 @@ describe('chats', () => {
     expect(got.headers.get('content-disposition')).toMatch(/^inline/);
     expect(got.headers.get('content-security-policy')).toContain('sandbox');
     expect((await req('mallory', 'GET', `/api/uploads/${file.id}`)).status).toBe(404);
-    const files = (await json<{ files: Array<{ id: string; origin: string }> }>(await req('alice', 'GET', `/api/chats/${chatId}/files`))).files;
+    const files = (
+      await json<{ files: Array<{ id: string; origin: string }> }>(
+        await req('alice', 'GET', `/api/chats/${chatId}/files`),
+      )
+    ).files;
     expect(files).toEqual([expect.objectContaining({ id: file.id, origin: 'upload' })]);
   });
 
@@ -167,16 +251,36 @@ describe('run event translation', () => {
   it('pairs tool steps, accumulates usage and maps approvals and failures', () => {
     const s = newTranslatorState();
     const ctx = { runId: 'r', chatId: 'c', model: 'm' };
-    const ev = (id: number, type: string, data: Record<string, unknown> = {}) => translate(s, { id, type, data, createdAt: new Date(1_000 * id) }, ctx);
+    const ev = (id: number, type: string, data: Record<string, unknown> = {}) =>
+      translate(s, { id, type, data, createdAt: new Date(1_000 * id) }, ctx);
     expect(ev(1, 'task.queued')).toEqual([{ type: 'run_started', runId: 'r', chatId: 'c', model: 'm' }]);
-    expect(ev(2, 'model.decision', { inputTokens: 10, outputTokens: 2, costUsd: '0.001' }).at(-1)).toEqual({ type: 'usage', tokensIn: 10, tokensOut: 2, cached: 0, costUsd: 0.001 });
-    expect(ev(3, 'model.decision', { inputTokens: 5, outputTokens: 1, costUsd: '0.002' }).at(-1)).toMatchObject({ tokensIn: 15, tokensOut: 3, costUsd: 0.003 });
+    expect(ev(2, 'model.decision', { inputTokens: 10, outputTokens: 2, costUsd: '0.001' }).at(-1)).toEqual({
+      type: 'usage',
+      tokensIn: 10,
+      tokensOut: 2,
+      cached: 0,
+      costUsd: 0.001,
+    });
+    expect(ev(3, 'model.decision', { inputTokens: 5, outputTokens: 1, costUsd: '0.002' }).at(-1)).toMatchObject({
+      tokensIn: 15,
+      tokensOut: 3,
+      costUsd: 0.003,
+    });
     const [start] = ev(4, 'tool.started', { tool: 'browser_read' });
-    expect(start).toMatchObject({ type: 'step', step: { idx: 0, toolName: 'browser_read', label: 'Reading the page', ok: null } });
-    expect(ev(6, 'tool.failed', { tool: 'browser_read', summary: 'blocked' })).toEqual([{ type: 'step_done', step: expect.objectContaining({ idx: 0, ok: false, ms: 2000, preview: 'blocked' }) }]);
+    expect(start).toMatchObject({
+      type: 'step',
+      step: { idx: 0, toolName: 'browser_read', label: 'Reading the page', ok: null },
+    });
+    expect(ev(6, 'tool.failed', { tool: 'browser_read', summary: 'blocked' })).toEqual([
+      { type: 'step_done', step: expect.objectContaining({ idx: 0, ok: false, ms: 2000, preview: 'blocked' }) },
+    ]);
     const appr = ev(7, 'approval.requested', { intentId: 'i1', tool: 'GMAIL_SEND_EMAIL', account: 'me@x' });
     expect(appr[1]).toMatchObject({ type: 'approval_required', approvalId: 'i1', tool: 'GMAIL_SEND_EMAIL' });
-    expect(ev(8, 'approval.decided', { intentId: 'i1', decision: 'approved' })).toEqual([{ type: 'approval_decided', approvalId: 'i1', tool: 'GMAIL_SEND_EMAIL', decision: 'approve' }]);
-    expect(ev(9, 'task.failed', { reason: 'stopped: reached the 12-decision limit for one run' })).toEqual([{ type: 'error', code: 'step_limit', message: 'stopped: reached the 12-decision limit for one run' }]);
+    expect(ev(8, 'approval.decided', { intentId: 'i1', decision: 'approved' })).toEqual([
+      { type: 'approval_decided', approvalId: 'i1', tool: 'GMAIL_SEND_EMAIL', decision: 'approve' },
+    ]);
+    expect(ev(9, 'task.failed', { reason: 'stopped: reached the 12-decision limit for one run' })).toEqual([
+      { type: 'error', code: 'step_limit', message: 'stopped: reached the 12-decision limit for one run' },
+    ]);
   });
 });

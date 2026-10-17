@@ -27,7 +27,8 @@ export async function ensureWorkspaceRoot(sbx: Sandbox) {
 export async function writeNewFile(sbx: Sandbox, path: string, content: string) {
   const p = resolve(path);
   await ensureWorkspaceRoot(sbx);
-  if (await sbx.files.exists(p.absolute)) throw new WorkspacePathError(`${p.relative} already exists; choose a new file name`);
+  if (await sbx.files.exists(p.absolute))
+    throw new WorkspacePathError(`${p.relative} already exists; choose a new file name`);
   const info = await sbx.files.write(p.absolute, content);
   return { path: p.relative, bytes: Buffer.byteLength(content), sandboxPath: info.path };
 }
@@ -46,7 +47,11 @@ export interface RunResult {
   timedOut: boolean;
 }
 
-export async function runPython(sbx: Sandbox, code: string, opts: { timeoutMs: number; onOutput?: () => void }): Promise<RunResult> {
+export async function runPython(
+  sbx: Sandbox,
+  code: string,
+  opts: { timeoutMs: number; onOutput?: () => void },
+): Promise<RunResult> {
   await ensureWorkspaceRoot(sbx);
   const script = `/tmp/superagent_${randomUUID()}.py`;
   await sbx.files.write(script, code);
@@ -58,13 +63,32 @@ export async function runPython(sbx: Sandbox, code: string, opts: { timeoutMs: n
       onStdout: () => opts.onOutput?.(),
       onStderr: () => opts.onOutput?.(),
     });
-    return { exitCode: r.exitCode, stdout: clip(r.stdout, 8000), stderr: clip(r.stderr, 4000), durationMs: Date.now() - started, timedOut: false };
+    return {
+      exitCode: r.exitCode,
+      stdout: clip(r.stdout, 8000),
+      stderr: clip(r.stderr, 4000),
+      durationMs: Date.now() - started,
+      timedOut: false,
+    };
   } catch (err) {
     if (err instanceof CommandExitError) {
-      return { exitCode: err.exitCode, stdout: clip(err.stdout, 8000), stderr: clip(err.stderr, 4000), durationMs: Date.now() - started, timedOut: false };
+      return {
+        exitCode: err.exitCode,
+        stdout: clip(err.stdout, 8000),
+        stderr: clip(err.stderr, 4000),
+        durationMs: Date.now() - started,
+        timedOut: false,
+      };
     }
     const timedOut = err instanceof Error && /timeout|deadline/i.test(`${err.name} ${err.message}`);
-    if (timedOut) return { exitCode: -1, stdout: '', stderr: 'execution timed out', durationMs: Date.now() - started, timedOut: true };
+    if (timedOut)
+      return {
+        exitCode: -1,
+        stdout: '',
+        stderr: 'execution timed out',
+        durationMs: Date.now() - started,
+        timedOut: true,
+      };
     throw err;
   } finally {
     await sbx.files.remove(script).catch(() => undefined);

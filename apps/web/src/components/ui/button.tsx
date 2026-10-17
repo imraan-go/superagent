@@ -1,16 +1,10 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { cn } from "@/lib/cn";
-import styles from "./button.module.css";
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { cn } from '@/lib/cn';
+import styles from './button.module.css';
 
-export type ButtonVariant =
-  | "primary"
-  | "secondary"
-  | "ghost"
-  | "outline"
-  | "danger"
-  | "attention";
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'danger' | 'attention';
 
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -23,8 +17,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export function Button({
-  variant = "secondary",
-  size = "md",
+  variant = 'secondary',
+  size = 'md',
   loading = false,
   block = false,
   iconLeft,
@@ -32,7 +26,7 @@ export function Button({
   disabled,
   className,
   children,
-  type = "button",
+  type = 'button',
   ...rest
 }: ButtonProps) {
   return (

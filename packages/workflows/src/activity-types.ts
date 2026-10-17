@@ -12,10 +12,20 @@ import type {
 export interface TaskActivities {
   loadTaskContext(i: { taskId: string; ownerId: string }): Promise<TaskContextResult>;
   checkApproval(i: { ownerId: string; intentId: string }): Promise<ApprovalCheck>;
-  recordApprovalOutcome(i: { taskId: string; ownerId: string; intentId: string; toolCallId: string; state: 'rejected' | 'expired' | 'pending' }): Promise<void>;
+  recordApprovalOutcome(i: {
+    taskId: string;
+    ownerId: string;
+    intentId: string;
+    toolCallId: string;
+    state: 'rejected' | 'expired' | 'pending';
+  }): Promise<void>;
   recordLimit(i: { taskId: string; ownerId: string; toolCallId: string; reason: string }): Promise<void>;
   finalizeTask(i: TaskFinalization): Promise<void>;
-  createScheduledTask(i: { scheduleId: string; ownerId: string; runKey: string }): Promise<{ taskId: string | null; reason?: string }>;
+  createScheduledTask(i: {
+    scheduleId: string;
+    ownerId: string;
+    runKey: string;
+  }): Promise<{ taskId: string | null; reason?: string }>;
   markWaitingApproval(i: { taskId: string; ownerId: string; intentId: string }): Promise<void>;
 }
 
@@ -24,7 +34,12 @@ export interface ModelActivities {
 }
 
 export interface PolicyActivities {
-  evaluateProposal(i: { taskId: string; ownerId: string; toolCallId: string; readOnly: boolean }): Promise<ProposalVerdict>;
+  evaluateProposal(i: {
+    taskId: string;
+    ownerId: string;
+    toolCallId: string;
+    readOnly: boolean;
+  }): Promise<ProposalVerdict>;
 }
 
 export interface ToolActivities {
@@ -32,8 +47,19 @@ export interface ToolActivities {
 }
 
 export interface ActionActivities {
-  executeApprovedAction(i: { taskId: string; ownerId: string; intentId: string; toolCallId: string }): Promise<ActionOutcome>;
-  reconcileAttempt(i: { taskId: string; ownerId: string; intentId: string; toolCallId: string; failure: string }): Promise<ActionOutcome>;
+  executeApprovedAction(i: {
+    taskId: string;
+    ownerId: string;
+    intentId: string;
+    toolCallId: string;
+  }): Promise<ActionOutcome>;
+  reconcileAttempt(i: {
+    taskId: string;
+    ownerId: string;
+    intentId: string;
+    toolCallId: string;
+    failure: string;
+  }): Promise<ActionOutcome>;
 }
 
 export interface WorkspaceActivities {

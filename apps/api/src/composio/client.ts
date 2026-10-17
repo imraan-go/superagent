@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 /*
  * Read-only Composio REST v3.1 client for the app catalog (toolkits, their tools and trigger
@@ -16,7 +16,7 @@ import { z } from "zod";
  * `next_cursor`); MCP lists use `page_no`. Every response is parsed loosely
  * (passthrough) so additive upstream changes never crash the panel.
  */
-export const COMPOSIO_BASE = "https://backend.composio.dev/api/v3.1";
+export const COMPOSIO_BASE = 'https://backend.composio.dev/api/v3.1';
 /** Single-owner product: one Composio user id. */
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
@@ -44,7 +44,9 @@ const toolkitSchema = z
         logo: z.string().optional(),
         tools_count: z.number().optional(),
         triggers_count: z.number().optional(),
-        categories: z.array(z.object({ name: z.string(), slug: z.string().optional(), id: z.string().optional() }).passthrough()).optional(),
+        categories: z
+          .array(z.object({ name: z.string(), slug: z.string().optional(), id: z.string().optional() }).passthrough())
+          .optional(),
       })
       .passthrough()
       .optional(),
@@ -99,11 +101,11 @@ export class ComposioClient {
 
   private async request(path: string, init: { method?: string; body?: unknown } = {}): Promise<unknown> {
     const res = await this.fetchImpl(`${this.base}${path}`, {
-      method: init.method ?? "GET",
+      method: init.method ?? 'GET',
       headers: {
-        "x-api-key": this.apiKey,
-        accept: "application/json",
-        ...(init.body === undefined ? {} : { "content-type": "application/json" }),
+        'x-api-key': this.apiKey,
+        accept: 'application/json',
+        ...(init.body === undefined ? {} : { 'content-type': 'application/json' }),
       },
       body: init.body === undefined ? undefined : JSON.stringify(init.body),
       signal: AbortSignal.timeout(30_000),
@@ -116,7 +118,12 @@ export class ComposioClient {
     return text ? (JSON.parse(text) as unknown) : {};
   }
 
-  private async paged<T extends z.ZodTypeAny>(path: string, item: T, params: URLSearchParams, pageSize = 100): Promise<Array<z.infer<T>>> {
+  private async paged<T extends z.ZodTypeAny>(
+    path: string,
+    item: T,
+    params: URLSearchParams,
+    pageSize = 100,
+  ): Promise<Array<z.infer<T>>> {
     return (await this.pagedWithTotal(path, item, params, pageSize)).items;
   }
 
@@ -132,11 +139,11 @@ export class ComposioClient {
     let cursor: string | null | undefined;
     for (let i = 0; i < MAX_PAGES; i += 1) {
       const q = new URLSearchParams(params);
-      q.set("limit", String(pageSize));
-      if (cursor) q.set("cursor", cursor);
+      q.set('limit', String(pageSize));
+      if (cursor) q.set('cursor', cursor);
       const data = page(item).parse(await this.request(`${path}?${q.toString()}`));
       out.push(...data.items);
-      if (total === null && typeof data.total_items === "number") total = data.total_items;
+      if (total === null && typeof data.total_items === 'number') total = data.total_items;
       cursor = data.next_cursor;
       if (!cursor) break;
     }
@@ -147,16 +154,23 @@ export class ComposioClient {
 
   /** The FULL catalog, paginated. */
   listAllToolkits(): Promise<ComposioToolkit[]> {
-    return this.paged("/toolkits", toolkitSchema, new URLSearchParams({ sort_by: "usage", managed_by: "all" }), 200);
+    return this.paged('/toolkits', toolkitSchema, new URLSearchParams({ sort_by: 'usage', managed_by: 'all' }), 200);
   }
 
   /** The full catalog plus Composio's reported `total_items`, so callers can prove nothing was missed. */
   listAllToolkitsWithTotal(): Promise<{ items: ComposioToolkit[]; total: number | null }> {
-    return this.pagedWithTotal("/toolkits", toolkitSchema, new URLSearchParams({ sort_by: "usage", managed_by: "all" }), 200);
+    return this.pagedWithTotal(
+      '/toolkits',
+      toolkitSchema,
+      new URLSearchParams({ sort_by: 'usage', managed_by: 'all' }),
+      200,
+    );
   }
 
   async listCategories(): Promise<Array<{ id: string; name: string }>> {
-    const data = page(z.object({ id: z.string(), name: z.string() }).passthrough()).parse(await this.request("/toolkits/categories"));
+    const data = page(z.object({ id: z.string(), name: z.string() }).passthrough()).parse(
+      await this.request('/toolkits/categories'),
+    );
     return data.items.map((c) => ({ id: c.id, name: c.name }));
   }
 
@@ -164,7 +178,10 @@ export class ComposioClient {
     slug: string;
     name?: string | undefined;
     composioManagedAuthSchemes: string[];
-    authConfigDetails: Array<{ mode: string; initiationFields: Array<{ name: string; displayName: string; required: boolean; secret: boolean }> }>;
+    authConfigDetails: Array<{
+      mode: string;
+      initiationFields: Array<{ name: string; displayName: string; required: boolean; secret: boolean }>;
+    }>;
     authGuideUrl: string | null;
   }> {
     const raw = z
@@ -182,8 +199,28 @@ export class ComposioClient {
                   .object({
                     connected_account_initiation: z
                       .object({
-                        required: z.array(z.object({ name: z.string(), displayName: z.string().optional(), is_secret: z.boolean().optional() }).passthrough()).default([]),
-                        optional: z.array(z.object({ name: z.string(), displayName: z.string().optional(), is_secret: z.boolean().optional() }).passthrough()).default([]),
+                        required: z
+                          .array(
+                            z
+                              .object({
+                                name: z.string(),
+                                displayName: z.string().optional(),
+                                is_secret: z.boolean().optional(),
+                              })
+                              .passthrough(),
+                          )
+                          .default([]),
+                        optional: z
+                          .array(
+                            z
+                              .object({
+                                name: z.string(),
+                                displayName: z.string().optional(),
+                                is_secret: z.boolean().optional(),
+                              })
+                              .passthrough(),
+                          )
+                          .default([]),
                       })
                       .passthrough()
                       .optional(),
@@ -207,7 +244,12 @@ export class ComposioClient {
         initiationFields: [
           ...(d.fields?.connected_account_initiation?.required ?? []).map((f) => ({ ...f, required: true })),
           ...(d.fields?.connected_account_initiation?.optional ?? []).map((f) => ({ ...f, required: false })),
-        ].map((f) => ({ name: f.name, displayName: f.displayName ?? f.name, required: f.required, secret: f.is_secret ?? false })),
+        ].map((f) => ({
+          name: f.name,
+          displayName: f.displayName ?? f.name,
+          required: f.required,
+          secret: f.is_secret ?? false,
+        })),
       })),
     };
   }
@@ -221,9 +263,9 @@ export class ComposioClient {
   /** Every tool of a toolkit (latest version), paginated. */
   async listTools(toolkit: string): Promise<ComposioTool[]> {
     const tools = await this.paged(
-      "/tools",
+      '/tools',
       toolSchema,
-      new URLSearchParams({ toolkit_slug: toolkit, toolkit_versions: "latest" }),
+      new URLSearchParams({ toolkit_slug: toolkit, toolkit_versions: 'latest' }),
       100,
     );
     return tools.filter((t) => t.is_deprecated !== true);
@@ -236,8 +278,7 @@ export class ComposioClient {
   async listTriggerTypes(toolkits: string[]): Promise<ComposioTriggerType[]> {
     if (toolkits.length === 0) return [];
     const params = new URLSearchParams();
-    for (const t of toolkits) params.append("toolkit_slugs", t);
-    return this.paged("/triggers_types", triggerTypeSchema, params, 100);
+    for (const t of toolkits) params.append('toolkit_slugs', t);
+    return this.paged('/triggers_types', triggerTypeSchema, params, 100);
   }
-
 }

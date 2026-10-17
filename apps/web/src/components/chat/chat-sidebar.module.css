@@ -94,8 +94,11 @@
   padding: 0 var(--sp-3);
   border: var(--border) solid color-mix(in srgb, var(--c-agent) 50%, transparent);
   border-radius: var(--radius-control);
-  background:
-    linear-gradient(120deg, color-mix(in srgb, var(--c-agent) 24%, transparent), color-mix(in srgb, var(--c-think) 18%, transparent));
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--c-agent) 24%, transparent),
+    color-mix(in srgb, var(--c-think) 18%, transparent)
+  );
   color: var(--text-1);
   font-family: var(--font-display);
   font-size: var(--fs-small);
@@ -158,7 +161,9 @@
   border-radius: var(--radius-control);
   color: var(--text-3);
   background: var(--ink-1);
-  transition: border-color var(--dur-std) var(--ease-out), box-shadow var(--dur-std) var(--ease-out);
+  transition:
+    border-color var(--dur-std) var(--ease-out),
+    box-shadow var(--dur-std) var(--ease-out);
 }
 
 .search:focus-within {
@@ -251,13 +256,12 @@
 
 .rowActive {
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--c-agent) 12%, transparent), transparent 80%),
-    var(--ink-2);
+    linear-gradient(90deg, color-mix(in srgb, var(--c-agent) 12%, transparent), transparent 80%), var(--ink-2);
   border-color: color-mix(in srgb, var(--c-agent) 24%, transparent);
 }
 
 .rowActive::before {
-  content: "";
+  content: '';
   position: absolute;
   inset-block: 8px;
   left: -1px;
@@ -323,9 +327,15 @@
   text-overflow: ellipsis;
 }
 
-.row[data-status="live"] .rowStatus { color: var(--c-agent); }
-.row[data-status="warn"] .rowStatus { color: var(--c-approval); }
-.row[data-status="error"] .rowStatus { color: var(--c-error); }
+.row[data-status='live'] .rowStatus {
+  color: var(--c-agent);
+}
+.row[data-status='warn'] .rowStatus {
+  color: var(--c-approval);
+}
+.row[data-status='error'] .rowStatus {
+  color: var(--c-error);
+}
 
 .rowTime {
   font-family: var(--font-mono);
@@ -426,7 +436,9 @@
   height: 38px;
   border: var(--border) solid transparent;
   border-radius: var(--radius-control);
-  transition: background-color var(--dur-micro) var(--ease-out), transform var(--dur-spring) var(--ease-spring);
+  transition:
+    background-color var(--dur-micro) var(--ease-out),
+    transform var(--dur-spring) var(--ease-spring);
 }
 
 .miniLink:hover {
@@ -500,10 +512,16 @@
   color: var(--text-2);
 }
 
-.computer[data-state="awake"] .computerState { color: var(--c-money); }
-.computer[data-state="waking"] .computerState,
-.computer[data-state="asleep"] .computerState { color: var(--c-approval); }
-.computer[data-state="offline"] .computerState { color: var(--c-error); }
+.computer[data-state='awake'] .computerState {
+  color: var(--c-money);
+}
+.computer[data-state='waking'] .computerState,
+.computer[data-state='asleep'] .computerState {
+  color: var(--c-approval);
+}
+.computer[data-state='offline'] .computerState {
+  color: var(--c-error);
+}
 
 .computerMini {
   position: relative;
@@ -527,7 +545,9 @@
   font-size: var(--fs-small);
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+  transition:
+    background-color var(--dur-micro) var(--ease-out),
+    color var(--dur-micro) var(--ease-out);
 }
 
 .dockBtn:hover {
@@ -586,7 +606,20 @@
 }
 
 /* Connect apps dock entry: label left, logo stack + count right. */
-.dockLabel { flex: 1; }
-.appsTail { display: inline-flex; align-items: center; gap: var(--sp-2); }
-.appsCount { font-family: var(--font-mono); font-size: var(--fs-micro); font-variant-numeric: tabular-nums; color: var(--text-3); }
-.dockBtn[data-apps-btn]:hover svg:first-child { transform: none; }
+.dockLabel {
+  flex: 1;
+}
+.appsTail {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.appsCount {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+.dockBtn[data-apps-btn]:hover svg:first-child {
+  transform: none;
+}

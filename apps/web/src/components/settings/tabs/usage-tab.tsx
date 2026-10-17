@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { SegmentedSwitch, SettingRow, SettingSection, SkeletonText } from "@/components/ui";
-import { settingsFetch, useSettingsSection } from "@/hooks/use-settings";
-import { formatCost, formatTokens } from "@/lib/format";
-import { cn } from "@/lib/cn";
-import { InlineError, NumberField } from "../controls";
-import styles from "../settings-tabs.module.css";
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { SegmentedSwitch, SettingRow, SettingSection, SkeletonText } from '@/components/ui';
+import { settingsFetch, useSettingsSection } from '@/hooks/use-settings';
+import { formatCost, formatTokens } from '@/lib/format';
+import { cn } from '@/lib/cn';
+import { InlineError, NumberField } from '../controls';
+import styles from '../settings-tabs.module.css';
 
-type Group = "day" | "model" | "kind" | "task";
-type SortKey = "label" | "events" | "tokensIn" | "tokensOut" | "tokensCached" | "costUsd";
+type Group = 'day' | 'model' | 'kind' | 'task';
+type SortKey = 'label' | 'events' | 'tokensIn' | 'tokensOut' | 'tokensCached' | 'costUsd';
 
 interface UsageRow {
   key: string;
@@ -27,7 +27,7 @@ interface UsageReport {
   from: string;
   to: string;
   rows: UsageRow[];
-  totals: Omit<UsageRow, "key" | "label">;
+  totals: Omit<UsageRow, 'key' | 'label'>;
   todayUsd: number;
 }
 
@@ -35,15 +35,15 @@ const DAY_MS = 86_400_000;
 const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
 const COLUMNS: Array<{ key: SortKey; label: string; numeric: boolean }> = [
-  { key: "label", label: "", numeric: false },
-  { key: "events", label: "Calls", numeric: true },
-  { key: "tokensIn", label: "In", numeric: true },
-  { key: "tokensOut", label: "Out", numeric: true },
-  { key: "tokensCached", label: "Cached", numeric: true },
-  { key: "costUsd", label: "Cost", numeric: true },
+  { key: 'label', label: '', numeric: false },
+  { key: 'events', label: 'Calls', numeric: true },
+  { key: 'tokensIn', label: 'In', numeric: true },
+  { key: 'tokensOut', label: 'Out', numeric: true },
+  { key: 'tokensCached', label: 'Cached', numeric: true },
+  { key: 'costUsd', label: 'Cost', numeric: true },
 ];
 
-const GROUP_LABEL: Record<Group, string> = { day: "Day", model: "Model", kind: "Kind", task: "Run" };
+const GROUP_LABEL: Record<Group, string> = { day: 'Day', model: 'Model', kind: 'Kind', task: 'Run' };
 
 interface BudgetView {
   maxCostPerRunUsd: string | null;
@@ -57,33 +57,40 @@ interface UsageSummaryView {
 
 export function UsageTab() {
   const qc = useQueryClient();
-  const prefs = useSettingsSection("usage");
+  const prefs = useSettingsSection('usage');
   const [now] = useState(() => Date.now());
   const monthStart = isoDay(Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), 1));
 
-  const [groupBy, setGroupBy] = useState<Group>("day");
+  const [groupBy, setGroupBy] = useState<Group>('day');
   const [from, setFrom] = useState(monthStart);
   const [to, setTo] = useState(() => isoDay(now + DAY_MS));
-  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "label", dir: -1 });
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'label', dir: -1 });
   const effectiveFrom = from;
 
   const qs = new URLSearchParams({ groupBy, from: effectiveFrom, to }).toString();
   const report = useQuery({
-    queryKey: ["usage", "report", qs],
+    queryKey: ['usage', 'report', qs],
     queryFn: () => settingsFetch<UsageReport>(`/api/usage/report?${qs}`),
   });
   const month = useQuery({
-    queryKey: ["usage", "month", monthStart],
-    queryFn: () => settingsFetch<UsageReport>(`/api/usage/report?${new URLSearchParams({ groupBy: "kind", from: monthStart })}`),
+    queryKey: ['usage', 'month', monthStart],
+    queryFn: () =>
+      settingsFetch<UsageReport>(`/api/usage/report?${new URLSearchParams({ groupBy: 'kind', from: monthStart })}`),
   });
-  const limits = useQuery({ queryKey: ["usage", "limits"], queryFn: () => settingsFetch<UsageSummaryView>("/api/usage") });
-  const mine = useQuery({ queryKey: ["settings", "budget"], queryFn: () => settingsFetch<BudgetView>("/api/settings") });
+  const limits = useQuery({
+    queryKey: ['usage', 'limits'],
+    queryFn: () => settingsFetch<UsageSummaryView>('/api/usage'),
+  });
+  const mine = useQuery({
+    queryKey: ['settings', 'budget'],
+    queryFn: () => settingsFetch<BudgetView>('/api/settings'),
+  });
   const saveBudget = useMutation({
     mutationFn: (b: { maxCostPerRunUsd: string; monthlyLimitUsd: string }) =>
-      settingsFetch("/api/settings/budget", { method: "PUT", body: JSON.stringify(b) }),
+      settingsFetch('/api/settings/budget', { method: 'PUT', body: JSON.stringify(b) }),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["usage", "limits"] });
-      void qc.invalidateQueries({ queryKey: ["settings", "budget"] });
+      void qc.invalidateQueries({ queryKey: ['usage', 'limits'] });
+      void qc.invalidateQueries({ queryKey: ['settings', 'budget'] });
     },
   });
 
@@ -92,9 +99,9 @@ export function UsageTab() {
     list.sort((a, b) => {
       const av = a[sort.key];
       const bv = b[sort.key];
-      return (typeof av === "number" && typeof bv === "number"
-        ? av - bv
-        : String(av).localeCompare(String(bv))) * sort.dir;
+      return (
+        (typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv))) * sort.dir
+      );
     });
     return list;
   }, [report.data, sort]);
@@ -106,8 +113,8 @@ export function UsageTab() {
   const over = limit > 0 && spent >= limit;
   const warn = limit > 0 && pct >= prefs.value.warnAtPct;
   const current = {
-    maxCostPerRunUsd: mine.data?.maxCostPerRunUsd ?? perRun ?? "0",
-    monthlyLimitUsd: mine.data?.monthlyLimitUsd ?? limits.data?.limits.monthlyUsd ?? "0",
+    maxCostPerRunUsd: mine.data?.maxCostPerRunUsd ?? perRun ?? '0',
+    monthlyLimitUsd: mine.data?.monthlyLimitUsd ?? limits.data?.limits.monthlyUsd ?? '0',
   };
 
   return (
@@ -121,7 +128,12 @@ export function UsageTab() {
       )}
 
       <SettingSection title="Budget">
-        <SettingRow label="This month" description={limit > 0 ? `${formatCost(spent)} of ${formatCost(limit)}` : `${formatCost(spent)} — no monthly limit`}>
+        <SettingRow
+          label="This month"
+          description={
+            limit > 0 ? `${formatCost(spent)} of ${formatCost(limit)}` : `${formatCost(spent)} — no monthly limit`
+          }
+        >
           <div className={styles.meter} style={{ width: 160 }} aria-hidden>
             <div
               className={cn(styles.meterFill, warn && styles.meterWarn, over && styles.meterOver)}
@@ -129,7 +141,10 @@ export function UsageTab() {
             />
           </div>
         </SettingRow>
-        <SettingRow label="Limit per run" description="A run stops before a model call would pass this. Can only be lower than the server's cap.">
+        <SettingRow
+          label="Limit per run"
+          description="A run stops before a model call would pass this. Can only be lower than the server's cap."
+        >
           <NumberField
             label="Limit per run in USD"
             prefix="$"
@@ -139,7 +154,10 @@ export function UsageTab() {
             onCommit={(v) => saveBudget.mutate({ ...current, maxCostPerRunUsd: v.toFixed(2) })}
           />
         </SettingRow>
-        <SettingRow label="Limit per month" description="Runs are refused once this month's spend reaches it. Can only be lower than the server's cap.">
+        <SettingRow
+          label="Limit per month"
+          description="Runs are refused once this month's spend reaches it. Can only be lower than the server's cap."
+        >
           <NumberField
             label="Limit per month in USD"
             prefix="$"
@@ -163,14 +181,14 @@ export function UsageTab() {
       </SettingSection>
 
       <section>
-        <div className={styles.row} style={{ justifyContent: "space-between", marginBottom: "var(--sp-3)" }}>
+        <div className={styles.row} style={{ justifyContent: 'space-between', marginBottom: 'var(--sp-3)' }}>
           <SegmentedSwitch<Group>
             label="Group usage by"
             size="sm"
             value={groupBy}
             onChange={(g) => {
               setGroupBy(g);
-              setSort({ key: g === "day" ? "label" : "costUsd", dir: -1 });
+              setSort({ key: g === 'day' ? 'label' : 'costUsd', dir: -1 });
             }}
             options={(Object.keys(GROUP_LABEL) as Group[]).map((g) => ({ value: g, label: GROUP_LABEL[g] }))}
           />
@@ -213,7 +231,7 @@ export function UsageTab() {
                         key={c.key}
                         scope="col"
                         className={cn(styles.th, c.numeric && styles.num)}
-                        aria-sort={active ? (sort.dir === 1 ? "ascending" : "descending") : "none"}
+                        aria-sort={active ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}
                       >
                         <button
                           type="button"
@@ -222,7 +240,7 @@ export function UsageTab() {
                           }
                         >
                           {c.label || GROUP_LABEL[groupBy]}
-                          {active ? (sort.dir === 1 ? " ↑" : " ↓") : ""}
+                          {active ? (sort.dir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
                     );
@@ -238,9 +256,9 @@ export function UsageTab() {
                   </tr>
                 )}
                 {rows.map((r) => (
-                  <tr key={r.key || "none"}>
+                  <tr key={r.key || 'none'}>
                     <td className={styles.labelCell} title={r.label}>
-                      {r.label || "—"}
+                      {r.label || '—'}
                     </td>
                     <td className={styles.num}>{r.events}</td>
                     <td className={styles.num}>{formatTokens(r.tokensIn)}</td>

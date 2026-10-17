@@ -9,7 +9,11 @@ import { createAuth } from './auth';
 
 const log = createLogger('api');
 const env = getEnv();
-requireKeys('database', ['DATABASE_URL', 'BETTER_AUTH_SECRET'], 'Run `pnpm setup:env`, `pnpm infra:up` and `pnpm db:migrate`.');
+requireKeys(
+  'database',
+  ['DATABASE_URL', 'BETTER_AUTH_SECRET'],
+  'Run `pnpm setup:env`, `pnpm infra:up` and `pnpm db:migrate`.',
+);
 const db = getDb();
 const app = createApp({ db, env, auth: createAuth(db, env), log, store: getArtifactStore, connections: getComposio });
 

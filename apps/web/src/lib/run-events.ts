@@ -4,11 +4,11 @@
  * Every frame carries a monotonic `seq` used as the SSE event id, so a client
  * that reconnects with `Last-Event-ID` can be replayed exactly (ADR-05).
  */
-import type { ChatMessage } from "./messages";
+import type { ChatMessage } from './messages';
 
 export interface RunStepView {
   idx: number;
-  type: "think" | "tool" | "observe" | "approval" | "takeover" | "waiting";
+  type: 'think' | 'tool' | 'observe' | 'approval' | 'takeover' | 'waiting';
   toolName: string | null;
   /** Plain-language summary for the activity line. */
   label: string;
@@ -20,27 +20,27 @@ export interface RunStepView {
 }
 
 export type RunEvent =
-  | { type: "run_started"; runId: string; chatId: string; model: string }
+  | { type: 'run_started'; runId: string; chatId: string; model: string }
   /** Coalesced assistant text; append in order. */
-  | { type: "token"; text: string }
+  | { type: 'token'; text: string }
   /** Coalesced summarised reasoning (Thinking mode); append in order. */
-  | { type: "thinking"; text: string }
+  | { type: 'thinking'; text: string }
   /**
    * Debug mode only: raw diagnostics (context/tool counts, model call
    * timings/tokens, gate and retry decisions). Never carries secrets.
    */
-  | { type: "debug"; kind: string; data: Record<string, unknown> }
+  | { type: 'debug'; kind: string; data: Record<string, unknown> }
   /**
    * Capability chips in effect for this run: picked by the Auto classifier
    * (`auto: true`, with human-readable reasons) or the owner's manual chips.
    */
-  | { type: "capabilities"; auto: boolean; chosen: string[]; reasons: string[] }
-  | { type: "step"; step: RunStepView }
-  | { type: "step_done"; step: RunStepView }
+  | { type: 'capabilities'; auto: boolean; chosen: string[]; reasons: string[] }
+  | { type: 'step'; step: RunStepView }
+  | { type: 'step_done'; step: RunStepView }
   /** The agent computer is waking; the loop retries automatically. */
-  | { type: "waiting"; reason: string; retryInMs: number }
+  | { type: 'waiting'; reason: string; retryInMs: number }
   | {
-      type: "approval_required";
+      type: 'approval_required';
       /** Panel `approvals.id` — what the owner decides on. */
       approvalId?: string;
       stepIdx: number;
@@ -50,17 +50,17 @@ export type RunEvent =
     }
   /** The owner decided a checkpoint; the run is continuing. */
   | {
-      type: "approval_decided";
+      type: 'approval_decided';
       approvalId: string;
       tool: string;
-      decision: "approve" | "reject";
+      decision: 'approve' | 'reject';
     }
   /** The agent asked the owner something in chat and is waiting (durably) for the answer. */
   | {
-      type: "question";
+      type: 'question';
       question: {
         questionId: string;
-        kind: "single" | "multi" | "text" | "confirm";
+        kind: 'single' | 'multi' | 'text' | 'confirm';
         prompt: string;
         options: Array<{ id: string; label: string }>;
         /** True when the answer gates a tool call (Yes runs it). */
@@ -69,13 +69,13 @@ export type RunEvent =
       };
     }
   | {
-      type: "question_resolved";
+      type: 'question_resolved';
       questionId: string;
-      status: "answered" | "expired";
+      status: 'answered' | 'expired';
       answer: { choices: string[]; text?: string } | null;
     }
   | {
-      type: "usage";
+      type: 'usage';
       tokensIn: number;
       tokensOut: number;
       cached: number;
@@ -84,10 +84,10 @@ export type RunEvent =
       thinkingTokens?: number;
     }
   /** A persisted turn — replaces any streamed text for that turn. */
-  | { type: "message"; message: ChatMessage }
-  | { type: "done"; status: "done" | "cancelled" | "paused_approval" }
+  | { type: 'message'; message: ChatMessage }
+  | { type: 'done'; status: 'done' | 'cancelled' | 'paused_approval' }
   /** `code: "step_limit"` means the run can be continued with a new turn. */
-  | { type: "error"; code: string; message: string };
+  | { type: 'error'; code: string; message: string };
 
 export interface RunFrame {
   seq: number;
@@ -106,7 +106,7 @@ export function serialiseFrame(frame: RunFrame): string {
 
 /** Terminal frames tell the client to stop listening. */
 export function isTerminal(event: RunEvent): boolean {
-  return event.type === "done" || event.type === "error";
+  return event.type === 'done' || event.type === 'error';
 }
 
 /**

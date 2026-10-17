@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-import type { ComponentType } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import type { ComponentType } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import {
   ChatCircleDots,
   Gauge,
@@ -15,30 +15,30 @@ import {
   Robot,
   SquaresFour,
   Sun,
-} from "@phosphor-icons/react/dist/ssr";
-import { Modal } from "@/components/ui";
-import { SETTINGS_TAB_LIST } from "@/components/settings/settings-modal";
-import { MANAGE_SECTION_LIST } from "@/components/manage/manage-view";
-import { useNewChat } from "@/hooks/use-new-chat";
-import { useTheme } from "@/hooks/use-theme";
-import { api } from "@/lib/api";
-import { focusPrompt, openApps, openSettings, requestManageSection } from "@/lib/app-events";
-import { cn } from "@/lib/cn";
-import { fuzzyScore } from "@/lib/hotkeys";
-import { OPEN_COMPUTER_EVENT } from "@/lib/hitl";
-import { resolvedTheme } from "@/lib/theme";
-import styles from "./command-palette.module.css";
+} from '@phosphor-icons/react/dist/ssr';
+import { Modal } from '@/components/ui';
+import { SETTINGS_TAB_LIST } from '@/components/settings/settings-modal';
+import { MANAGE_SECTION_LIST } from '@/components/manage/manage-view';
+import { useNewChat } from '@/hooks/use-new-chat';
+import { useTheme } from '@/hooks/use-theme';
+import { api } from '@/lib/api';
+import { focusPrompt, openApps, openSettings, requestManageSection } from '@/lib/app-events';
+import { cn } from '@/lib/cn';
+import { fuzzyScore } from '@/lib/hotkeys';
+import { OPEN_COMPUTER_EVENT } from '@/lib/hitl';
+import { resolvedTheme } from '@/lib/theme';
+import styles from './command-palette.module.css';
 
 interface Command {
   id: string;
   group: string;
   label: string;
   hint?: string;
-  icon: ComponentType<{ size?: number; weight?: "duotone"; "aria-hidden"?: boolean }>;
+  icon: ComponentType<{ size?: number; weight?: 'duotone'; 'aria-hidden'?: boolean }>;
   run: () => void;
 }
 
-const GROUP_ORDER = ["Actions", "Navigate", "Recent chats", "Settings", "Manage"];
+const GROUP_ORDER = ['Actions', 'Navigate', 'Recent chats', 'Settings', 'Manage'];
 
 export function CommandPalette({
   open,
@@ -52,15 +52,15 @@ export function CommandPalette({
   const router = useRouter();
   const newChat = useNewChat();
   const { theme, setTheme } = useTheme();
-  const { data } = useQuery({ queryKey: ["chats"], queryFn: api.listChats, enabled: open });
+  const { data } = useQuery({ queryKey: ['chats'], queryFn: api.listChats, enabled: open });
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setQuery("");
+      setQuery('');
       setActive(0);
     }
   }
@@ -74,44 +74,71 @@ export function CommandPalette({
       fn();
     };
     const list: Command[] = [
-      { id: "new-chat", group: "Actions", label: "New chat", hint: "⌘J", icon: Plus, run: go(() => newChat.mutate()) },
+      { id: 'new-chat', group: 'Actions', label: 'New chat', hint: '⌘J', icon: Plus, run: go(() => newChat.mutate()) },
       {
-        id: "focus-prompt",
-        group: "Actions",
-        label: "Focus prompt",
-        hint: "⌘/",
+        id: 'focus-prompt',
+        group: 'Actions',
+        label: 'Focus prompt',
+        hint: '⌘/',
         icon: PencilSimple,
         // After the dialog closes so focus lands in the prompt, not the restore target.
         run: go(() => setTimeout(focusPrompt, 0)),
       },
       {
-        id: "theme",
-        group: "Actions",
-        label: "Toggle theme",
+        id: 'theme',
+        group: 'Actions',
+        label: 'Toggle theme',
         // Static on purpose: a theme-dependent hint differs between SSR and the client (React #418).
-        hint: "light ⇄ dark",
+        hint: 'light ⇄ dark',
         icon: Sun,
-        run: go(() => setTheme(resolvedTheme(theme) === "dark" ? "light" : "dark")),
+        run: go(() => setTheme(resolvedTheme(theme) === 'dark' ? 'light' : 'dark')),
       },
       {
-        id: "computer",
-        group: "Actions",
-        label: "Open Computer",
-        hint: "expand the agent screen",
+        id: 'computer',
+        group: 'Actions',
+        label: 'Open Computer',
+        hint: 'expand the agent screen',
         icon: Monitor,
         run: go(() => window.dispatchEvent(new CustomEvent(OPEN_COMPUTER_EVENT))),
       },
-      { id: "connect-apps", group: "Actions", label: "Connect apps", icon: SquaresFour, run: go(() => openApps()) },
-      { id: "manage-apps", group: "Actions", label: "Manage connected apps", icon: SquaresFour, run: go(() => openApps({ view: "manage" })) },
-      { id: "shortcuts", group: "Actions", label: "Keyboard shortcuts", hint: "?", icon: Keyboard, run: go(onShowShortcuts) },
-      { id: "go-agent", group: "Navigate", label: "Switch to Agent", hint: "g a", icon: Robot, run: go(() => router.push("/")) },
-      { id: "go-manage", group: "Navigate", label: "Switch to Manage", hint: "g m", icon: Gauge, run: go(() => router.push("/manage")) },
+      { id: 'connect-apps', group: 'Actions', label: 'Connect apps', icon: SquaresFour, run: go(() => openApps()) },
+      {
+        id: 'manage-apps',
+        group: 'Actions',
+        label: 'Manage connected apps',
+        icon: SquaresFour,
+        run: go(() => openApps({ view: 'manage' })),
+      },
+      {
+        id: 'shortcuts',
+        group: 'Actions',
+        label: 'Keyboard shortcuts',
+        hint: '?',
+        icon: Keyboard,
+        run: go(onShowShortcuts),
+      },
+      {
+        id: 'go-agent',
+        group: 'Navigate',
+        label: 'Switch to Agent',
+        hint: 'g a',
+        icon: Robot,
+        run: go(() => router.push('/')),
+      },
+      {
+        id: 'go-manage',
+        group: 'Navigate',
+        label: 'Switch to Manage',
+        hint: 'g m',
+        icon: Gauge,
+        run: go(() => router.push('/manage')),
+      },
     ];
     for (const chat of (data?.chats ?? []).slice(0, 15)) {
       list.push({
         id: `chat:${chat.id}`,
-        group: "Recent chats",
-        label: chat.title || "Untitled chat",
+        group: 'Recent chats',
+        label: chat.title || 'Untitled chat',
         icon: ChatCircleDots,
         run: go(() => router.push(`/chat/${chat.id}`)),
       });
@@ -119,7 +146,7 @@ export function CommandPalette({
     for (const tab of SETTINGS_TAB_LIST) {
       list.push({
         id: `settings:${tab.id}`,
-        group: "Settings",
+        group: 'Settings',
         label: `Settings: ${tab.label}`,
         icon: Gear,
         run: go(() => openSettings(tab.id)),
@@ -128,12 +155,12 @@ export function CommandPalette({
     for (const section of MANAGE_SECTION_LIST) {
       list.push({
         id: `manage:${section.id}`,
-        group: "Manage",
+        group: 'Manage',
         label: `Manage: ${section.label}`,
         icon: Gauge,
         run: go(() => {
           requestManageSection(section.id);
-          router.push("/manage");
+          router.push('/manage');
         }),
       });
     }
@@ -167,29 +194,29 @@ export function CommandPalette({
   const activeId = results[clamped] ? `${listId}-${clamped}` : undefined;
 
   useEffect(() => {
-    document.getElementById(activeId ?? "")?.scrollIntoView({ block: "nearest" });
+    document.getElementById(activeId ?? '')?.scrollIntoView({ block: 'nearest' });
   }, [activeId]);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown") {
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
       setActive((clamped + 1) % Math.max(results.length, 1));
-    } else if (e.key === "ArrowUp") {
+    } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setActive((clamped - 1 + results.length) % Math.max(results.length, 1));
-    } else if (e.key === "Home") {
+    } else if (e.key === 'Home') {
       e.preventDefault();
       setActive(0);
-    } else if (e.key === "End") {
+    } else if (e.key === 'End') {
       e.preventDefault();
       setActive(Math.max(results.length - 1, 0));
-    } else if (e.key === "Enter") {
+    } else if (e.key === 'Enter') {
       e.preventDefault();
       results[clamped]?.run();
     }
   };
 
-  let lastGroup = "";
+  let lastGroup = '';
   return (
     <Modal open={open} onClose={onClose} title="Command palette" bodyFlush className={styles.palette}>
       <div className={styles.searchRow}>
@@ -242,7 +269,7 @@ export function CommandPalette({
 
       {results.length === 0 && <p className={styles.empty}>No matches.</p>}
       <p className={styles.srOnly} role="status" aria-live="polite">
-        {results.length} {results.length === 1 ? "result" : "results"}
+        {results.length} {results.length === 1 ? 'result' : 'results'}
       </p>
     </Modal>
   );

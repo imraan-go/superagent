@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import dynamic from "next/dynamic";
-import { CalendarCheck, ChartLine, Cube, Gauge, Tray } from "@phosphor-icons/react/dist/ssr";
-import { Skeleton, SkeletonText, ToastProvider } from "@/components/ui";
-import { cn } from "@/lib/cn";
-import { MANAGE_SECTION_EVENT, consumePendingManageSection } from "@/lib/app-events";
-import styles from "./manage-view.module.css";
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
+import { CalendarCheck, ChartLine, Cube, Gauge, Tray } from '@phosphor-icons/react/dist/ssr';
+import { Skeleton, SkeletonText, ToastProvider } from '@/components/ui';
+import { cn } from '@/lib/cn';
+import { MANAGE_SECTION_EVENT, consumePendingManageSection } from '@/lib/app-events';
+import styles from './manage-view.module.css';
 
 /** Section-shaped placeholder: heading, a line of copy, then a card grid. */
 function SectionSkeleton() {
@@ -26,24 +26,26 @@ function SectionSkeleton() {
 }
 
 /** Every section is its own chunk; the view opens on Overview and loads the rest on demand. */
-const Overview = dynamic(() => import("./overview").then((m) => m.Overview), { loading: SectionSkeleton });
-const Workspaces = dynamic(() => import("./workspaces").then((m) => m.Workspaces), { loading: SectionSkeleton });
-const Activity = dynamic(() => import("./activity").then((m) => m.Activity), { loading: SectionSkeleton });
-const Inbox = dynamic(() => import("./inbox").then((m) => m.Inbox), { loading: SectionSkeleton });
-const Routines = dynamic(() => import("@/components/settings/tabs/schedules-tab").then((m) => m.SchedulesTab), { loading: SectionSkeleton });
+const Overview = dynamic(() => import('./overview').then((m) => m.Overview), { loading: SectionSkeleton });
+const Workspaces = dynamic(() => import('./workspaces').then((m) => m.Workspaces), { loading: SectionSkeleton });
+const Activity = dynamic(() => import('./activity').then((m) => m.Activity), { loading: SectionSkeleton });
+const Inbox = dynamic(() => import('./inbox').then((m) => m.Inbox), { loading: SectionSkeleton });
+const Routines = dynamic(() => import('@/components/settings/tabs/schedules-tab').then((m) => m.SchedulesTab), {
+  loading: SectionSkeleton,
+});
 
 /**
  * Workspaces: health of what the agent depends on, your E2B sandboxes, activity across runs, the
  * inbox of questions and approvals, and routines. Destructive actions are hold-to-confirm.
  */
-type Section = "overview" | "sandboxes" | "activity" | "inbox" | "routines";
+type Section = 'overview' | 'sandboxes' | 'activity' | 'inbox' | 'routines';
 
 const SECTIONS: Array<{ id: Section; label: string; icon: typeof Gauge }> = [
-  { id: "overview", label: "Overview", icon: Gauge },
-  { id: "sandboxes", label: "Sandboxes", icon: Cube },
-  { id: "activity", label: "Activity", icon: ChartLine },
-  { id: "inbox", label: "Inbox", icon: Tray },
-  { id: "routines", label: "Routines", icon: CalendarCheck },
+  { id: 'overview', label: 'Overview', icon: Gauge },
+  { id: 'sandboxes', label: 'Sandboxes', icon: Cube },
+  { id: 'activity', label: 'Activity', icon: ChartLine },
+  { id: 'inbox', label: 'Inbox', icon: Tray },
+  { id: 'routines', label: 'Routines', icon: CalendarCheck },
 ];
 
 /** Section ids + labels for the command palette. */
@@ -55,7 +57,7 @@ export function ManageView() {
   // A palette deep-link queued before this mounted wins the initial section.
   const [section, setSection] = useState<Section>(() => {
     const queued = consumePendingManageSection();
-    return isSection(queued) ? queued : "overview";
+    return isSection(queued) ? queued : 'overview';
   });
 
   // Live deep-links while Manage is already open.
@@ -70,7 +72,7 @@ export function ManageView() {
   }, []);
 
   // `/manage?section=inbox` is the deep link behind the topbar waiting badge.
-  const requested = useSearchParams().get("section");
+  const requested = useSearchParams().get('section');
   const [seenRequest, setSeenRequest] = useState<string | null>(null);
   if (requested !== seenRequest) {
     setSeenRequest(requested);
@@ -90,10 +92,10 @@ export function ManageView() {
                 key={item.id}
                 type="button"
                 className={cn(styles.navItem, section === item.id && styles.navItemActive)}
-                aria-current={section === item.id ? "page" : undefined}
+                aria-current={section === item.id ? 'page' : undefined}
                 onClick={() => setSection(item.id)}
               >
-                <Icon size={16} weight={section === item.id ? "fill" : "regular"} />
+                <Icon size={16} weight={section === item.id ? 'fill' : 'regular'} />
                 {item.label}
               </button>
             );
@@ -101,11 +103,11 @@ export function ManageView() {
         </nav>
 
         <main id="main" tabIndex={-1} className={styles.main}>
-          {section === "overview" && <Overview />}
-          {section === "sandboxes" && <Workspaces />}
-          {section === "activity" && <Activity />}
-          {section === "inbox" && <Inbox />}
-          {section === "routines" && <Routines />}
+          {section === 'overview' && <Overview />}
+          {section === 'sandboxes' && <Workspaces />}
+          {section === 'activity' && <Activity />}
+          {section === 'inbox' && <Inbox />}
+          {section === 'routines' && <Routines />}
         </main>
       </div>
     </ToastProvider>

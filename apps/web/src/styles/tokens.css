@@ -4,7 +4,7 @@
    ========================================================================= */
 
 :root,
-[data-theme="dark"] {
+[data-theme='dark'] {
   color-scheme: dark;
 
   /* Surfaces: 0 = deepest ink, 3 = raised control */
@@ -73,7 +73,7 @@
   --logo-bg: #ffffff; /* tile behind third-party app logos, both themes */
 }
 
-[data-theme="light"] {
+[data-theme='light'] {
   color-scheme: light;
 
   --ink-0: #f6f8fa;
@@ -165,7 +165,7 @@
   /* ---- Type -------------------------------------------------------- */
   --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-ui: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, 'SFMono-Regular', monospace;
 
   --fs-micro: 11px;
   --fs-tiny: 12px;
@@ -185,7 +185,26 @@
   --dur-panel: 280ms;
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
   /* Spring approximations as CSS linear() — no JS, compositor-only. */
-  --ease-spring: linear(0, 0.013 0.6%, 0.05 1.2%, 0.2 2.6%, 0.43 4.3%, 0.7 6.4%, 0.92 8.6%, 1.04 10.3%, 1.1 12%, 1.12 13.5%, 1.11 15.4%, 1.07 18%, 1.01 22.5%, 0.99 26.4%, 0.985 30%, 0.995 38%, 1.002 50%, 1);
+  --ease-spring: linear(
+    0,
+    0.013 0.6%,
+    0.05 1.2%,
+    0.2 2.6%,
+    0.43 4.3%,
+    0.7 6.4%,
+    0.92 8.6%,
+    1.04 10.3%,
+    1.1 12%,
+    1.12 13.5%,
+    1.11 15.4%,
+    1.07 18%,
+    1.01 22.5%,
+    0.99 26.4%,
+    0.985 30%,
+    0.995 38%,
+    1.002 50%,
+    1
+  );
   --ease-snappy: cubic-bezier(0.2, 0.9, 0.25, 1.15);
   --dur-spring: 420ms;
   --stagger: 28ms;
@@ -226,24 +245,54 @@
 }
 
 /* `data-cat` on any element exposes its category hue as --cat. */
-[data-cat="screen"] { --cat: var(--cat-screen); }
-[data-cat="browser"] { --cat: var(--cat-browser); }
-[data-cat="rdp"] { --cat: var(--cat-rdp); }
-[data-cat="shell"] { --cat: var(--cat-shell); }
-[data-cat="files"] { --cat: var(--cat-files); }
-[data-cat="connector"] { --cat: var(--cat-connector); }
-[data-cat="mcp"] { --cat: var(--cat-mcp); }
-[data-cat="memory"] { --cat: var(--cat-memory); }
-[data-cat="schedule"] { --cat: var(--cat-schedule); }
-[data-cat="human"] { --cat: var(--cat-human); }
-[data-cat="other"] { --cat: var(--cat-other); }
-[data-cat="think"] { --cat: var(--c-think); }
-[data-cat="agent"] { --cat: var(--c-agent); }
-[data-cat="money"] { --cat: var(--c-money); }
-[data-cat="error"] { --cat: var(--c-error); }
+[data-cat='screen'] {
+  --cat: var(--cat-screen);
+}
+[data-cat='browser'] {
+  --cat: var(--cat-browser);
+}
+[data-cat='rdp'] {
+  --cat: var(--cat-rdp);
+}
+[data-cat='shell'] {
+  --cat: var(--cat-shell);
+}
+[data-cat='files'] {
+  --cat: var(--cat-files);
+}
+[data-cat='connector'] {
+  --cat: var(--cat-connector);
+}
+[data-cat='mcp'] {
+  --cat: var(--cat-mcp);
+}
+[data-cat='memory'] {
+  --cat: var(--cat-memory);
+}
+[data-cat='schedule'] {
+  --cat: var(--cat-schedule);
+}
+[data-cat='human'] {
+  --cat: var(--cat-human);
+}
+[data-cat='other'] {
+  --cat: var(--cat-other);
+}
+[data-cat='think'] {
+  --cat: var(--c-think);
+}
+[data-cat='agent'] {
+  --cat: var(--c-agent);
+}
+[data-cat='money'] {
+  --cat: var(--c-money);
+}
+[data-cat='error'] {
+  --cat: var(--c-error);
+}
 
 /* Manage mode recolors the primary accent to amber (docs/MANAGE_TAB.md). */
-[data-mode="manage"] {
+[data-mode='manage'] {
   --signal: var(--amber);
   --signal-dim: var(--amber-dim);
   --on-signal: var(--on-amber);
@@ -262,7 +311,7 @@
 }
 
 /* Settings → Appearance overrides (set on <html> by AppearanceSync). */
-:root[data-motion="reduce"] {
+:root[data-motion='reduce'] {
   --dur-spring: 0ms;
   --stagger: 0ms;
   --dur-micro: 0ms;
@@ -270,7 +319,7 @@
   --dur-panel: 0ms;
 }
 
-:root[data-density="compact"] {
+:root[data-density='compact'] {
   --sp-3: 10px;
   --sp-4: 12px;
   --sp-5: 16px;
@@ -278,7 +327,7 @@
 }
 
 /* "Reduced motion: off" keeps motion even when the OS asks for less. */
-:root[data-motion="full"] {
+:root[data-motion='full'] {
   --dur-spring: 420ms;
   --stagger: 28ms;
   --dur-micro: 120ms;

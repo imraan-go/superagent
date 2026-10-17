@@ -10,15 +10,10 @@
 }
 
 .skeleton::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--skeleton-sheen) 50%,
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, var(--skeleton-sheen) 50%, transparent);
   transform: translateX(-100%);
   animation: sheen 1.4s var(--ease-out) infinite;
 }

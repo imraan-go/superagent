@@ -44,7 +44,12 @@ export async function createScheduleWithOutbox(db: Db, input: CreateScheduleInpu
         chatId: input.chatId ?? null,
       })
       .returning();
-    await enqueueOutbox(tx, { ownerId: input.ownerId, kind: 'create_schedule', refId: id, payload: { scheduleId: id } });
+    await enqueueOutbox(tx, {
+      ownerId: input.ownerId,
+      kind: 'create_schedule',
+      refId: id,
+      payload: { scheduleId: id },
+    });
     return s!;
   });
 }
@@ -62,7 +67,10 @@ export async function transitionSchedule(db: Db, ownerId: string, id: string, t:
   if (s.state === 'deleted') throw new NotFoundError('schedule');
   const { kind, state } = TRANSITIONS[t];
   await db.transaction(async (tx) => {
-    await tx.update(schedules).set({ state, updatedAt: new Date() }).where(and(eq(schedules.id, s.id), eq(schedules.ownerId, ownerId)));
+    await tx
+      .update(schedules)
+      .set({ state, updatedAt: new Date() })
+      .where(and(eq(schedules.id, s.id), eq(schedules.ownerId, ownerId)));
     await enqueueOutbox(tx, { ownerId, kind, refId: s.id, payload: { scheduleId: s.id } });
   });
   return { schedule: s, state };

@@ -7,7 +7,9 @@
   position: relative;
   flex-shrink: 0;
   color: var(--text-3);
-  transition: color var(--dur-panel) var(--ease-out), filter var(--dur-panel) var(--ease-out);
+  transition:
+    color var(--dur-panel) var(--ease-out),
+    filter var(--dur-panel) var(--ease-out);
 }
 
 .arc {
@@ -203,13 +205,13 @@
 
 /* Reduced motion: every state becomes a static, still-distinguishable glyph. */
 @media (prefers-reduced-motion: reduce) {
-  :root:not([data-motion="full"]) .arc,
-  :root:not([data-motion="full"]) .core {
+  :root:not([data-motion='full']) .arc,
+  :root:not([data-motion='full']) .core {
     animation: none !important;
   }
 }
 
-:root[data-motion="reduce"] .arc,
-:root[data-motion="reduce"] .core {
+:root[data-motion='reduce'] .arc,
+:root[data-motion='reduce'] .core {
   animation: none !important;
 }

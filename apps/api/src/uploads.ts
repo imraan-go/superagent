@@ -51,16 +51,29 @@ export function sanitizeFileName(name: string): string {
   return cut || 'file';
 }
 
-export type UploadCheck = { ok: true; name: string; mime: string } | { ok: false; code: 'empty' | 'too_large' | 'type_not_allowed' | 'content_mismatch'; message: string };
+export type UploadCheck =
+  | { ok: true; name: string; mime: string }
+  | { ok: false; code: 'empty' | 'too_large' | 'type_not_allowed' | 'content_mismatch'; message: string };
 
 export function validateUpload(rawName: string, bytes: Uint8Array, maxBytes: number): UploadCheck {
   const name = sanitizeFileName(rawName);
   if (bytes.byteLength === 0) return { ok: false, code: 'empty', message: 'That file is empty.' };
-  if (bytes.byteLength > maxBytes) return { ok: false, code: 'too_large', message: `Files are limited to ${Math.floor(maxBytes / (1024 * 1024))} MB.` };
+  if (bytes.byteLength > maxBytes)
+    return {
+      ok: false,
+      code: 'too_large',
+      message: `Files are limited to ${Math.floor(maxBytes / (1024 * 1024))} MB.`,
+    };
   const dot = name.lastIndexOf('.');
   const ext = dot < 0 ? '' : name.slice(dot + 1).toLowerCase();
   const mime = ALLOWED[ext];
-  if (!mime) return { ok: false, code: 'type_not_allowed', message: `.${ext || '?'} files are not accepted. Allowed: ${Object.keys(ALLOWED).join(', ')}.` };
-  if (!sniff(ext, bytes)) return { ok: false, code: 'content_mismatch', message: 'The file contents do not match its extension.' };
+  if (!mime)
+    return {
+      ok: false,
+      code: 'type_not_allowed',
+      message: `.${ext || '?'} files are not accepted. Allowed: ${Object.keys(ALLOWED).join(', ')}.`,
+    };
+  if (!sniff(ext, bytes))
+    return { ok: false, code: 'content_mismatch', message: 'The file contents do not match its extension.' };
   return { ok: true, name, mime };
 }

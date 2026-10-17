@@ -13,17 +13,35 @@ export const CONFIRM_OPTIONS = [
 
 export async function createQuestion(
   db: DbOrTx,
-  q: { ownerId: string; taskId: string; chatId: string | null; toolCallId: string; kind: string; prompt: string; options: Array<{ id: string; label: string }>; gate: boolean; expiresAt: Date },
+  q: {
+    ownerId: string;
+    taskId: string;
+    chatId: string | null;
+    toolCallId: string;
+    kind: string;
+    prompt: string;
+    options: Array<{ id: string; label: string }>;
+    gate: boolean;
+    expiresAt: Date;
+  },
 ) {
   // Idempotent per tool call: a retried Activity returns the question it already created.
   await db.insert(questions).values(q).onConflictDoNothing({ target: questions.toolCallId });
-  const rows = await db.select().from(questions).where(and(eq(questions.toolCallId, q.toolCallId), eq(questions.ownerId, q.ownerId))).limit(1);
+  const rows = await db
+    .select()
+    .from(questions)
+    .where(and(eq(questions.toolCallId, q.toolCallId), eq(questions.ownerId, q.ownerId)))
+    .limit(1);
   return rows[0]!;
 }
 
 export async function getQuestionForOwner(db: DbOrTx, ownerId: string, id: string) {
   if (!isUuid(id)) throw new NotFoundError('question');
-  const rows = await db.select().from(questions).where(and(eq(questions.id, id), eq(questions.ownerId, ownerId))).limit(1);
+  const rows = await db
+    .select()
+    .from(questions)
+    .where(and(eq(questions.id, id), eq(questions.ownerId, ownerId)))
+    .limit(1);
   if (!rows[0]) throw new NotFoundError('question');
   return rows[0];
 }
@@ -38,7 +56,10 @@ export async function pendingQuestionForChat(db: DbOrTx, ownerId: string, chatId
 }
 
 export async function listPendingQuestions(db: DbOrTx, ownerId: string) {
-  const rows = await db.select().from(questions).where(and(eq(questions.ownerId, ownerId), eq(questions.status, 'pending')));
+  const rows = await db
+    .select()
+    .from(questions)
+    .where(and(eq(questions.ownerId, ownerId), eq(questions.status, 'pending')));
   return rows.filter((q) => q.expiresAt.getTime() > Date.now());
 }
 
@@ -50,7 +71,11 @@ export async function listPendingQuestions(db: DbOrTx, ownerId: string) {
 export async function answerQuestion(db: Db, ownerId: string, id: string, a: { choices: string[]; text?: string }) {
   return db.transaction(async (tx) => {
     if (!isUuid(id)) throw new NotFoundError('question');
-    const rows = await tx.select().from(questions).where(and(eq(questions.id, id), eq(questions.ownerId, ownerId))).for('update');
+    const rows = await tx
+      .select()
+      .from(questions)
+      .where(and(eq(questions.id, id), eq(questions.ownerId, ownerId)))
+      .for('update');
     const q = rows[0];
     if (!q) throw new NotFoundError('question');
     if (q.status !== 'pending') throw new ConflictError(`question is already ${q.status}`);
@@ -60,7 +85,8 @@ export async function answerQuestion(db: Db, ownerId: string, id: string, a: { c
     }
     const valid = new Set(q.options.map((o) => o.id));
     const choices = [...new Set(a.choices)].filter((c) => valid.has(c));
-    if (a.choices.length && choices.length !== new Set(a.choices).size) throw new ConflictError('answer contains an unknown option');
+    if (a.choices.length && choices.length !== new Set(a.choices).size)
+      throw new ConflictError('answer contains an unknown option');
     if ((q.kind === 'single' || q.kind === 'confirm') && choices.length > 1) throw new ConflictError('pick one option');
     if (q.kind === 'confirm' && !choices.length) {
       // A typed reply to a Yes/No question is read as "no" unless it clearly says yes.

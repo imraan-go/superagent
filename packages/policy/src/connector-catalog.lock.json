@@ -9,15 +9,7 @@
     "toolkit": "github",
     "version": "20261014_00",
     "verifiedAt": "2026-10-16T08:45:57.890Z",
-    "params": [
-      "page",
-      "sort",
-      "type",
-      "since",
-      "before",
-      "per_page",
-      "direction"
-    ]
+    "params": ["page", "sort", "type", "since", "before", "per_page", "direction"]
   },
   "GOOGLECALENDAR_EVENTS_LIST": {
     "toolkit": "googlecalendar",
@@ -144,75 +136,37 @@
     "toolkit": "notion",
     "version": "20261008_00",
     "verifiedAt": "2026-10-16T08:45:59.410Z",
-    "params": [
-      "page_id",
-      "include_transcript"
-    ]
+    "params": ["page_id", "include_transcript"]
   },
   "NOTION_QUERY_DATABASE": {
     "toolkit": "notion",
     "version": "20261008_00",
     "verifiedAt": "2026-10-16T08:45:59.586Z",
-    "params": [
-      "sorts",
-      "page_size",
-      "database_id",
-      "start_cursor"
-    ]
+    "params": ["sorts", "page_size", "database_id", "start_cursor"]
   },
   "NOTION_CREATE_NOTION_PAGE": {
     "toolkit": "notion",
     "version": "20261008_00",
     "verifiedAt": "2026-10-16T08:45:59.767Z",
-    "params": [
-      "icon",
-      "cover",
-      "title",
-      "markdown",
-      "parent_id"
-    ]
+    "params": ["icon", "cover", "title", "markdown", "parent_id"]
   },
   "SLACK_LIST_ALL_CHANNELS": {
     "toolkit": "slack",
     "version": "20261015_00",
     "verifiedAt": "2026-10-16T08:45:59.941Z",
-    "params": [
-      "limit",
-      "types",
-      "cursor",
-      "team_id",
-      "exclude_archived"
-    ]
+    "params": ["limit", "types", "cursor", "team_id", "exclude_archived"]
   },
   "SLACK_FETCH_CONVERSATION_HISTORY": {
     "toolkit": "slack",
     "version": "20261015_00",
     "verifiedAt": "2026-10-16T08:46:00.129Z",
-    "params": [
-      "limit",
-      "cursor",
-      "latest",
-      "oldest",
-      "channel",
-      "inclusive",
-      "include_all_metadata"
-    ]
+    "params": ["limit", "cursor", "latest", "oldest", "channel", "inclusive", "include_all_metadata"]
   },
   "SLACK_SEARCH_MESSAGES": {
     "toolkit": "slack",
     "version": "20261015_00",
     "verifiedAt": "2026-10-16T08:46:00.386Z",
-    "params": [
-      "page",
-      "sort",
-      "count",
-      "query",
-      "cursor",
-      "team_id",
-      "sort_dir",
-      "highlight",
-      "auto_paginate"
-    ]
+    "params": ["page", "sort", "count", "query", "cursor", "team_id", "sort_dir", "highlight", "auto_paginate"]
   },
   "SLACK_SEND_MESSAGE": {
     "toolkit": "slack",
@@ -315,24 +269,13 @@
     "toolkit": "googledocs",
     "version": "20261008_00",
     "verifiedAt": "2026-10-16T08:46:01.790Z",
-    "params": [
-      "title",
-      "image_assets",
-      "markdown_text"
-    ]
+    "params": ["title", "image_assets", "markdown_text"]
   },
   "GOOGLEDOCS_INSERT_TEXT_ACTION": {
     "toolkit": "googledocs",
     "version": "20261008_00",
     "verifiedAt": "2026-10-16T08:46:02.015Z",
-    "params": [
-      "tab_id",
-      "segment_id",
-      "document_id",
-      "append_to_end",
-      "text_to_insert",
-      "insertion_index"
-    ]
+    "params": ["tab_id", "segment_id", "document_id", "append_to_end", "text_to_insert", "insertion_index"]
   },
   "OUTLOOK_LIST_MESSAGES": {
     "toolkit": "outlook",

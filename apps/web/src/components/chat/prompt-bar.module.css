@@ -15,8 +15,7 @@
   border: var(--border) solid var(--glass-line);
   border-radius: var(--radius-panel);
   background:
-    linear-gradient(180deg, var(--glass-hi), transparent 50%),
-    color-mix(in srgb, var(--ink-2) 86%, transparent);
+    linear-gradient(180deg, var(--glass-hi), transparent 50%), color-mix(in srgb, var(--ink-2) 86%, transparent);
   backdrop-filter: blur(12px);
   box-shadow: var(--elev-2);
   transition:
@@ -230,7 +229,7 @@
 }
 
 .barBusy::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: -1px var(--sp-4) auto;
   height: 2px;
@@ -242,8 +241,12 @@
 }
 
 @keyframes sweep {
-  from { background-position: -40% 0; }
-  to { background-position: 140% 0; }
+  from {
+    background-position: -40% 0;
+  }
+  to {
+    background-position: 140% 0;
+  }
 }
 
 .toolbar {
@@ -263,7 +266,9 @@
   padding-right: var(--sp-3);
 }
 
-.caps::-webkit-scrollbar { display: none; }
+.caps::-webkit-scrollbar {
+  display: none;
+}
 
 .cap {
   display: inline-flex;
@@ -286,12 +291,26 @@
 }
 
 .cap {
-  transition: transform var(--dur-spring) var(--ease-spring), border-color var(--dur-std) var(--ease-out), color var(--dur-std) var(--ease-out);
+  transition:
+    transform var(--dur-spring) var(--ease-spring),
+    border-color var(--dur-std) var(--ease-out),
+    color var(--dur-std) var(--ease-out);
 }
-.cap svg { color: var(--cat, currentColor); }
-.cap:hover { color: var(--text-1); border-color: color-mix(in srgb, var(--cat, var(--line-strong)) 55%, var(--line)); transform: translateY(-1px); }
-.cap:active { transform: scale(0.95); }
-.cap:focus-visible { outline: 2px solid var(--signal); outline-offset: 1px; }
+.cap svg {
+  color: var(--cat, currentColor);
+}
+.cap:hover {
+  color: var(--text-1);
+  border-color: color-mix(in srgb, var(--cat, var(--line-strong)) 55%, var(--line));
+  transform: translateY(-1px);
+}
+.cap:active {
+  transform: scale(0.95);
+}
+.cap:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 1px;
+}
 
 .capOn {
   border-color: color-mix(in oklab, var(--cat, var(--signal)) 60%, var(--line));
@@ -299,7 +318,10 @@
   color: var(--cat, var(--signal));
 }
 
-.capOn:hover { color: var(--cat, var(--signal)); border-color: var(--cat, var(--signal)); }
+.capOn:hover {
+  color: var(--cat, var(--signal));
+  border-color: var(--cat, var(--signal));
+}
 
 .right {
   margin-left: auto;
@@ -316,7 +338,10 @@
 }
 
 .send {
-  transition: background var(--dur-micro) ease, color var(--dur-micro) ease, box-shadow var(--dur-std) ease;
+  transition:
+    background var(--dur-micro) ease,
+    color var(--dur-micro) ease,
+    box-shadow var(--dur-std) ease;
 }
 
 .sendReady {
@@ -360,7 +385,7 @@
   cursor: pointer;
 }
 
-.slash [aria-selected="true"] button,
+.slash [aria-selected='true'] button,
 .slash button:hover {
   background: var(--ink-3);
   color: var(--text-1);
@@ -391,16 +416,32 @@
   font-size: inherit;
 }
 
-.capNote { color: var(--signal); }
+.capNote {
+  color: var(--signal);
+}
 
 @media (max-width: 640px) {
-  .wrap { padding-inline: var(--sp-3); }
-  .cap span { display: none; }
-  .cap { width: 28px; justify-content: center; padding: 0; }
-  .keys > span:first-child { display: none; }
-  .pace { display: none; }
+  .wrap {
+    padding-inline: var(--sp-3);
+  }
+  .cap span {
+    display: none;
+  }
+  .cap {
+    width: 28px;
+    justify-content: center;
+    padding: 0;
+  }
+  .keys > span:first-child {
+    display: none;
+  }
+  .pace {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .barBusy::before { animation: none; }
+  .barBusy::before {
+    animation: none;
+  }
 }

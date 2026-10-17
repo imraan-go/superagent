@@ -68,7 +68,11 @@ export class ComposioConnector {
   }
 
   /** Starts a Connect Link / OAuth flow. The returned redirectUrl is opened by the user in their browser. */
-  async initiate(composioUserId: string, toolkit: Toolkit, callbackUrl: string): Promise<{ redirectUrl: string; connectedAccountId: string }> {
+  async initiate(
+    composioUserId: string,
+    toolkit: Toolkit,
+    callbackUrl: string,
+  ): Promise<{ redirectUrl: string; connectedAccountId: string }> {
     const authConfigs = composioAuthConfigs();
     const session = await this.composio.sessions.create(composioUserId, {
       sessionPreset: 'direct_tools',
@@ -89,7 +93,13 @@ export class ComposioConnector {
   async verify(composioUserId: string, toolkit: Toolkit, connectedAccountId: string): Promise<VerifiedConnection> {
     const owned = await this.composio.connectedAccounts.list({ userIds: [composioUserId], toolkitSlugs: [toolkit] });
     const match = owned.items.find((i) => i.id === connectedAccountId);
-    if (!match) return { state: 'failed', statusReason: 'connected account is not owned by this user/toolkit', toolkit: null, authConfigId: null };
+    if (!match)
+      return {
+        state: 'failed',
+        statusReason: 'connected account is not owned by this user/toolkit',
+        toolkit: null,
+        authConfigId: null,
+      };
     const full = await this.composio.connectedAccounts.get(connectedAccountId);
     return {
       state: mapStatus(full.status),
@@ -104,8 +114,16 @@ export class ComposioConnector {
   }
 
   /** Executes exactly one approved catalogue slug against exactly one bound account. */
-  async execute(composioUserId: string, toolkit: Toolkit, connectedAccountId: string, slug: string, args: Record<string, unknown>, signal?: AbortSignal): Promise<ExecuteResult> {
-    if (!CONNECTOR_CANDIDATES.some((c) => c.slug === slug && c.toolkit === toolkit)) throw new Error(`tool ${slug} is not in the curated catalogue`);
+  async execute(
+    composioUserId: string,
+    toolkit: Toolkit,
+    connectedAccountId: string,
+    slug: string,
+    args: Record<string, unknown>,
+    signal?: AbortSignal,
+  ): Promise<ExecuteResult> {
+    if (!CONNECTOR_CANDIDATES.some((c) => c.slug === slug && c.toolkit === toolkit))
+      throw new Error(`tool ${slug} is not in the curated catalogue`);
     const session = await this.composio.sessions.create(
       composioUserId,
       {
@@ -132,8 +150,18 @@ export class ComposioConnector {
           signal.addEventListener('abort', () => reject(new Error('composio execution aborted')), { once: true });
         })
       : undefined;
-    const res = (await (aborted ? Promise.race([call, aborted]) : call)) as { data?: unknown; error?: string | null; logId?: string; resultType?: string };
-    return { ok: res.resultType ? res.resultType === 'completed' : !res.error, data: res.data ?? null, error: res.error ?? null, logId: res.logId ?? null };
+    const res = (await (aborted ? Promise.race([call, aborted]) : call)) as {
+      data?: unknown;
+      error?: string | null;
+      logId?: string;
+      resultType?: string;
+    };
+    return {
+      ok: res.resultType ? res.resultType === 'completed' : !res.error,
+      data: res.data ?? null,
+      error: res.error ?? null,
+      logId: res.logId ?? null,
+    };
   }
 
   /** Development/setup-time discovery of a slug's live schema. */
@@ -150,7 +178,11 @@ let instance: ComposioConnector | undefined;
 
 export function getComposio(): ComposioConnector {
   if (instance) return instance;
-  const { COMPOSIO_API_KEY } = requireKeys('composio', ['COMPOSIO_API_KEY'], 'Add COMPOSIO_API_KEY to .env (see docs/credentials-checklist.md).');
+  const { COMPOSIO_API_KEY } = requireKeys(
+    'composio',
+    ['COMPOSIO_API_KEY'],
+    'Add COMPOSIO_API_KEY to .env (see docs/credentials-checklist.md).',
+  );
   getEnv();
   instance = new ComposioConnector(COMPOSIO_API_KEY);
   return instance;

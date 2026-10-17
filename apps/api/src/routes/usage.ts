@@ -27,7 +27,11 @@ function usd(nanos: unknown): number {
   return Number(nanosToUsd(BigInt(String(nanos))));
 }
 
-async function totals(db: Db, ownerId: string, where: { since?: Date; taskIds?: ReturnType<typeof sql> | null; taskId?: string }): Promise<Totals> {
+async function totals(
+  db: Db,
+  ownerId: string,
+  where: { since?: Date; taskIds?: ReturnType<typeof sql> | null; taskId?: string },
+): Promise<Totals> {
   const u = schema.usageEntries;
   const conds = [eq(u.ownerId, ownerId)];
   if (where.since) conds.push(gte(u.createdAt, where.since));
@@ -44,7 +48,16 @@ async function totals(db: Db, ownerId: string, where: { since?: Date; taskIds?: 
     })
     .from(u)
     .where(and(...conds));
-  return row ? { tokensIn: row.tokensIn, tokensOut: row.tokensOut, tokensCached: row.tokensCached, costUsd: usd(row.cost), calls: row.calls, toolCalls: row.toolCalls } : { ...ZERO };
+  return row
+    ? {
+        tokensIn: row.tokensIn,
+        tokensOut: row.tokensOut,
+        tokensCached: row.tokensCached,
+        costUsd: usd(row.cost),
+        calls: row.calls,
+        toolCalls: row.toolCalls,
+      }
+    : { ...ZERO };
 }
 
 export function registerUsageRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: RouteHelpers) {
@@ -78,8 +91,22 @@ export function registerUsageRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: RouteH
       month,
       chat,
       run,
-      stats: { toolCalls: stats?.toolCalls ?? 0, toolOk: stats?.toolOk ?? 0, toolFailed: stats?.toolFailed ?? 0, avgToolMs: null },
-      budget: limitUsd > 0 ? { limitUsd, period: 'month', warnAtPct, pct, state: month.costUsd > limitUsd ? 'over' : pct >= warnAtPct ? 'warn' : 'ok' } : null,
+      stats: {
+        toolCalls: stats?.toolCalls ?? 0,
+        toolOk: stats?.toolOk ?? 0,
+        toolFailed: stats?.toolFailed ?? 0,
+        avgToolMs: null,
+      },
+      budget:
+        limitUsd > 0
+          ? {
+              limitUsd,
+              period: 'month',
+              warnAtPct,
+              pct,
+              state: month.costUsd > limitUsd ? 'over' : pct >= warnAtPct ? 'warn' : 'ok',
+            }
+          : null,
     };
   };
 
@@ -120,7 +147,8 @@ export function registerUsageRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: RouteH
   app.get('/api/usage/report', async (c) => {
     const ownerId = uid(c);
     const groupBy = (c.req.query('groupBy') ?? 'day') as keyof typeof GROUPS;
-    if (!GROUPS[groupBy]) return c.json({ error: 'invalid_request', message: 'groupBy must be day, model, kind or task' }, 400);
+    if (!GROUPS[groupBy])
+      return c.json({ error: 'invalid_request', message: 'groupBy must be day, model, kind or task' }, 400);
     const range = reportRange(c.req.query('from'), c.req.query('to'));
     if (!range) return c.json({ error: 'invalid_request', message: 'bad date range' }, 400);
     const u = schema.usageEntries;
@@ -140,13 +168,41 @@ export function registerUsageRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: RouteH
       .orderBy(sql`1 desc`);
     let titles = new Map<string, string>();
     if (groupBy === 'task' && rows.length) {
-      const t = await d.db.select({ id: schema.tasks.id, title: schema.tasks.title }).from(schema.tasks).where(eq(schema.tasks.ownerId, ownerId));
+      const t = await d.db
+        .select({ id: schema.tasks.id, title: schema.tasks.title })
+        .from(schema.tasks)
+        .where(eq(schema.tasks.ownerId, ownerId));
       titles = new Map(t.map((x) => [x.id, x.title]));
     }
-    const out = rows.map((r) => ({ key: r.key, label: titles.get(r.key) ?? r.key, events: r.events, tokensIn: r.tokensIn, tokensOut: r.tokensOut, tokensCached: r.tokensCached, costUsd: usd(r.cost) }));
-    const tot = out.reduce((a, r) => ({ events: a.events + r.events, tokensIn: a.tokensIn + r.tokensIn, tokensOut: a.tokensOut + r.tokensOut, tokensCached: a.tokensCached + r.tokensCached, costUsd: a.costUsd + r.costUsd }), { events: 0, tokensIn: 0, tokensOut: 0, tokensCached: 0, costUsd: 0 });
+    const out = rows.map((r) => ({
+      key: r.key,
+      label: titles.get(r.key) ?? r.key,
+      events: r.events,
+      tokensIn: r.tokensIn,
+      tokensOut: r.tokensOut,
+      tokensCached: r.tokensCached,
+      costUsd: usd(r.cost),
+    }));
+    const tot = out.reduce(
+      (a, r) => ({
+        events: a.events + r.events,
+        tokensIn: a.tokensIn + r.tokensIn,
+        tokensOut: a.tokensOut + r.tokensOut,
+        tokensCached: a.tokensCached + r.tokensCached,
+        costUsd: a.costUsd + r.costUsd,
+      }),
+      { events: 0, tokensIn: 0, tokensOut: 0, tokensCached: 0, costUsd: 0 },
+    );
     const today = await totals(d.db, ownerId, { since: new Date(new Date().toISOString().slice(0, 10)) });
-    return c.json({ groupBy, from: range.from.toISOString(), to: range.to.toISOString(), rows: out, totals: tot, todayUsd: today.costUsd, note: 'Costs are measured (Gateway-reported), estimated or unknown (counted as 0). Not a vendor invoice.' });
+    return c.json({
+      groupBy,
+      from: range.from.toISOString(),
+      to: range.to.toISOString(),
+      rows: out,
+      totals: tot,
+      todayUsd: today.costUsd,
+      note: 'Costs are measured (Gateway-reported), estimated or unknown (counted as 0). Not a vendor invoice.',
+    });
   });
 
   app.get('/api/usage/export', async (c) => {
@@ -154,14 +210,46 @@ export function registerUsageRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: RouteH
     const range = reportRange(c.req.query('from'), c.req.query('to'));
     if (!range) return c.json({ error: 'invalid_request', message: 'bad date range' }, 400);
     const u = schema.usageEntries;
-    const rows = await d.db.select().from(u).where(and(eq(u.ownerId, ownerId), gte(u.createdAt, range.from), lt(u.createdAt, range.to))).orderBy(u.createdAt);
+    const rows = await d.db
+      .select()
+      .from(u)
+      .where(and(eq(u.ownerId, ownerId), gte(u.createdAt, range.from), lt(u.createdAt, range.to)))
+      .orderBy(u.createdAt);
     const esc = (v: unknown) => {
       const s = v === null || v === undefined ? '' : String(v);
       // Neutralise spreadsheet formulas and quote every field.
       return `"${(/^[=+\-@]/.test(s) ? `'${s}` : s).replace(/"/g, '""')}"`;
     };
-    const header = ['created_at', 'kind', 'provider', 'model', 'task_id', 'input_tokens', 'output_tokens', 'cache_read_tokens', 'quantity', 'cost_usd', 'cost_status'];
-    const lines = rows.map((r) => [r.createdAt.toISOString(), r.kind, r.provider, r.model, r.taskId, r.inputTokens, r.outputTokens, r.cacheReadTokens, r.quantity, r.costNanos !== null ? nanosToUsd(r.costNanos) : '', r.costStatus].map(esc).join(','));
+    const header = [
+      'created_at',
+      'kind',
+      'provider',
+      'model',
+      'task_id',
+      'input_tokens',
+      'output_tokens',
+      'cache_read_tokens',
+      'quantity',
+      'cost_usd',
+      'cost_status',
+    ];
+    const lines = rows.map((r) =>
+      [
+        r.createdAt.toISOString(),
+        r.kind,
+        r.provider,
+        r.model,
+        r.taskId,
+        r.inputTokens,
+        r.outputTokens,
+        r.cacheReadTokens,
+        r.quantity,
+        r.costNanos !== null ? nanosToUsd(r.costNanos) : '',
+        r.costStatus,
+      ]
+        .map(esc)
+        .join(','),
+    );
     c.header('Content-Type', 'text/csv; charset=utf-8');
     c.header('Content-Disposition', 'attachment; filename="superagent-usage.csv"');
     return c.body([header.join(','), ...lines].join('\n'));

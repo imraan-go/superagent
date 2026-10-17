@@ -52,10 +52,16 @@
   text-overflow: ellipsis;
 }
 
-.state[data-state="awake"] { color: var(--c-money); }
-.state[data-state="waking"],
-.state[data-state="asleep"] { color: var(--c-approval); }
-.state[data-state="offline"] { color: var(--c-error); }
+.state[data-state='awake'] {
+  color: var(--c-money);
+}
+.state[data-state='waking'],
+.state[data-state='asleep'] {
+  color: var(--c-approval);
+}
+.state[data-state='offline'] {
+  color: var(--c-error);
+}
 
 .state {
   display: inline-flex;
@@ -99,4 +105,3 @@
 }
 
 /* In the <1100px drawer the close button sits top-right; keep clear of it. */
-

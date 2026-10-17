@@ -32,22 +32,24 @@
 /* Colour semantics: live = agent teal, attention = amber, down = coral. */
 .wrap {
   background: color-mix(in srgb, var(--ink-2) 70%, transparent);
-  transition: color var(--dur-std) var(--ease-out), border-color var(--dur-std) var(--ease-out);
+  transition:
+    color var(--dur-std) var(--ease-out),
+    border-color var(--dur-std) var(--ease-out);
 }
 
-.wrap[data-status="live"],
-.wrap[data-status="ok"] {
+.wrap[data-status='live'],
+.wrap[data-status='ok'] {
   color: var(--c-agent);
   border-color: color-mix(in srgb, var(--c-agent) 40%, transparent);
   box-shadow: 0 0 16px color-mix(in srgb, var(--c-agent) 14%, transparent);
 }
 
-.wrap[data-status="warn"] {
+.wrap[data-status='warn'] {
   color: var(--c-approval);
   border-color: color-mix(in srgb, var(--c-approval) 40%, transparent);
 }
 
-.wrap[data-status="error"] {
+.wrap[data-status='error'] {
   color: var(--c-error);
   border-color: color-mix(in srgb, var(--c-error) 40%, transparent);
 }

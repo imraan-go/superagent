@@ -27,7 +27,9 @@ let owner: string;
 beforeAll(async () => {
   Runtime.install({ logger: new DefaultLogger('WARN') });
   const path = execSync('command -v temporal').toString().trim();
-  env = await TestWorkflowEnvironment.createLocal({ server: { executable: { type: 'existing-path', path }, ip: '127.0.0.1', ui: false } });
+  env = await TestWorkflowEnvironment.createLocal({
+    server: { executable: { type: 'existing-path', path }, ip: '127.0.0.1', ui: false },
+  });
 }, 120_000);
 
 afterAll(async () => {
@@ -60,11 +62,19 @@ async function insertSchedule(spec: object, timezone: string) {
   return id;
 }
 
-const setState = (id: string, state: string) => db.update(schema.schedules).set({ state }).where(eq(schema.schedules.id, id));
-const pendingOutbox = async () => db.select().from(schema.workflowOutbox).where(eq(schema.workflowOutbox.status, 'pending'));
+const setState = (id: string, state: string) =>
+  db.update(schema.schedules).set({ state }).where(eq(schema.schedules.id, id));
+const pendingOutbox = async () =>
+  db.select().from(schema.workflowOutbox).where(eq(schema.workflowOutbox.status, 'pending'));
 
 function localParts(iso: string, timeZone: string) {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, hour: '2-digit', minute: '2-digit', weekday: 'short', hourCycle: 'h23' }).formatToParts(new Date(iso));
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    weekday: 'short',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(iso));
   const get = (t: string) => parts.find((p) => p.type === t)?.value;
   return { weekday: get('weekday'), hour: get('hour'), minute: get('minute') };
 }
@@ -116,7 +126,10 @@ describe('outbox → Temporal schedules', () => {
     await setState(id, 'paused');
     const [createRow] = await claimOutbox(db);
     await enqueueOutbox(db, { ownerId: owner, kind: 'pause_schedule', refId: id });
-    const [pauseRow] = await db.select().from(schema.workflowOutbox).where(and(eq(schema.workflowOutbox.kind, 'pause_schedule'), eq(schema.workflowOutbox.refId, id)));
+    const [pauseRow] = await db
+      .select()
+      .from(schema.workflowOutbox)
+      .where(and(eq(schema.workflowOutbox.kind, 'pause_schedule'), eq(schema.workflowOutbox.refId, id)));
     await processOutboxRow(db, env.client, QUEUE, pauseRow!, log);
     await processOutboxRow(db, env.client, QUEUE, createRow!, log);
     await processOutboxRow(db, env.client, QUEUE, createRow!, log);
@@ -137,7 +150,9 @@ describe('outbox → Temporal schedules', () => {
 });
 
 describe('outbox → task workflows and projection recovery', () => {
-  const newTask = async () => (await createTaskWithOutbox(db, { ownerId: owner, title: 't', prompt: 'p', allowedDomains: [], retentionDays: 30 })).task;
+  const newTask = async () =>
+    (await createTaskWithOutbox(db, { ownerId: owner, title: 't', prompt: 'p', allowedDomains: [], retentionDays: 30 }))
+      .task;
 
   it('start_task is idempotent: a duplicate row never creates a second execution', async () => {
     const t = await newTask();
@@ -145,7 +160,8 @@ describe('outbox → task workflows and projection recovery', () => {
     await processOutboxRow(db, env.client, QUEUE, row!, log);
     await processOutboxRow(db, env.client, QUEUE, row!, log);
     const runs = [];
-    for await (const w of env.client.workflow.list({ query: `WorkflowId = '${taskWorkflowId(t.id)}'` })) runs.push(w.runId);
+    for await (const w of env.client.workflow.list({ query: `WorkflowId = '${taskWorkflowId(t.id)}'` }))
+      runs.push(w.runId);
     expect(runs).toHaveLength(1);
     await env.client.workflow.getHandle(taskWorkflowId(t.id)).terminate('test cleanup');
   });
@@ -166,7 +182,11 @@ describe('outbox → task workflows and projection recovery', () => {
     const ghost = await newTask();
     await db.delete(schema.workflowOutbox);
 
-    await env.client.workflow.start('agentTaskWorkflow', { taskQueue: QUEUE, workflowId: taskWorkflowId(ghost.id), args: [{ taskId: ghost.id, ownerId: owner }] });
+    await env.client.workflow.start('agentTaskWorkflow', {
+      taskQueue: QUEUE,
+      workflowId: taskWorkflowId(ghost.id),
+      args: [{ taskId: ghost.id, ownerId: owner }],
+    });
     await db.update(schema.tasks).set({ status: 'running' }).where(eq(schema.tasks.id, ghost.id));
     await env.client.workflow.getHandle(taskWorkflowId(ghost.id)).terminate('operator terminated');
 

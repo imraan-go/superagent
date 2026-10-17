@@ -1,4 +1,4 @@
-import type { ThemePreference } from "@/lib/theme";
+import type { ThemePreference } from '@/lib/theme';
 
 /**
  * Applies the theme before first paint so there is no flash of the wrong
@@ -9,8 +9,7 @@ import type { ThemePreference } from "@/lib/theme";
  */
 export function ThemeScript({ serverTheme }: { serverTheme?: ThemePreference | null }) {
   // `serverTheme` is a zod-validated enum, so interpolating it is safe.
-  const seeded =
-    serverTheme === "dark" || serverTheme === "light" || serverTheme === "system" ? serverTheme : null;
+  const seeded = serverTheme === 'dark' || serverTheme === 'light' || serverTheme === 'system' ? serverTheme : null;
   const script = `
 (function () {
   try {

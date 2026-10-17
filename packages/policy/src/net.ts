@@ -78,15 +78,23 @@ export function checkBrowserUrl(raw: string, allowedDomains: string[]): UrlCheck
   } catch {
     return { ok: false, reason: 'not a valid absolute URL' };
   }
-  if (url.protocol !== 'https:' && url.protocol !== 'http:') return { ok: false, reason: `scheme ${url.protocol} is not allowed` };
+  if (url.protocol !== 'https:' && url.protocol !== 'http:')
+    return { ok: false, reason: `scheme ${url.protocol} is not allowed` };
   if (url.username || url.password) return { ok: false, reason: 'credentials in URL are not allowed' };
-  if (url.port && url.port !== '80' && url.port !== '443') return { ok: false, reason: 'non-standard ports are not allowed' };
+  if (url.port && url.port !== '80' && url.port !== '443')
+    return { ok: false, reason: 'non-standard ports are not allowed' };
   const host = url.hostname.replace(/^\[|\]$/g, '');
   if (isIP(host)) return { ok: false, reason: 'IP-literal destinations are not allowed' };
-  if (BLOCKED_HOSTNAMES.has(host.toLowerCase()) || host.endsWith('.local') || host.endsWith('.internal') || !host.includes('.')) {
+  if (
+    BLOCKED_HOSTNAMES.has(host.toLowerCase()) ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal') ||
+    !host.includes('.')
+  ) {
     return { ok: false, reason: 'internal hostnames are not allowed' };
   }
   if (allowedDomains.length === 0) return { ok: false, reason: 'task has no approved browsing domains' };
-  if (!allowedDomains.some((d) => hostMatches(host, d))) return { ok: false, reason: `${host} is not in this task's approved domains` };
+  if (!allowedDomains.some((d) => hostMatches(host, d)))
+    return { ok: false, reason: `${host} is not in this task's approved domains` };
   return { ok: true, url };
 }

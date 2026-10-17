@@ -1,5 +1,17 @@
 import { sql } from 'drizzle-orm';
-import { bigint, bigserial, boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import {
+  bigint,
+  bigserial,
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' });
 const created = () => ts('created_at').notNull().defaultNow();
@@ -154,7 +166,11 @@ export const tasks = pgTable(
     completedAt: ts('completed_at'),
     expiresAt: ts('expires_at').notNull(),
   },
-  (t) => [uniqueIndex('tasks_owner_idem_uq').on(t.ownerId, t.idempotencyKey), index('tasks_owner_created_idx').on(t.ownerId, t.createdAt), index('tasks_chat_idx').on(t.chatId, t.createdAt)],
+  (t) => [
+    uniqueIndex('tasks_owner_idem_uq').on(t.ownerId, t.idempotencyKey),
+    index('tasks_owner_created_idx').on(t.ownerId, t.createdAt),
+    index('tasks_chat_idx').on(t.chatId, t.createdAt),
+  ],
 );
 
 /**
@@ -232,7 +248,10 @@ export const taskMessages = pgTable(
     content: jsonb('content').notNull(),
     createdAt: created(),
   },
-  (t) => [uniqueIndex('task_messages_dedupe_uq').on(t.taskId, t.dedupeKey), index('task_messages_task_idx').on(t.taskId, t.id)],
+  (t) => [
+    uniqueIndex('task_messages_dedupe_uq').on(t.taskId, t.dedupeKey),
+    index('task_messages_task_idx').on(t.taskId, t.id),
+  ],
 );
 
 /** Tool calls proposed by the model; arguments stay here, Temporal only sees toolCallId. */
@@ -269,7 +288,10 @@ export const taskEvents = pgTable(
     data: jsonb('data').notNull().default({}),
     createdAt: created(),
   },
-  (t) => [uniqueIndex('task_events_dedupe_uq').on(t.taskId, t.dedupeKey), index('task_events_task_idx').on(t.taskId, t.id)],
+  (t) => [
+    uniqueIndex('task_events_dedupe_uq').on(t.taskId, t.dedupeKey),
+    index('task_events_task_idx').on(t.taskId, t.id),
+  ],
 );
 
 export const workflowOutbox = pgTable(
@@ -287,7 +309,10 @@ export const workflowOutbox = pgTable(
     createdAt: created(),
     processedAt: ts('processed_at'),
   },
-  (t) => [index('workflow_outbox_pending_idx').on(t.status, t.availableAt), uniqueIndex('workflow_outbox_kind_ref_uq').on(t.kind, t.refId)],
+  (t) => [
+    index('workflow_outbox_pending_idx').on(t.status, t.availableAt),
+    uniqueIndex('workflow_outbox_kind_ref_uq').on(t.kind, t.refId),
+  ],
 );
 
 export const connectedAccounts = pgTable(

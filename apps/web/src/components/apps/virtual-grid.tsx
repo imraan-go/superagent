@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
-import styles from "./apps.module.css";
+import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import styles from './apps.module.css';
 
 export const ROW_H = 72;
 const OVERSCAN = 4;
@@ -10,19 +10,29 @@ const TWO_COL_MIN = 640;
 
 /** Move focus through the grid with the arrow keys (Up/Down jump a whole row of columns). */
 export function gridKeyNav(e: React.KeyboardEvent<HTMLElement>): void {
-  const keys = ["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End"];
+  const keys = ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
   if (!keys.includes(e.key)) return;
   const target = e.target as HTMLElement;
-  if (!target.matches("[data-app-main]")) return;
+  if (!target.matches('[data-app-main]')) return;
   const root = e.currentTarget;
-  const items = [...root.querySelectorAll<HTMLElement>("[data-app-main]")];
+  const items = [...root.querySelectorAll<HTMLElement>('[data-app-main]')];
   const i = items.indexOf(target);
   if (i < 0) return;
   // Columns = how many items share the first row's top edge.
   const top = items[0]!.getBoundingClientRect().top;
   const cols = Math.max(1, items.filter((el) => Math.abs(el.getBoundingClientRect().top - top) < 4).length);
   const next =
-    e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : e.key === "ArrowDown" ? i + cols : e.key === "ArrowUp" ? i - cols : e.key === "Home" ? 0 : items.length - 1;
+    e.key === 'ArrowRight'
+      ? i + 1
+      : e.key === 'ArrowLeft'
+        ? i - 1
+        : e.key === 'ArrowDown'
+          ? i + cols
+          : e.key === 'ArrowUp'
+            ? i - cols
+            : e.key === 'Home'
+              ? 0
+              : items.length - 1;
   const el = items[Math.max(0, Math.min(items.length - 1, next))];
   if (el && el !== target) {
     e.preventDefault();
@@ -57,7 +67,9 @@ export function VirtualGrid({
     if (!scrollEl) return;
     const measure = () => {
       const host = hostRef.current;
-      const offset = host ? host.getBoundingClientRect().top - scrollEl.getBoundingClientRect().top + scrollEl.scrollTop : 0;
+      const offset = host
+        ? host.getBoundingClientRect().top - scrollEl.getBoundingClientRect().top + scrollEl.scrollTop
+        : 0;
       setView({
         top: Math.max(0, scrollEl.scrollTop - offset),
         height: scrollEl.clientHeight,
@@ -65,11 +77,11 @@ export function VirtualGrid({
       });
     };
     measure();
-    scrollEl.addEventListener("scroll", measure, { passive: true });
+    scrollEl.addEventListener('scroll', measure, { passive: true });
     const ro = new ResizeObserver(measure);
     ro.observe(scrollEl);
     return () => {
-      scrollEl.removeEventListener("scroll", measure);
+      scrollEl.removeEventListener('scroll', measure);
       ro.disconnect();
     };
   }, [scrollEl]);
@@ -89,7 +101,13 @@ export function VirtualGrid({
     for (let c = 0; c < cols; c += 1) {
       const idx = r * cols + c;
       if (idx >= total) break;
-      const style = { position: "absolute", top: r * ROW_H, left: `${(c * 100) / cols}%`, width: `${100 / cols}%`, height: ROW_H } as const;
+      const style = {
+        position: 'absolute',
+        top: r * ROW_H,
+        left: `${(c * 100) / cols}%`,
+        width: `${100 / cols}%`,
+        height: ROW_H,
+      } as const;
       out.push(
         <div key={idx} role="listitem" className={styles.vcell} style={style} data-index={idx}>
           {getItem(idx) ?? skeleton(idx)}
@@ -98,7 +116,13 @@ export function VirtualGrid({
     }
   }
   return (
-    <div ref={hostRef} className={styles.vgrid} style={{ height: rows * ROW_H }} role="list" aria-label={`${total} apps`}>
+    <div
+      ref={hostRef}
+      className={styles.vgrid}
+      style={{ height: rows * ROW_H }}
+      role="list"
+      aria-label={`${total} apps`}
+    >
       {out}
     </div>
   );

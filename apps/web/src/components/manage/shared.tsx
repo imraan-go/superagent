@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
-import { Button, Dot, Skeleton } from "@/components/ui";
-import { ManageApiError } from "./api";
-import styles from "./shared.module.css";
+import type { ReactNode } from 'react';
+import { Button, Dot, Skeleton } from '@/components/ui';
+import { ManageApiError } from './api';
+import styles from './shared.module.css';
 
 export function SectionHeader({ title, children }: { title: string; children?: ReactNode }) {
   return (
@@ -17,8 +17,8 @@ export function SectionHeader({ title, children }: { title: string; children?: R
 /** Clear, specific failure state. */
 export function ErrorNote({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const err = error instanceof ManageApiError ? error : null;
-  const headline = err?.code === "network" ? "Server unreachable" : "Something went wrong.";
-  const detail = err?.message ?? (error instanceof Error ? error.message : "");
+  const headline = err?.code === 'network' ? 'Server unreachable' : 'Something went wrong.';
+  const detail = err?.message ?? (error instanceof Error ? error.message : '');
   return (
     <div className={styles.errorNote} role="alert">
       <Dot status="error" size="sm" />
@@ -46,10 +46,10 @@ export function SkeletonRows({ rows = 4, height = 36 }: { rows?: number; height?
 }
 
 export function formatWhen(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return '—';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export function formatDuration(ms: number): string {

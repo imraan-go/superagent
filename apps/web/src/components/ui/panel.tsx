@@ -1,12 +1,12 @@
-import type { HTMLAttributes, ReactNode } from "react";
-import { cn } from "@/lib/cn";
-import styles from "./panel.module.css";
+import type { HTMLAttributes, ReactNode } from 'react';
+import { cn } from '@/lib/cn';
+import styles from './panel.module.css';
 
-export type PanelTone = "default" | "live" | "attention" | "critical";
+export type PanelTone = 'default' | 'live' | 'attention' | 'critical';
 
 // `title` is widened to ReactNode (badges, counts), so the DOM attribute of the
 // same name is excluded rather than shadowed.
-export interface PanelProps extends Omit<HTMLAttributes<HTMLElement>, "title"> {
+export interface PanelProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
   title?: ReactNode;
   /** Rendered at the right of the header — icon buttons, counts, status dots. */
   actions?: ReactNode;
@@ -19,18 +19,18 @@ export interface PanelProps extends Omit<HTMLAttributes<HTMLElement>, "title"> {
   flush?: boolean;
   /** Remove body padding — tables and scroll lists manage their own. */
   bodyFlush?: boolean;
-  as?: "section" | "div" | "aside" | "article";
+  as?: 'section' | 'div' | 'aside' | 'article';
 }
 
 export function Panel({
   title,
   actions,
   badge,
-  tone = "default",
+  tone = 'default',
   quiet = false,
   flush = false,
   bodyFlush = false,
-  as: Tag = "section",
+  as: Tag = 'section',
   className,
   children,
   ...rest
@@ -41,7 +41,7 @@ export function Panel({
     <Tag
       className={cn(
         styles.panel,
-        tone !== "default" && styles[tone],
+        tone !== 'default' && styles[tone],
         quiet && styles.quiet,
         flush && styles.flush,
         className,

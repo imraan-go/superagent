@@ -1,7 +1,16 @@
 import type { Context, Hono } from 'hono';
 import { and, desc, eq, inArray, like, lt, sql } from 'drizzle-orm';
 import { capabilityStatus } from '@superagent/config';
-import { ConflictError, NotFoundError, enqueueOutbox, isUuid, listConnections, listPendingQuestions, questionPart, schema } from '@superagent/db';
+import {
+  ConflictError,
+  NotFoundError,
+  enqueueOutbox,
+  isUuid,
+  listConnections,
+  listPendingQuestions,
+  questionPart,
+  schema,
+} from '@superagent/db';
 import type { ApiDeps, AppEnvVars, RouteHelpers } from '../app';
 
 const ACTIVE = ['queued', 'running', 'waiting_approval'];
@@ -14,7 +23,11 @@ export function registerSystemRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: Route
   const { uid } = h;
 
   const workspacesOf = (ownerId: string) =>
-    d.db.select().from(schema.workspaces).where(eq(schema.workspaces.ownerId, ownerId)).orderBy(desc(schema.workspaces.updatedAt));
+    d.db
+      .select()
+      .from(schema.workspaces)
+      .where(eq(schema.workspaces.ownerId, ownerId))
+      .orderBy(desc(schema.workspaces.updatedAt));
 
   const publicWorkspace = (w: typeof schema.workspaces.$inferSelect) => ({
     id: w.id,
@@ -37,7 +50,12 @@ export function registerSystemRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: Route
     const [stale] = await d.db
       .select({ n: sql<number>`count(*)::int` })
       .from(schema.workflowOutbox)
-      .where(and(eq(schema.workflowOutbox.status, 'pending'), lt(schema.workflowOutbox.createdAt, new Date(Date.now() - 30_000))));
+      .where(
+        and(
+          eq(schema.workflowOutbox.status, 'pending'),
+          lt(schema.workflowOutbox.createdAt, new Date(Date.now() - 30_000)),
+        ),
+      );
     const [ws, conns, questions, approvals, running] = await Promise.all([
       workspacesOf(ownerId),
       listConnections(d.db, ownerId),
@@ -45,14 +63,22 @@ export function registerSystemRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: Route
       d.db
         .select({ n: sql<number>`count(*)::int` })
         .from(schema.actionIntents)
-        .where(and(eq(schema.actionIntents.ownerId, ownerId), eq(schema.actionIntents.status, 'pending_approval'), sql`${schema.actionIntents.expiresAt} > now()`)),
+        .where(
+          and(
+            eq(schema.actionIntents.ownerId, ownerId),
+            eq(schema.actionIntents.status, 'pending_approval'),
+            sql`${schema.actionIntents.expiresAt} > now()`,
+          ),
+        ),
       d.db
         .select({ n: sql<number>`count(*)::int` })
         .from(schema.tasks)
         .where(and(eq(schema.tasks.ownerId, ownerId), inArray(schema.tasks.status, ['queued', 'running']))),
     ]);
     return c.json({
-      capabilities: Object.fromEntries(Object.entries(caps).map(([k, v]) => [k, { configured: v.configured, missing: v.missing }])),
+      capabilities: Object.fromEntries(
+        Object.entries(caps).map(([k, v]) => [k, { configured: v.configured, missing: v.missing }]),
+      ),
       worker: (stale?.n ?? 0) > 0 ? 'stalled' : 'ok',
       running: running[0]?.n ?? 0,
       workspaces: ws.filter((w) => w.state !== 'killed').map(publicWorkspace),
@@ -131,16 +157,31 @@ export function registerSystemRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: Route
     const ownerId = uid(c);
     const id = c.req.param('id') ?? '';
     if (!isUuid(id)) throw new NotFoundError('workspace');
-    const [w] = await d.db.select().from(schema.workspaces).where(and(eq(schema.workspaces.id, id), eq(schema.workspaces.ownerId, ownerId))).limit(1);
+    const [w] = await d.db
+      .select()
+      .from(schema.workspaces)
+      .where(and(eq(schema.workspaces.id, id), eq(schema.workspaces.ownerId, ownerId)))
+      .limit(1);
     if (!w) throw new NotFoundError('workspace');
     const busy = await d.db
       .select({ id: schema.tasks.id })
       .from(schema.tasks)
-      .where(and(eq(schema.tasks.ownerId, ownerId), inArray(schema.tasks.status, ['queued', 'running']), ...(w.scope === 'user' ? [] : [eq(schema.tasks.id, w.scope)])))
+      .where(
+        and(
+          eq(schema.tasks.ownerId, ownerId),
+          inArray(schema.tasks.status, ['queued', 'running']),
+          ...(w.scope === 'user' ? [] : [eq(schema.tasks.id, w.scope)]),
+        ),
+      )
       .limit(1);
     if (busy.length) throw new ConflictError('a run is using this workspace; stop it first');
     if (op === 'pause' && w.state !== 'running') return c.json({ ok: true, state: w.state });
-    await enqueueOutbox(d.db, { ownerId, kind: `workspace_${op}`, refId: w.id, payload: { workspaceId: w.id, kind: w.kind, scope: w.scope } });
+    await enqueueOutbox(d.db, {
+      ownerId,
+      kind: `workspace_${op}`,
+      refId: w.id,
+      payload: { workspaceId: w.id, kind: w.kind, scope: w.scope },
+    });
     return c.json({ ok: true, state: op === 'pause' ? 'pausing' : 'killing' }, 202);
   };
   app.post('/api/workspaces/:id/pause', workspaceOp('pause'));
@@ -152,7 +193,15 @@ export function registerSystemRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: Route
     const limit = Math.min(200, Math.max(1, Number(c.req.query('limit') ?? 80) || 80));
     const e = schema.taskEvents;
     const rows = await d.db
-      .select({ id: e.id, type: e.type, data: e.data, createdAt: e.createdAt, taskId: e.taskId, chatId: schema.tasks.chatId, title: schema.tasks.title })
+      .select({
+        id: e.id,
+        type: e.type,
+        data: e.data,
+        createdAt: e.createdAt,
+        taskId: e.taskId,
+        chatId: schema.tasks.chatId,
+        title: schema.tasks.title,
+      })
       .from(e)
       .innerJoin(schema.tasks, eq(schema.tasks.id, e.taskId))
       .where(and(eq(e.ownerId, ownerId), like(e.type, 'tool.%')))
@@ -187,15 +236,42 @@ export function registerSystemRoutes(app: Hono<AppEnvVars>, d: ApiDeps, h: Route
       .select({ id: a.id, name: a.name, source: a.source, createdAt: a.createdAt, taskId: a.taskId })
       .from(a)
       .innerJoin(schema.tasks, eq(schema.tasks.id, a.taskId))
-      .where(and(eq(a.ownerId, ownerId), eq(schema.tasks.chatId, chatId), sql`${a.deletedAt} is null`, sql`${a.source}->>'kind' = 'browser_screenshot'`))
+      .where(
+        and(
+          eq(a.ownerId, ownerId),
+          eq(schema.tasks.chatId, chatId),
+          sql`${a.deletedAt} is null`,
+          sql`${a.source}->>'kind' = 'browser_screenshot'`,
+        ),
+      )
       .orderBy(desc(a.createdAt))
       .limit(30);
     return c.json({
       screens: rows.map((r) => {
         const s = r.source as { url?: string; title?: string };
-        return { id: r.id, url: s.url ?? null, title: s.title ?? null, taskId: r.taskId, createdAt: r.createdAt.toISOString(), active: false };
+        return {
+          id: r.id,
+          url: s.url ?? null,
+          title: s.title ?? null,
+          taskId: r.taskId,
+          createdAt: r.createdAt.toISOString(),
+          active: false,
+        };
       }),
-      active: (await d.db.select({ id: schema.tasks.id }).from(schema.tasks).where(and(eq(schema.tasks.ownerId, ownerId), eq(schema.tasks.chatId, chatId), inArray(schema.tasks.status, ACTIVE))).limit(1)).length > 0,
+      active:
+        (
+          await d.db
+            .select({ id: schema.tasks.id })
+            .from(schema.tasks)
+            .where(
+              and(
+                eq(schema.tasks.ownerId, ownerId),
+                eq(schema.tasks.chatId, chatId),
+                inArray(schema.tasks.status, ACTIVE),
+              ),
+            )
+            .limit(1)
+        ).length > 0,
     });
   });
 }

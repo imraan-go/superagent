@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useSyncExternalStore } from "react";
-import { readTheme, setTheme, subscribeTheme } from "@/lib/theme";
-import type { ThemePreference } from "@/lib/theme";
+import { useSyncExternalStore } from 'react';
+import { readTheme, setTheme, subscribeTheme } from '@/lib/theme';
+import type { ThemePreference } from '@/lib/theme';
 
 /**
  * Theme preference as a store, not as local state — so the topbar toggle and
@@ -12,6 +12,6 @@ export function useTheme(): {
   theme: ThemePreference;
   setTheme: (next: ThemePreference) => void;
 } {
-  const theme = useSyncExternalStore(subscribeTheme, readTheme, () => "system" as const);
+  const theme = useSyncExternalStore(subscribeTheme, readTheme, () => 'system' as const);
   return { theme, setTheme };
 }
