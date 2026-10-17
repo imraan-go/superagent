@@ -93,7 +93,7 @@ export async function listChatMessages(db: DbOrTx, ownerId: string, chatId: stri
     .select()
     .from(chatMessages)
     .where(and(eq(chatMessages.chatId, chatId), eq(chatMessages.ownerId, ownerId)))
-    .orderBy(asc(chatMessages.createdAt), asc(chatMessages.id));
+    .orderBy(asc(chatMessages.createdAt), asc(chatMessages.seq));
 }
 
 /** Latest run per chat, for the sidebar's status dot and status line. */
@@ -146,7 +146,7 @@ export async function chatHistoryForModel(
         inArray(chatMessages.role, ['user', 'assistant']),
       ),
     )
-    .orderBy(desc(chatMessages.createdAt), desc(chatMessages.id))
+    .orderBy(desc(chatMessages.createdAt), desc(chatMessages.seq))
     .limit(maxTurns);
   const out: Array<{ role: 'user' | 'assistant'; content: string }> = [];
   let used = 0;
