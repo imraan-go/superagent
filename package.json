@@ -32,7 +32,11 @@
     "smoke:cloud": "tsx scripts/smoke-cloud.ts",
     "cleanup:cloud": "tsx scripts/cleanup-cloud.ts",
     "lint": "eslint .",
-    "typecheck": "pnpm -r --if-present typecheck && tsc -p tsconfig.scripts.json --noEmit"
+    "typecheck": "pnpm -r --if-present typecheck && tsc -p tsconfig.scripts.json --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "pnpm -s format:check && pnpm -s lint && pnpm -s typecheck && pnpm -s test",
+    "check:changed": "bash scripts/check-changed.sh"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.9",
@@ -62,6 +66,7 @@
     "eslint": "10.12.0",
     "eslint-plugin-react-hooks": "7.1.1",
     "pg": "8.23.1",
+    "prettier": "3.6.2",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
     "typescript-eslint": "8.71.2",
