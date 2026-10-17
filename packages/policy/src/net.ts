@@ -30,6 +30,12 @@ const V4_PRIVATE: Array<[string, number]> = [
 
 export const PRIVATE_CIDRS_V4 = V4_PRIVATE.map(([b, m]) => `${b}/${m}`);
 
+/**
+ * Sandbox egress deny list for E2B. E2B rejects `0.0.0.0/8` ("invalid denied CIDR"), so it is
+ * left out here only; navigation to 0.0.0.0 is still refused by the app-level URL/DNS checks.
+ */
+export const SANDBOX_DENY_CIDRS_V4 = PRIVATE_CIDRS_V4.filter((c) => c !== '0.0.0.0/8');
+
 export function isPrivateAddress(ip: string): boolean {
   const kind = isIP(ip);
   if (kind === 4) {

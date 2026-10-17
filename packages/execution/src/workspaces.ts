@@ -1,5 +1,5 @@
 import { Sandbox } from 'e2b';
-import { PRIVATE_CIDRS_V4 } from '@superagent/policy';
+import { SANDBOX_DENY_CIDRS_V4 } from '@superagent/policy';
 
 export type WorkspaceKind = 'code' | 'browser';
 
@@ -123,7 +123,7 @@ export class Workspaces {
       lifecycle: { onTimeout: 'pause', autoResume: false },
       ...(kind === 'code'
         ? { allowInternetAccess: this.cfg.codeInternetAccess, network: { allowPublicTraffic: false } }
-        : { allowInternetAccess: true, network: { allowPublicTraffic: false, denyOut: PRIVATE_CIDRS_V4 } }),
+        : { allowInternetAccess: true, network: { allowPublicTraffic: false, denyOut: SANDBOX_DENY_CIDRS_V4 } }),
     });
     await this.store.update(row.ownerId, row.id, { sandboxId: sbx.sandboxId, state: 'running', lastError: null });
     this.cfg.onEvent?.({ type: 'workspace.created', workspaceId: row.id, sandboxId: sbx.sandboxId });

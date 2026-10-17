@@ -1,0 +1,278 @@
+/* App grid (DESIGN_SYSTEM §Layout):
+     [left rail, full height] [topbar / centre] [right rail, full height]
+   `.body` is display: contents, so the route's <main> and <aside> are placed
+   directly into this grid. The right column is `auto`: routes without a
+   Mission rail collapse it to zero. */
+
+.app {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--sidebar-l) minmax(0, 1fr) auto;
+  grid-template-rows: var(--topbar-h) minmax(0, 1fr);
+  height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  transition: grid-template-columns var(--dur-panel) var(--ease-spring);
+}
+
+.app[data-left="rail"] {
+  grid-template-columns: var(--sidebar-l-rail) minmax(0, 1fr) auto;
+}
+
+.appManage {
+  grid-template-columns: 0 minmax(0, 1fr) auto;
+}
+
+/* Aurora mesh: three faint, static radial glows behind everything. Painted
+   once (no animation), so it costs nothing per frame. */
+.aurora {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 12% -10%, var(--aurora-1), transparent 70%),
+    radial-gradient(50% 45% at 92% 8%, var(--aurora-2), transparent 70%),
+    radial-gradient(70% 60% at 55% 115%, var(--aurora-3), transparent 70%);
+}
+
+/* ---- left rail ----------------------------------------------------------- */
+.sidebarLeft {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  min-height: 0;
+  overflow: hidden;
+  border-right: var(--border) solid var(--glass-line);
+  background:
+    linear-gradient(180deg, var(--glass-hi), transparent 40%),
+    color-mix(in srgb, var(--ink-1) 82%, transparent);
+}
+
+/* ---- topbar (centre column only) ---------------------------------------- */
+.topbar {
+  grid-column: 2;
+  grid-row: 1;
+  z-index: var(--z-sticky);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--sp-4);
+  min-width: 0;
+  padding: 0 var(--sp-5);
+  border-bottom: var(--border) solid var(--glass-line);
+  background: var(--glass);
+  backdrop-filter: blur(16px) saturate(1.3);
+}
+
+.topbarLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.menuBtn {
+  display: none;
+}
+
+/* Brand in the topbar only where the left rail is absent (Manage, phones). */
+.brand {
+  display: none;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-right: var(--sp-2);
+  color: var(--text-1);
+  text-decoration: none;
+  border-radius: var(--radius-control);
+}
+
+.appManage .brand {
+  display: inline-flex;
+}
+
+.brand .brandGlyph {
+  color: var(--signal);
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  background: linear-gradient(95deg, var(--text-1) 30%, var(--c-agent) 75%, var(--c-think));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* ⌘K launcher: reads as a search field, opens the command palette. */
+.paletteBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  max-width: 280px;
+  flex: 1;
+  height: 34px;
+  padding: 0 var(--sp-2) 0 var(--sp-3);
+  border: var(--border) solid var(--glass-line);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--ink-2) 70%, transparent);
+  color: var(--text-3);
+  font: inherit;
+  font-size: var(--fs-small);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-std) var(--ease-out),
+    color var(--dur-std) var(--ease-out),
+    transform var(--dur-spring) var(--ease-spring);
+}
+
+.paletteBtn:hover {
+  border-color: color-mix(in srgb, var(--c-think) 50%, var(--line));
+  color: var(--text-2);
+}
+
+.paletteBtn:active {
+  transform: scale(0.98);
+}
+
+.paletteBtn svg {
+  flex: none;
+  color: var(--c-think);
+}
+
+.paletteText {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.kbd {
+  margin-left: auto;
+  padding: 1px 6px;
+  border: var(--border) solid var(--line);
+  border-radius: 6px;
+  background: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+}
+
+.topbarRight {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
+
+/* Sign-out lives in the left rail's dock; the topbar copy is for Manage/phones. */
+.topSignOut {
+  display: none;
+}
+
+.appManage .topSignOut {
+  display: contents;
+}
+
+/* ---- route content ------------------------------------------------------- */
+.body {
+  display: contents;
+}
+
+.body > :not(aside) {
+  grid-column: 2;
+  grid-row: 2;
+  min-height: 0;
+  min-width: 0;
+}
+
+.appManage .body > :not(aside) {
+  grid-column: 2 / -1;
+}
+
+.body > aside {
+  grid-column: 3;
+  grid-row: 1 / -1;
+  z-index: var(--z-sticky);
+}
+
+/* Crossfade the workspace when the mode (route) changes. */
+.body > main {
+  position: relative;
+  animation: mode-in var(--dur-panel) var(--ease-out);
+}
+
+@keyframes mode-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Below 820px the left rail goes too; the topbar menu opens the drawer. */
+@media (max-width: 820px) {
+  .app,
+  .app[data-left="rail"] {
+    grid-template-columns: 0 minmax(0, 1fr) 0;
+  }
+
+  .sidebarLeft {
+    display: none;
+  }
+
+  .menuBtn {
+    display: inline-flex;
+  }
+
+  .brand {
+    display: inline-flex;
+  }
+
+  .topSignOut {
+    display: contents;
+  }
+
+  .paletteBtn {
+    flex: none;
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .paletteText,
+  .kbd {
+    display: none;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    padding: 0 var(--sp-3);
+  }
+
+  .topbarRight {
+    gap: var(--sp-1);
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    padding: 0 var(--sp-2);
+  }
+
+  .brand {
+    margin-right: 0;
+  }
+
+  .wordmark {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .hideNarrow {
+    display: none;
+  }
+}

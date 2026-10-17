@@ -10,16 +10,23 @@ import {
   describeTaskWorkflow,
   setTemporalSchedulePaused,
   signalApproval,
+  signalQuestion,
   startTaskWorkflow,
 } from '@superagent/temporal';
 
 type OutboxRow = Awaited<ReturnType<typeof claimOutbox>>[number];
 
+/** Owner-requested sandbox operations (Workspaces view); absent when E2B is not configured. */
+export interface WorkspaceOps {
+  pause(ownerId: string, kind: 'code' | 'browser', scope: string): Promise<unknown>;
+  kill(ownerId: string, kind: 'code' | 'browser', scope: string): Promise<unknown>;
+}
+
 /**
  * Applies DB-committed intent to Temporal (transactional outbox). Every operation is idempotent on
  * the Temporal side (stable workflow/schedule ids), so at-least-once processing is safe.
  */
-export async function processOutboxRow(db: Db, client: Client, taskQueue: string, row: OutboxRow, log: Logger): Promise<void> {
+export async function processOutboxRow(db: Db, client: Client, taskQueue: string, row: OutboxRow, log: Logger, ws?: () => WorkspaceOps): Promise<void> {
   const p = row.payload as Record<string, string>;
   switch (row.kind) {
     case 'start_task': {
@@ -30,6 +37,11 @@ export async function processOutboxRow(db: Db, client: Client, taskQueue: string
     case 'signal_approval': {
       const r = await signalApproval(client, p.taskId!, row.refId);
       log.info('outbox.signal_approval', { taskId: p.taskId, result: r });
+      return;
+    }
+    case 'signal_question': {
+      const r = await signalQuestion(client, p.taskId!, row.refId);
+      log.info('outbox.signal_question', { taskId: p.taskId, result: r });
       return;
     }
     case 'cancel_task': {
@@ -74,16 +86,25 @@ export async function processOutboxRow(db: Db, client: Client, taskQueue: string
       log.info('outbox.schedule', { scheduleId: s.id, kind: row.kind, created, paused });
       return;
     }
+    case 'workspace_pause':
+    case 'workspace_kill': {
+      if (!ws) throw new Error('E2B is not configured on this worker');
+      const kind = p.kind as 'code' | 'browser';
+      if (row.kind === 'workspace_pause') await ws().pause(row.ownerId, kind, p.scope!);
+      else await ws().kill(row.ownerId, kind, p.scope!);
+      log.info('outbox.workspace', { op: row.kind, workspaceId: p.workspaceId });
+      return;
+    }
     default:
       throw new Error(`unknown outbox kind ${row.kind}`);
   }
 }
 
-export async function drainOutbox(db: Db, client: Client, taskQueue: string, log: Logger): Promise<number> {
+export async function drainOutbox(db: Db, client: Client, taskQueue: string, log: Logger, ws?: () => WorkspaceOps): Promise<number> {
   const rows = await claimOutbox(db, 20);
   for (const row of rows) {
     try {
-      await processOutboxRow(db, client, taskQueue, row, log);
+      await processOutboxRow(db, client, taskQueue, row, log, ws);
       await completeOutbox(db, row.id);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

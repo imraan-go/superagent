@@ -15,6 +15,20 @@
       "when": 1792041807426,
       "tag": "0001_task_timezone",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792135874997,
+      "tag": "0002_chats_questions_prefs",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792137124991,
+      "tag": "0003_task_capabilities",
+      "breakpoints": true
     }
   ]
 }

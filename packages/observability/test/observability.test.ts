@@ -17,6 +17,10 @@ describe('redaction', () => {
     expect(out).toContain('[REDACTED');
     expect(out).not.toMatch(/abc\.def\.ghi|0123456789abcdefghij|supersecretvalue123|0b1c2d3e|MIIEv/);
   });
+  it('keeps numeric token counts but still redacts token values', () => {
+    expect(redact({ inputTokens: 1200, cacheReadTokens: 0, token: 12345, accessTokens: 'abc', apiToken: 'x' })).toEqual({ inputTokens: 1200, cacheReadTokens: 0, token: '[REDACTED]', accessTokens: '[REDACTED]', apiToken: '[REDACTED]' });
+  });
+
   it('redacts by key name, deeply', () => {
     const r = redact({ a: { apiKey: 'value-1', nested: [{ password: 'p', ok: 'keep' }] }, cookie: 'c', accessToken: 't' }) as Record<string, unknown>;
     expect(JSON.stringify(r)).not.toMatch(/value-1|"p"|"c"|"t"/);

@@ -5,3 +5,7 @@ export * from './repos/tasks';
 export * from './repos/approvals';
 export * from './repos/budget';
 export * from './repos/resources';
+export * from './repos/chats';
+export * from './repos/questions';
+export * from './repos/preferences';
+export * from './repos/schedules';

@@ -15,6 +15,8 @@ const csp = [
 
 const config: NextConfig = {
   poweredByHeader: false,
+  // Workspace packages ship TypeScript source (shared zod schemas).
+  transpilePackages: ['@superagent/contracts'],
   // The browser only ever talks to this origin; /api/* is proxied to the API on loopback.
   async rewrites() {
     return [{ source: '/api/:path*', destination: `${API}/api/:path*` }];

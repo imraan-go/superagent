@@ -1,0 +1,87 @@
+.palette {
+  --modal-w: 600px;
+}
+
+.searchRow {
+  padding: var(--sp-3);
+  border-bottom: var(--border) solid var(--line);
+}
+
+.input {
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--ink-2);
+  color: var(--text-1);
+  font: inherit;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 1px;
+}
+
+.list {
+  margin: 0;
+  padding: var(--sp-2);
+  list-style: none;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+}
+
+.group {
+  margin: var(--sp-2) var(--sp-2) var(--sp-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-control);
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.optionActive {
+  background: var(--signal-wash);
+  color: var(--text-1);
+  box-shadow: inset 2px 0 0 var(--signal);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hint {
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  color: var(--text-3);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--sp-4);
+  text-align: center;
+  color: var(--text-3);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

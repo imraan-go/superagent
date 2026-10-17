@@ -14,7 +14,7 @@ import { DefaultLogger, Runtime, Worker, bundleWorkflowCode, type WorkflowBundle
 import { WorkflowFailedError } from '@temporalio/client';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { AgentActivities, DecisionResult, ProposalVerdict } from '@superagent/contracts/workflow';
-import { APPROVAL_SIGNAL } from '@superagent/contracts/workflow';
+import { APPROVAL_SIGNAL, QUESTION_SIGNAL } from '@superagent/contracts/workflow';
 
 const WORKFLOWS = fileURLToPath(new URL('../src/index.ts', import.meta.url));
 let env: TestWorkflowEnvironment;
@@ -37,12 +37,15 @@ type Script = {
   verdicts?: Record<string, ProposalVerdict>;
   approvalStates?: Array<'approved' | 'rejected' | 'pending' | 'expired'>;
   executeApprovedThrows?: boolean;
+  questionStates?: Array<'answered' | 'pending' | 'expired' | 'cancelled'>;
+  confirmed?: boolean;
 };
 
 function fakeActivities(s: Script) {
   const calls: Array<{ name: string; arg: unknown }> = [];
   let decisionIdx = 0;
   let approvalIdx = 0;
+  let questionIdx = 0;
   const log = (name: string, arg: unknown) => calls.push({ name, arg });
   const acts: AgentActivities = {
     loadTaskContext: async (r) => (log('loadTaskContext', r), { status: 'ready', readOnly: false, limits: { maxDecisions: 5, maxToolCalls: 4, maxActiveMs: 60_000, approvalExpiryMs: 5_000 } }),
@@ -66,6 +69,13 @@ function fakeActivities(s: Script) {
     },
     reconcileAttempt: async (r) => (log('reconcileAttempt', r), { state: 'unknown', summary: 'unknown' }),
     recordApprovalOutcome: async (r) => void log('recordApprovalOutcome', r),
+    prepareForQuestionWait: async (r) => void log('prepareForQuestionWait', r),
+    checkQuestion: async (r) => {
+      log('checkQuestion', r);
+      const state = s.questionStates?.[questionIdx++] ?? 'pending';
+      return state === 'answered' ? { state, confirmed: s.confirmed ?? true } : { state };
+    },
+    recordQuestionOutcome: async (r) => (log('recordQuestionOutcome', r), { runGatedTool: r.gate && r.state === 'answered' && (s.confirmed ?? true) }),
     finalizeTask: async (f) => void log('finalizeTask', f),
     releaseTaskResources: async (r) => void log('releaseTaskResources', r),
     createScheduledTask: async (i) => (log('createScheduledTask', i), { taskId: '00000000-0000-4000-8000-0000000000aa' }),
@@ -82,6 +92,7 @@ async function makeWorker(acts: AgentActivities, taskQueue: string) {
 
 const tools = (step: number, ...ids: string[]): DecisionResult => ({ kind: 'tools', step, proposals: ids.map((id) => ({ toolCallId: id, toolName: 'x' })) });
 const approvalVerdict = (id: string, ms = 60_000): ProposalVerdict => ({ verdict: 'needs_approval', toolCallId: id, intentId: `intent-${id}`, expiresAtMs: Date.now() + ms });
+const questionVerdict = (id: string, gate: boolean, ms = 60_000): ProposalVerdict => ({ verdict: 'needs_answer', toolCallId: id, questionId: `q-${id}`, expiresAtMs: Date.now() + ms, gate });
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -172,6 +183,55 @@ describe('agentTaskWorkflow on a local Temporal dev server', () => {
     expect(f.count('executeApprovedAction')).toBe(1);
     expect(f.count('reconcileAttempt')).toBe(1);
   });
+
+  it('ask_user waits durably for a persisted answer, then continues the loop', async () => {
+    const f = fakeActivities({ decisions: [tools(0, 'ask'), { kind: 'final', step: 1 }], verdicts: { ask: questionVerdict('ask', false) }, questionStates: ['pending', 'answered'] });
+    const q = `t${++queueSeq}`;
+    const w = await makeWorker(f.acts, q);
+    await w.runUntil(async () => {
+      const h = await env.client.workflow.start('agentTaskWorkflow', { taskQueue: q, workflowId: `wf-${q}`, args: [{ taskId: 'tq1', ownerId: 'o1' }] });
+      await waitFor(() => f.count('prepareForQuestionWait') === 1);
+      // A signal is only a wake-up: the first re-read still says pending, so the run keeps waiting.
+      await h.signal(QUESTION_SIGNAL, { questionId: 'q-ask' });
+      await waitFor(() => f.count('checkQuestion') === 1);
+      expect(f.count('recordQuestionOutcome')).toBe(0);
+      await h.signal(QUESTION_SIGNAL, { questionId: 'q-unrelated' });
+      await h.signal(QUESTION_SIGNAL, { questionId: 'q-ask' });
+      expect(await h.result()).toBe('completed');
+    });
+    expect(f.count('checkQuestion')).toBe(2);
+    expect(f.find('recordQuestionOutcome')).toEqual([expect.objectContaining({ questionId: 'q-ask', gate: false, state: 'answered' })]);
+    expect(f.count('executeTool')).toBe(0);
+    expect(f.count('modelDecision')).toBe(2);
+  });
+
+  it('a confirm gate runs the tool only after Yes', async () => {
+    const yes = fakeActivities({ decisions: [tools(0, 'sched')], verdicts: { sched: questionVerdict('sched', true) }, questionStates: ['answered'], confirmed: true });
+    const no = fakeActivities({ decisions: [tools(0, 'sched')], verdicts: { sched: questionVerdict('sched', true) }, questionStates: ['answered'], confirmed: false });
+    for (const [f, n] of [[yes, 1], [no, 0]] as const) {
+      const q = `t${++queueSeq}`;
+      const w = await makeWorker(f.acts, q);
+      await w.runUntil(async () => {
+        const h = await env.client.workflow.start('agentTaskWorkflow', { taskQueue: q, workflowId: `wf-${q}`, args: [{ taskId: `tq-${q}`, ownerId: 'o1' }] });
+        await waitFor(() => f.count('prepareForQuestionWait') === 1);
+        await h.signal(QUESTION_SIGNAL, { questionId: 'q-sched' });
+        expect(await h.result()).toBe('completed');
+      });
+      expect(f.count('executeTool')).toBe(n);
+    }
+  });
+
+  it('an unanswered question expires on the durable timer and the run carries on', async () => {
+    const f = fakeActivities({ decisions: [tools(0, 'ask')], verdicts: { ask: questionVerdict('ask', true, 2_500) } });
+    const q = `t${++queueSeq}`;
+    const w = await makeWorker(f.acts, q);
+    await w.runUntil(async () => {
+      const h = await env.client.workflow.start('agentTaskWorkflow', { taskQueue: q, workflowId: `wf-${q}`, args: [{ taskId: 'tq3', ownerId: 'o1' }] });
+      expect(await h.result()).toBe('completed');
+    });
+    expect(f.find('recordQuestionOutcome')).toEqual([expect.objectContaining({ state: 'expired', gate: true })]);
+    expect(f.count('executeTool')).toBe(0);
+  }, 30_000);
 
   it('cancellation during an approval wait finalizes as cancelled and releases resources', async () => {
     const f = fakeActivities({ decisions: [tools(0, 'send')], verdicts: { send: approvalVerdict('send') } });

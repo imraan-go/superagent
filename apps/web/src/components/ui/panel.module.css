@@ -1,0 +1,83 @@
+/* Glassy elevated panel: translucent ink, a top highlight, a fine border. */
+.panel {
+  background:
+    linear-gradient(180deg, var(--glass-hi), transparent 42%),
+    color-mix(in srgb, var(--ink-1) 88%, transparent);
+  border: var(--border) solid var(--glass-line);
+  transition: border-color var(--dur-std) var(--ease-out), box-shadow var(--dur-std) var(--ease-out);
+  border-radius: var(--radius-panel);
+  /* Elevation is border + subtle glow, never a heavy shadow. */
+  box-shadow: var(--elev-1);
+  overflow: hidden;
+}
+
+.flush {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+}
+
+.quiet {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* A panel owned by a live run carries the signal halo. */
+.live {
+  border-color: var(--signal-dim);
+  box-shadow: var(--halo);
+}
+
+.attention {
+  border-color: var(--amber-dim);
+  box-shadow: var(--halo-amber);
+}
+
+.critical {
+  border-color: var(--danger-dim);
+  box-shadow: var(--halo-danger);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: var(--border) solid var(--line);
+  min-height: 44px;
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex-shrink: 0;
+}
+
+.body {
+  padding: var(--sp-4);
+}
+
+.bodyFlush {
+  padding: 0;
+}

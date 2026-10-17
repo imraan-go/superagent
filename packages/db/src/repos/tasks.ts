@@ -17,6 +17,14 @@ export interface CreateTaskInput {
   readOnly?: boolean;
   timezone?: string;
   retentionDays: number;
+  /** Chat this run belongs to; its earlier turns are passed as `history`. */
+  chatId?: string | null;
+  model?: string | null;
+  capabilities?: string[] | null;
+  /** Prior turns (oldest first), stored ahead of the new user message. */
+  history?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  /** Replaces the plain-text first user message (e.g. text plus attachment references). */
+  userContent?: unknown;
 }
 
 /**
@@ -44,6 +52,9 @@ export async function createTaskWithOutbox(db: Db, input: CreateTaskInput): Prom
         scheduleId: input.scheduleId,
         readOnly: input.readOnly ?? false,
         timezone: input.timezone ?? null,
+        chatId: input.chatId ?? null,
+        model: input.model ?? null,
+        capabilities: input.capabilities?.length ? input.capabilities : null,
         workflowId: taskWorkflowId(id),
         expiresAt: new Date(Date.now() + input.retentionDays * 86_400_000),
       })
@@ -53,7 +64,11 @@ export async function createTaskWithOutbox(db: Db, input: CreateTaskInput): Prom
       const again = await tx.select().from(tasks).where(and(eq(tasks.ownerId, input.ownerId), eq(tasks.idempotencyKey, idem))).limit(1);
       return { task: again[0]!, created: false };
     }
-    await tx.insert(taskMessages).values({ taskId: id, ownerId: input.ownerId, step: 0, kind: 'user', dedupeKey: 'user:0', content: { role: 'user', content: input.prompt } });
+    const history = input.history ?? [];
+    if (history.length) {
+      await tx.insert(taskMessages).values(history.map((h, i) => ({ taskId: id, ownerId: input.ownerId, step: 0, kind: h.role, dedupeKey: `history:${i}`, content: { role: h.role, content: h.content } })));
+    }
+    await tx.insert(taskMessages).values({ taskId: id, ownerId: input.ownerId, step: 0, kind: 'user', dedupeKey: 'user:0', content: { role: 'user', content: input.userContent ?? input.prompt } });
     await tx.insert(taskEvents).values({ taskId: id, ownerId: input.ownerId, type: 'task.queued', dedupeKey: 'task.queued', data: { origin: input.origin ?? 'user' } });
     if (input.origin !== 'schedule') {
       await tx.insert(workflowOutbox).values({ ownerId: input.ownerId, kind: 'start_task', refId: id, payload: { taskId: id } });

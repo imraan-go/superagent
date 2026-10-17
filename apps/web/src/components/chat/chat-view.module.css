@@ -1,0 +1,55 @@
+.center {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  min-width: 0;
+}
+
+.scroll {
+  overflow-y: auto;
+  min-height: 0;
+  /* Anchor growth to the bottom so streaming text does not push the view. */
+  overflow-anchor: auto;
+}
+
+.loading {
+  padding: var(--sp-6);
+  text-align: center;
+  color: var(--text-3);
+  font-size: var(--fs-small);
+}
+
+/* Sticks to the bottom of the scroller when the owner has scrolled up. */
+.jump {
+  position: sticky;
+  bottom: var(--sp-3);
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  width: max-content;
+  margin: 0 auto;
+  padding: 6px var(--sp-3);
+  border: var(--border) solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--ink-2);
+  box-shadow: var(--elev-2);
+  color: var(--text-1);
+  font: inherit;
+  font-size: var(--fs-tiny);
+  cursor: pointer;
+  animation: jumpIn var(--dur-std) var(--ease-out) both;
+}
+
+.jump:hover { border-color: var(--signal); color: var(--signal); }
+.jump:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+
+@keyframes jumpIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jump { animation: none; }
+}

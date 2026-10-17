@@ -1,0 +1,67 @@
+.base {
+  display: inline-grid;
+  place-items: center;
+  border: var(--border) solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-micro) var(--ease-out),
+    color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out),
+    box-shadow var(--dur-std) var(--ease-out),
+    transform var(--dur-spring) var(--ease-spring);
+}
+
+.base:hover:not(:disabled) {
+  background: var(--ink-2);
+  color: var(--text-1);
+}
+
+.base:active:not(:disabled) {
+  background: var(--ink-3);
+  transform: scale(0.9);
+  transition-duration: var(--dur-micro);
+}
+
+.base:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.sm {
+  width: 28px;
+  height: 28px;
+}
+
+.md {
+  width: 34px;
+  height: 34px;
+}
+
+.lg {
+  width: 40px;
+  height: 40px;
+}
+
+.pill {
+  border-radius: var(--radius-pill);
+}
+
+/* Active/selected nav state — the icon rail uses this. */
+.active {
+  background: var(--signal-wash);
+  color: var(--signal);
+  border-color: var(--signal-dim);
+}
+
+.active:hover:not(:disabled) {
+  background: var(--signal-wash-strong);
+  color: var(--signal);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--danger-wash);
+  color: var(--danger);
+}

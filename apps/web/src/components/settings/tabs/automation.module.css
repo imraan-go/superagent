@@ -1,0 +1,129 @@
+.stack {
+  display: grid;
+  gap: var(--sp-6);
+}
+
+.list {
+  display: grid;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+}
+
+.item + .item {
+  border-top: var(--border) solid var(--line);
+}
+
+.itemTitle {
+  color: var(--text-1);
+  font-size: var(--fs-base);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin-top: 2px;
+  color: var(--text-3);
+  font-size: var(--fs-tiny);
+  overflow-wrap: anywhere;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-tiny);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  justify-content: flex-end;
+}
+
+.form {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+}
+
+.formRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.input,
+.textarea,
+.select {
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--ink-0);
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: var(--fs-small);
+}
+
+.textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.input:focus-visible,
+.textarea:focus-visible,
+.select:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 1px;
+}
+
+.empty {
+  padding: var(--sp-4);
+  color: var(--text-3);
+  font-size: var(--fs-small);
+}
+
+.error {
+  padding: var(--sp-3) var(--sp-4);
+  color: var(--danger);
+  font-size: var(--fs-small);
+}
+
+.secretBox {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border-top: var(--border) solid var(--line);
+  background: var(--ink-2);
+  color: var(--amber);
+  font-size: var(--fs-small);
+}
+
+.code {
+  display: block;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-chip);
+  background: var(--ink-0);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-tiny);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: var(--sp-2);
+  padding: 0 var(--sp-2);
+  border-radius: var(--radius-pill);
+  background: var(--ink-3);
+  color: var(--text-2);
+  font-size: var(--fs-micro);
+  vertical-align: middle;
+}

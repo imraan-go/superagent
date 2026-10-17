@@ -20,6 +20,11 @@ export function redactString(input: string, maxLength = 4000): string {
   return out;
 }
 
+/** Usage counters such as `inputTokens: 1200` are numbers, never credentials; keep them readable. */
+function isTokenCount(key: string, value: unknown): boolean {
+  return /tokens$/i.test(key) && typeof value === 'number' && Number.isFinite(value);
+}
+
 /** Deep-redacts values for logs and persisted events. Never mutates the input. */
 export function redact(value: unknown, depth = 0, maxString = 4000): unknown {
   if (depth > 8) return '[depth-limit]';
@@ -33,7 +38,7 @@ export function redact(value: unknown, depth = 0, maxString = 4000): unknown {
   if (typeof value === 'object') {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      out[k] = SENSITIVE_KEY.test(k) ? '[REDACTED]' : redact(v, depth + 1, maxString);
+      out[k] = SENSITIVE_KEY.test(k) && !isTokenCount(k, v) ? '[REDACTED]' : redact(v, depth + 1, maxString);
     }
     return out;
   }

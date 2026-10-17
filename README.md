@@ -12,7 +12,7 @@ account.
 
 | Path | What |
 |---|---|
-| `apps/web` | Next.js client (single origin; `/api/*` is proxied to the API) |
+| `apps/web` | Next.js client: chat workspace with live run trace and question cards, Mission rail, Connect Apps, Settings, Workspaces view (single origin; `/api/*` is proxied to the API). See [docs/web-app.md](docs/web-app.md) |
 | `apps/api` | Hono HTTP API, Better Auth sessions, ownership checks, transactional outbox writes |
 | `apps/worker` | Temporal worker (workflows + activities), outbox drain, projection + E2B orphan reconciliation |
 | `packages/contracts` | Zod request schemas, workflow ↔ activity contracts, event types |
@@ -66,7 +66,7 @@ Optional capabilities light up when their credentials exist (see
 | `pnpm models:verify` | Validate configured models against the live Gateway catalogue (free) |
 | `pnpm composio:discover` | Verify curated connector tools against your Composio project and write the lock |
 | `pnpm e2b:template:build` | Build the Google Chrome and code templates on E2B |
-| `pnpm test` | Unit tests (mocked models/connectors/sandboxes; PGlite for Postgres) |
+| `pnpm test` | Unit tests (mocked models/connectors/sandboxes; PGlite for Postgres) and the web app's pure modules |
 | `pnpm test:integration` | Real local Temporal server: workflows, approvals, restarts, schedules, outbox |
 | `pnpm test:e2e` | Playwright against the running local stack (installed Google Chrome) |
 | `pnpm smoke:cloud --stage=m1,m5` | Live cloud smoke tests within `LIVE_SMOKE_MAX_COST` |
@@ -76,6 +76,7 @@ Optional capabilities light up when their credentials exist (see
 ## Documentation
 
 - [Implementation plan and status](docs/implementation-plan.md)
+- [Web app: chats, questions, routines, apps, workspaces](docs/web-app.md)
 - [Architecture](docs/architecture.md)
 - [Credentials checklist](docs/credentials-checklist.md)
 - [Temporal policy](docs/temporal-policy.md)

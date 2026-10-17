@@ -6,6 +6,7 @@ import { createLogger } from '@superagent/observability';
 import { MemoryArtifactStore } from '@superagent/storage';
 import { createApp, type ConnectionsPort } from '../src/app';
 import { createAuth } from '../src/auth';
+import { supportedToolkits } from '../src/composio/tools';
 import { createTestDb } from '../../../packages/db/test/helpers';
 
 const ORIGIN = 'http://localhost:3000';
@@ -155,6 +156,23 @@ describe('connections', () => {
     const list = (await (await req('alice', 'GET', '/api/connections')).json()) as { connections: Array<Record<string, unknown>> };
     expect(list.connections[0]).toMatchObject({ toolkit: 'github', status: 'active' });
     expect(JSON.stringify(list)).not.toContain('ca_github_1');
+  });
+});
+
+describe('connect apps (curated toolkits)', () => {
+  it('every curated toolkit has verified tools in the lock', () => {
+    expect([...supportedToolkits()].sort()).toEqual(['github', 'gmail', 'googlecalendar', 'googledocs', 'googledrive', 'googlesheets', 'notion', 'outlook', 'slack']);
+  });
+
+  it('offers Connect for verified toolkits and refuses the rest', async () => {
+    const env = EnvSchema.parse({ APP_ENV: 'test', BETTER_AUTH_SECRET: 'x'.repeat(40), DATABASE_URL: 'postgres://unused', MAX_COST_PER_RUN: '0.25', MONTHLY_COST_LIMIT: '10', COMPOSIO_API_KEY: 'test_key' });
+    const withKey = createApp({ db, env, auth: createAuth(db, env), log: createLogger('test'), store: () => store, connections: () => fakeConnections });
+    const connect = async (toolkit: string) =>
+      (await (await withKey.request('/api/connectors/composio', { method: 'POST', headers: { origin: ORIGIN, cookie: cookies.alice!, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'connect', toolkit }) })).json()) as { kind: string; redirectUrl?: string };
+    for (const toolkit of ['notion', 'slack', 'googlesheets', 'googledocs', 'outlook']) {
+      expect(await connect(toolkit)).toMatchObject({ kind: 'redirect', redirectUrl: `https://connect.composio.dev/link/${toolkit}` });
+    }
+    expect(await connect('jira')).toMatchObject({ kind: 'unsupported' });
   });
 });
 

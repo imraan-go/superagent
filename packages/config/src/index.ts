@@ -75,6 +75,10 @@ export const EnvSchema = z
     COMPOSIO_AUTH_CONFIG_GOOGLEDRIVE: optionalString,
     COMPOSIO_AUTH_CONFIG_GMAIL: optionalString,
     COMPOSIO_AUTH_CONFIG_NOTION: optionalString,
+    COMPOSIO_AUTH_CONFIG_SLACK: optionalString,
+    COMPOSIO_AUTH_CONFIG_GOOGLESHEETS: optionalString,
+    COMPOSIO_AUTH_CONFIG_GOOGLEDOCS: optionalString,
+    COMPOSIO_AUTH_CONFIG_OUTLOOK: optionalString,
 
     E2B_API_KEY: optionalString,
     E2B_CODE_TEMPLATE_ID: optionalString,
@@ -196,6 +200,10 @@ export function composioAuthConfigs(env: AppEnv = getEnv()): Record<string, stri
     googledrive: env.COMPOSIO_AUTH_CONFIG_GOOGLEDRIVE,
     gmail: env.COMPOSIO_AUTH_CONFIG_GMAIL,
     notion: env.COMPOSIO_AUTH_CONFIG_NOTION,
+    slack: env.COMPOSIO_AUTH_CONFIG_SLACK,
+    googlesheets: env.COMPOSIO_AUTH_CONFIG_GOOGLESHEETS,
+    googledocs: env.COMPOSIO_AUTH_CONFIG_GOOGLEDOCS,
+    outlook: env.COMPOSIO_AUTH_CONFIG_OUTLOOK,
   };
   for (const [k, v] of Object.entries(map)) {
     if (v) {

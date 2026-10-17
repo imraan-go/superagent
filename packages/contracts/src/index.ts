@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export * from './workflow';
+export * from './settings';
 
 export const TaskStatus = z.enum(['queued', 'running', 'waiting_approval', 'completed', 'failed', 'cancelled']);
 export type TaskStatus = z.infer<typeof TaskStatus>;
@@ -54,12 +55,59 @@ export const CreateScheduleRequest = z.object({
 });
 export type CreateScheduleRequest = z.infer<typeof CreateScheduleRequest>;
 
+/* ---------- chats ---------- */
+
+export const QuestionKind = z.enum(['single', 'multi', 'text', 'confirm']);
+export type QuestionKind = z.infer<typeof QuestionKind>;
+
+export const QuestionOption = z.object({ id: z.string().trim().min(1).max(40), label: z.string().trim().min(1).max(200) });
+export type QuestionOption = z.infer<typeof QuestionOption>;
+
+export const CreateChatRequest = z.object({ title: z.string().trim().max(200).optional() }).strict();
+
+export const UpdateChatRequest = z
+  .object({
+    title: z.string().trim().min(1).max(200).optional(),
+    pinned: z.boolean().optional(),
+    archived: z.boolean().optional(),
+    mode: z.string().trim().max(40).optional(),
+    capsAuto: z.boolean().optional(),
+    caps: z.array(z.string().trim().max(40)).max(20).optional(),
+  })
+  .strict();
+
+export const SendChatMessageRequest = z.object({
+  text: z.string().trim().min(1).max(8000),
+  model: z.string().trim().max(120).optional(),
+  fileIds: z.array(z.uuid()).max(10).default([]),
+  capabilities: z.array(z.string().trim().max(40)).max(20).optional(),
+  mode: z.string().trim().max(40).optional(),
+  capabilitiesAuto: z.boolean().optional(),
+  allowedDomains: z.array(domain).max(20).optional(),
+  timezone: z.string().trim().max(64).refine((tz) => isIanaTimezone(tz), 'must be an IANA timezone such as America/Toronto').optional(),
+});
+export type SendChatMessageRequest = z.infer<typeof SendChatMessageRequest>;
+
+/** An answer to an agent question. `choices` are option ids (single/multi/confirm); `text` is typed. */
+export const AnswerQuestionRequest = z
+  .object({
+    questionId: z.uuid(),
+    choices: z.array(z.string().trim().min(1).max(40)).max(20).default([]),
+    text: z.string().trim().max(4000).optional(),
+  })
+  .refine((a) => a.choices.length > 0 || (a.text ?? '').length > 0, 'pick an option or type an answer');
+export type AnswerQuestionRequest = z.infer<typeof AnswerQuestionRequest>;
+
 export const MemoryUpsertRequest = z.object({
   content: z.string().trim().min(1).max(2000),
 });
 
+/** Composio toolkits the agent has curated tools for (packages/policy connector-catalog.ts). */
+export const ConnectorToolkit = z.enum(['github', 'googlecalendar', 'googledrive', 'gmail', 'notion', 'slack', 'googlesheets', 'googledocs', 'outlook']);
+export type ConnectorToolkit = z.infer<typeof ConnectorToolkit>;
+
 export const ConnectRequest = z.object({
-  toolkit: z.enum(['github', 'googlecalendar', 'googledrive', 'gmail', 'notion']),
+  toolkit: ConnectorToolkit,
 });
 
 export const BudgetSettingsRequest = z.object({
@@ -95,6 +143,10 @@ export const TaskEventType = z.enum([
   'task.completed',
   'task.failed',
   'task.cancelled',
+  'question.asked',
+  'question.answered',
+  'question.expired',
+  'schedule.changed',
 ]);
 export type TaskEventType = z.infer<typeof TaskEventType>;
 

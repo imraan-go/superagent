@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
@@ -10,6 +11,15 @@ export default defineConfig({
           exclude: ['**/*.int.test.ts', '**/node_modules/**'],
           environment: 'node',
           testTimeout: 30_000,
+        },
+      },
+      {
+        // Pure web modules (transcript grouping, hotkeys, …); `@/` resolves like the Next app.
+        resolve: { alias: { '@': fileURLToPath(new URL('./apps/web/src', import.meta.url)) } },
+        test: {
+          name: 'web',
+          include: ['apps/web/src/**/*.test.ts'],
+          environment: 'node',
         },
       },
       {

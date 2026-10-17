@@ -1,0 +1,102 @@
+.root {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+}
+
+/* One compact row: glyph · name/sandbox · state. */
+/* Sticky header: identity row, level with the topbar, then the tab strip. */
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+  min-height: var(--topbar-h);
+  padding: var(--sp-3) calc(var(--sp-8) + var(--sp-4)) var(--sp-2) var(--sp-4);
+}
+
+.avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--ink-2);
+  color: var(--text-2);
+}
+
+.idText {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+  color: var(--text-1);
+}
+
+.sub {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.state[data-state="awake"] { color: var(--c-money); }
+.state[data-state="waking"],
+.state[data-state="asleep"] { color: var(--c-approval); }
+.state[data-state="offline"] { color: var(--c-error); }
+
+.state {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--sp-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  color: var(--text-2);
+}
+
+.tabs {
+  justify-self: stretch;
+  margin: 0 var(--sp-4);
+}
+
+/*
+ * The single scroller. Block flow (not a flex column) so no child can be
+ * shrunk below its content: every panel is as tall as what it holds.
+ */
+.body {
+  display: block;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--sp-3) var(--sp-3) var(--sp-4);
+  scrollbar-gutter: stable;
+}
+
+.body > * + * {
+  margin-top: var(--sp-3);
+}
+
+/* Wrapper for the always-mounted Computer tab; mirrors .body's rhythm. */
+.computerHost > * + * {
+  margin-top: var(--sp-3);
+}
+
+.computerHost[hidden] {
+  display: none;
+}
+
+/* In the <1100px drawer the close button sits top-right; keep clear of it. */
+

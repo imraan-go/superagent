@@ -1,4 +1,6 @@
 import js from '@eslint/js';
+import nextPlugin from '@next/eslint-plugin-next';
+import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
@@ -25,6 +27,17 @@ export default tseslint.config(
           ],
         },
       ],
+    },
+  },
+  {
+    // The web app: React hook rules and Next.js rules (the UI ported from the dashboard relies on them).
+    files: ['apps/web/**/*.{ts,tsx}'],
+    plugins: { 'react-hooks': reactHooks, '@next/next': nextPlugin },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      ...nextPlugin.configs.recommended.rules,
+      // App Router only: there is no pages/ directory.
+      '@next/next/no-html-link-for-pages': 'off',
     },
   },
   {

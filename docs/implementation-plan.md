@@ -13,6 +13,7 @@ real service.
 | M4 Composio | Connect Link, verified callback, explicit account per execution, discovery lock, GitHub/Calendar/Drive reads | Mocked; **blocked on `COMPOSIO_API_KEY`** |
 | M5 Schedule, approval, recovery | IANA/DST schedules, overlap SKIP, catch-up, pause/resume; approval Signal + durable timer; worker and server restarts | Schedules **live**; approval and restarts on a real local Temporal server with fake activities; a live approved write needs Composio (Gmail) |
 | M6 Acceptance + AWS runbook | Final report, Dockerfiles, runbook | Images build and start locally; AWS is documentation only |
+| M7 Dashboard web app | Chat workspace (runs per turn with chat history), `ask_user` questions + confirm gates on Temporal, routines from chat, Connect Apps over the Composio catalog, Settings, Workspaces view (see [web-app.md](web-app.md)) | **Live locally**: chat, questions, routines create/delete from chat, E2B Python and Chrome runs; Composio connect covered by API tests only |
 
 ## Live evidence
 
