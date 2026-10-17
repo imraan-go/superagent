@@ -212,18 +212,16 @@ export async function modelDecision(d: Deps, ref: TaskRef & { step: number }): P
 
   let out;
   try {
-    out = await d
-      .model()
-      .decide({
-        modelId: modelId!,
-        system: SYSTEM_PROMPT,
-        context,
-        messages,
-        tools,
-        maxOutputTokens: env.AI_MAX_OUTPUT_TOKENS,
-        endUserId: ownerId,
-        abortSignal: abortSignal(),
-      });
+    out = await d.model().decide({
+      modelId: modelId!,
+      system: SYSTEM_PROMPT,
+      context,
+      messages,
+      tools,
+      maxOutputTokens: env.AI_MAX_OUTPUT_TOKENS,
+      endUserId: ownerId,
+      abortSignal: abortSignal(),
+    });
   } catch (err) {
     if (err instanceof PartialOutputError) {
       await record(err.usage, 'partial');

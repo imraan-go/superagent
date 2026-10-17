@@ -188,16 +188,14 @@ describe('chats', () => {
       dedupeKey: 't2',
       data: { tool: 'browser_navigate', summary: 'navigated' },
     });
-    await db
-      .insert(schema.chatMessages)
-      .values({
-        chatId,
-        ownerId: aliceId,
-        role: 'assistant',
-        taskId: runId,
-        content: [{ type: 'text', text: 'Try Sushi Nori.' }],
-        dedupeKey: `final:${runId}`,
-      });
+    await db.insert(schema.chatMessages).values({
+      chatId,
+      ownerId: aliceId,
+      role: 'assistant',
+      taskId: runId,
+      content: [{ type: 'text', text: 'Try Sushi Nori.' }],
+      dedupeKey: `final:${runId}`,
+    });
     await setTaskStatus(db, aliceId, runId, 'completed');
     await appendEvent(db, { ownerId: aliceId, taskId: runId, type: 'task.completed', dedupeKey: 'task.completed' });
     const text = await (await req('alice', 'GET', `/api/runs/${runId}/events`)).text();

@@ -146,17 +146,15 @@ describe('approvals', () => {
       task: { id: string };
     };
     const taskId = created.task.id;
-    await db
-      .insert(schema.toolCalls)
-      .values({
-        id: `${taskId}:c1`,
-        taskId,
-        ownerId: ids.alice!,
-        step: 0,
-        providerToolCallId: 'c1',
-        toolName: 'gmail_send_email',
-        input: {},
-      });
+    await db.insert(schema.toolCalls).values({
+      id: `${taskId}:c1`,
+      taskId,
+      ownerId: ids.alice!,
+      step: 0,
+      providerToolCallId: 'c1',
+      toolName: 'gmail_send_email',
+      input: {},
+    });
     const intent = await createIntent(db, {
       ownerId: ids.alice!,
       taskId,

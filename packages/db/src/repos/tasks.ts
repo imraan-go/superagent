@@ -77,38 +77,32 @@ export async function createTaskWithOutbox(
     }
     const history = input.history ?? [];
     if (history.length) {
-      await tx
-        .insert(taskMessages)
-        .values(
-          history.map((h, i) => ({
-            taskId: id,
-            ownerId: input.ownerId,
-            step: 0,
-            kind: h.role,
-            dedupeKey: `history:${i}`,
-            content: { role: h.role, content: h.content },
-          })),
-        );
+      await tx.insert(taskMessages).values(
+        history.map((h, i) => ({
+          taskId: id,
+          ownerId: input.ownerId,
+          step: 0,
+          kind: h.role,
+          dedupeKey: `history:${i}`,
+          content: { role: h.role, content: h.content },
+        })),
+      );
     }
-    await tx
-      .insert(taskMessages)
-      .values({
-        taskId: id,
-        ownerId: input.ownerId,
-        step: 0,
-        kind: 'user',
-        dedupeKey: 'user:0',
-        content: { role: 'user', content: input.userContent ?? input.prompt },
-      });
-    await tx
-      .insert(taskEvents)
-      .values({
-        taskId: id,
-        ownerId: input.ownerId,
-        type: 'task.queued',
-        dedupeKey: 'task.queued',
-        data: { origin: input.origin ?? 'user' },
-      });
+    await tx.insert(taskMessages).values({
+      taskId: id,
+      ownerId: input.ownerId,
+      step: 0,
+      kind: 'user',
+      dedupeKey: 'user:0',
+      content: { role: 'user', content: input.userContent ?? input.prompt },
+    });
+    await tx.insert(taskEvents).values({
+      taskId: id,
+      ownerId: input.ownerId,
+      type: 'task.queued',
+      dedupeKey: 'task.queued',
+      data: { origin: input.origin ?? 'user' },
+    });
     if (input.origin !== 'schedule') {
       await tx
         .insert(workflowOutbox)
