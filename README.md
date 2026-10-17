@@ -7,6 +7,8 @@ runs durably on **Temporal** — pausing for the user's exact approval before an
 account.
 
 > Status and what is verified live vs. only under mocks: see [docs/implementation-plan.md](docs/implementation-plan.md).
+>
+> Contributing (including with Claude Code): every change needs a ClickUp ticket and keeps docs current; see [CLAUDE.md](CLAUDE.md).
 
 ## Layout
 

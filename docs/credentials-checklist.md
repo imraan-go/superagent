@@ -13,7 +13,7 @@ Variables already exported in your shell take precedence over `.env`.
 
 | Key | Purpose |
 |---|---|
-| `POSTGRES_PASSWORD`, `DATABASE_URL` | Local Postgres (Docker, 127.0.0.1:5432) |
+| `POSTGRES_PASSWORD`, `DATABASE_URL` | Local Postgres (Docker, 127.0.0.1:5432); fixed password `superagent`, not random |
 | `BETTER_AUTH_SECRET` | Session signing (≥ 32 chars) |
 | `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Local MinIO root credentials (127.0.0.1:9000) |
 | `DEV_SEED_EMAIL`, `DEV_SEED_PASSWORD` | Development-only seed user; the seed refuses to run in production |
