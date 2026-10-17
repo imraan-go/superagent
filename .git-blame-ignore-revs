@@ -1,0 +1,5 @@
+# Mechanical formatting commits; use with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# style: format the repo with Prettier
+5c31d3a777de57a6b4a8ecbcdc50da57228b20ee
+# style: second Prettier pass
+ecda854bdf8e1955ccba66e8906afb53d294dc45
